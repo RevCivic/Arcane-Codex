@@ -1,0 +1,17 @@
+{
+  "node": {
+    "402fb47c5137d76adadedaf7c2303db388ef04256c": {
+      "workers": {
+        "app/characters/new/page": {
+          "moduleId": 31729,
+          "async": false,
+          "exportedName": "createCharacter",
+          "filename": "src/app/actions.ts"
+        }
+      },
+      "exportedName": "createCharacter",
+      "filename": "src/app/actions.ts"
+    }
+  },
+  "edge": {}
+}

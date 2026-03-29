@@ -1,0 +1,3 @@
+module.exports=[77042,a=>{"use strict";var b=a.i(87924);a.s(["DeleteButton",0,function({action:a,label:c}){return(0,b.jsx)("form",{action:a,onSubmit:a=>{confirm(`Delete "${c}"? This cannot be undone.`)||a.preventDefault()},children:(0,b.jsx)("button",{type:"submit",className:"text-xs px-3 py-1.5 rounded transition-colors hover:text-red-300",style:{color:"#ef4444",border:"1px solid #3f1212",fontFamily:"Georgia, serif"},children:"Delete"})})}])}];
+
+//# sourceMappingURL=src_components_DeleteButton_tsx_0o246ct._.js.map
