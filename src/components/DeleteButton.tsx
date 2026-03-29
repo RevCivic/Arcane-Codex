@@ -6,16 +6,6 @@ interface DeleteButtonProps {
 }
 
 export function DeleteButton({ action, label }: DeleteButtonProps) {
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!confirm(`Delete "${label}"? This cannot be undone.`)) return
-    const form = e.currentTarget
-    const formAction = form.getAttribute('data-action')
-    if (formAction) {
-      await action()
-    }
-  }
-
   return (
     <form action={action} onSubmit={(e) => {
       if (!confirm(`Delete "${label}"? This cannot be undone.`)) e.preventDefault()
