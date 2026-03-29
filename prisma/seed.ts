@@ -43,7 +43,7 @@ async function main() {
     },
   })
 
-  const james = await prisma.character.create({
+  await prisma.character.create({
     data: {
       name: 'Detective James Holt',
       role: 'Police Liaison',
