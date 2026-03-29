@@ -50,7 +50,12 @@ function parseCSV(text: string): string[][] {
   return rows
 }
 
-type ColMap = Partial<Record<'name' | 'role' | 'description' | 'stats' | 'affiliation' | 'status', number>>
+type ColMap = Partial<Record<
+  'name' | 'firstName' | 'lastName' | 'race' | 'gender' | 'age' |
+  'role' | 'description' | 'stats' | 'affiliation' |
+  'currentCase' | 'currentLocation' | 'homeOrigin' | 'status',
+  number
+>>
 
 /** Maps the header row to the Character field indices we care about. */
 function mapHeaders(headers: string[]): ColMap {
@@ -59,6 +64,16 @@ function mapHeaders(headers: string[]): ColMap {
     const h = headers[i].trim().toLowerCase()
     if (['name', 'character name', 'character'].includes(h)) {
       map.name = i
+    } else if (['first name', 'firstname', 'first'].includes(h)) {
+      map.firstName = i
+    } else if (['last name', 'lastname', 'last', 'surname'].includes(h)) {
+      map.lastName = i
+    } else if (['race', 'species', 'type'].includes(h)) {
+      map.race = i
+    } else if (['gender', 'sex'].includes(h)) {
+      map.gender = i
+    } else if (['age'].includes(h)) {
+      map.age = i
     } else if (['role', 'class', 'job', 'title'].includes(h)) {
       map.role = i
     } else if (['description', 'desc', 'background', 'notes', 'bio'].includes(h)) {
@@ -67,6 +82,12 @@ function mapHeaders(headers: string[]): ColMap {
       map.stats = i
     } else if (['affiliation', 'faction', 'group', 'organization', 'org'].includes(h)) {
       map.affiliation = i
+    } else if (['case', 'case name', 'incident', 'investigation'].includes(h)) {
+      map.currentCase = i
+    } else if (['current location', 'location', 'current loc'].includes(h)) {
+      map.currentLocation = i
+    } else if (['home/origin', 'home', 'origin', 'hometown', 'home origin'].includes(h)) {
+      map.homeOrigin = i
     } else if (['status', 'state', 'condition'].includes(h)) {
       map.status = i
     }
@@ -101,11 +122,12 @@ export async function syncCharactersFromSheet(): Promise<{
   }
 
   const col = mapHeaders(rows[0])
-  if (col.name === undefined) {
+  // Accept either a dedicated "name" column or a "first name" + "last name" pair
+  if (col.name === undefined && col.firstName === undefined) {
     return {
       created: 0,
       updated: 0,
-      error: 'Could not find a "Name" column in the sheet headers',
+      error: 'Could not find a "Name" or "First Name" column in the sheet headers',
     }
   }
 
@@ -119,16 +141,36 @@ export async function syncCharactersFromSheet(): Promise<{
   for (const row of rows.slice(1)) {
     if (row.every((c) => !c.trim())) continue // skip blank rows
 
-    const name = row[col.name]?.trim()
-    if (!name) continue
-
     const get = (idx: number | undefined) => (idx !== undefined ? row[idx]?.trim() || null : undefined)
 
+    // Resolve full name: prefer dedicated "name" column, otherwise join first + last
+    const firstName = get(col.firstName)
+    const lastName = get(col.lastName)
+    let name: string | null = null
+    if (col.name !== undefined) {
+      name = row[col.name]?.trim() || null
+    } else if (firstName || lastName) {
+      name = [firstName, lastName].filter(Boolean).join(' ')
+    }
+    if (!name) continue
+
+    const ageRaw = get(col.age)
+    const parsedAge = ageRaw !== null && ageRaw !== undefined ? parseInt(ageRaw, 10) : NaN
+    const age = isNaN(parsedAge) ? null : parsedAge
+
     const data = {
+      firstName,
+      lastName,
+      race: get(col.race),
+      gender: get(col.gender),
+      age,
       role: get(col.role),
       description: get(col.description),
       stats: get(col.stats),
       affiliation: get(col.affiliation),
+      currentCase: get(col.currentCase),
+      currentLocation: get(col.currentLocation),
+      homeOrigin: get(col.homeOrigin),
       status: (col.status !== undefined ? row[col.status]?.trim() : null) || 'Active',
     }
 
@@ -151,14 +193,24 @@ export async function syncCharactersFromSheet(): Promise<{
 
 export async function createCharacter(formData: FormData) {
   const name = formData.get('name') as string
+  const firstName = formData.get('firstName') as string
+  const lastName = formData.get('lastName') as string
+  const race = formData.get('race') as string
+  const gender = formData.get('gender') as string
+  const ageRaw = formData.get('age') as string
+  const parsedAge = ageRaw ? parseInt(ageRaw, 10) : NaN
+  const age = isNaN(parsedAge) ? null : parsedAge
   const role = formData.get('role') as string
   const description = formData.get('description') as string
   const stats = formData.get('stats') as string
   const affiliation = formData.get('affiliation') as string
+  const currentCase = formData.get('currentCase') as string
+  const currentLocation = formData.get('currentLocation') as string
+  const homeOrigin = formData.get('homeOrigin') as string
   const status = formData.get('status') as string
 
   await prisma.character.create({
-    data: { name, role, description, stats, affiliation, status: status || 'Active' },
+    data: { name, firstName, lastName, race, gender, age, role, description, stats, affiliation, currentCase, currentLocation, homeOrigin, status: status || 'Active' },
   })
   revalidatePath('/characters')
   redirect('/characters')
@@ -166,15 +218,25 @@ export async function createCharacter(formData: FormData) {
 
 export async function updateCharacter(id: number, formData: FormData) {
   const name = formData.get('name') as string
+  const firstName = formData.get('firstName') as string
+  const lastName = formData.get('lastName') as string
+  const race = formData.get('race') as string
+  const gender = formData.get('gender') as string
+  const ageRaw = formData.get('age') as string
+  const parsedAge = ageRaw ? parseInt(ageRaw, 10) : NaN
+  const age = isNaN(parsedAge) ? null : parsedAge
   const role = formData.get('role') as string
   const description = formData.get('description') as string
   const stats = formData.get('stats') as string
   const affiliation = formData.get('affiliation') as string
+  const currentCase = formData.get('currentCase') as string
+  const currentLocation = formData.get('currentLocation') as string
+  const homeOrigin = formData.get('homeOrigin') as string
   const status = formData.get('status') as string
 
   await prisma.character.update({
     where: { id },
-    data: { name, role, description, stats, affiliation, status },
+    data: { name, firstName, lastName, race, gender, age, role, description, stats, affiliation, currentCase, currentLocation, homeOrigin, status },
   })
   revalidatePath('/characters')
   revalidatePath(`/characters/${id}`)
