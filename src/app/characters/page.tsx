@@ -75,9 +75,19 @@ export default async function CharactersPage() {
                   {character.description}
                 </p>
               )}
+              {character.race && (
+                <p className="text-xs mb-1" style={{ color: '#6b7280' }}>
+                  🧬 {character.race}{character.gender ? ` · ${character.gender}` : ''}{character.age ? ` · Age ${character.age}` : ''}
+                </p>
+              )}
               {character.affiliation && (
-                <p className="text-xs mb-3" style={{ color: '#6b7280' }}>
+                <p className="text-xs mb-1" style={{ color: '#6b7280' }}>
                   📎 {character.affiliation}
+                </p>
+              )}
+              {character.currentCase && (
+                <p className="text-xs mb-3" style={{ color: '#6b7280' }}>
+                  🗂 {character.currentCase}
                 </p>
               )}
               <div className="flex items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>

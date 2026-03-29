@@ -27,15 +27,57 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
       </h1>
 
       <form action={action} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>First Name</label>
+            <input name="firstName" defaultValue={character.firstName ?? ''} className="arcane-input" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Last Name</label>
+            <input name="lastName" defaultValue={character.lastName ?? ''} className="arcane-input" />
+          </div>
+        </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>
-            Name <span style={{ color: '#ef4444' }}>*</span>
+            Full Name <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <input name="name" required defaultValue={character.name} className="arcane-input" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Race</label>
+            <input name="race" defaultValue={character.race ?? ''} className="arcane-input" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Gender</label>
+            <input name="gender" defaultValue={character.gender ?? ''} className="arcane-input" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Age</label>
+            <input name="age" type="number" defaultValue={character.age ?? ''} className="arcane-input" />
+          </div>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Role</label>
           <input name="role" defaultValue={character.role ?? ''} className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Affiliation</label>
+          <input name="affiliation" defaultValue={character.affiliation ?? ''} className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Case</label>
+          <input name="currentCase" defaultValue={character.currentCase ?? ''} className="arcane-input" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Current Location</label>
+            <input name="currentLocation" defaultValue={character.currentLocation ?? ''} className="arcane-input" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Home / Origin</label>
+            <input name="homeOrigin" defaultValue={character.homeOrigin ?? ''} className="arcane-input" />
+          </div>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Description</label>
@@ -44,10 +86,6 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Stats (BRP)</label>
           <textarea name="stats" rows={3} defaultValue={character.stats ?? ''} className="arcane-input" />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Affiliation</label>
-          <input name="affiliation" defaultValue={character.affiliation ?? ''} className="arcane-input" />
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Status</label>

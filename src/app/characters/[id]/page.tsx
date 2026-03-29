@@ -65,10 +65,46 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
               <dd className="text-sm leading-6" style={{ color: '#e2e8f0' }}>{character.description}</dd>
             </div>
           )}
+          {character.race && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Race</dt>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.race}</dd>
+            </div>
+          )}
+          {character.gender && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Gender</dt>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.gender}</dd>
+            </div>
+          )}
+          {character.age !== null && character.age !== undefined && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Age</dt>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.age}</dd>
+            </div>
+          )}
           {character.affiliation && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Affiliation</dt>
               <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.affiliation}</dd>
+            </div>
+          )}
+          {character.currentCase && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Case</dt>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.currentCase}</dd>
+            </div>
+          )}
+          {character.currentLocation && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Current Location</dt>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.currentLocation}</dd>
+            </div>
+          )}
+          {character.homeOrigin && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Home / Origin</dt>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.homeOrigin}</dd>
             </div>
           )}
           {character.stats && (

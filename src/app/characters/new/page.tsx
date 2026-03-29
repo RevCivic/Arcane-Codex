@@ -19,15 +19,57 @@ export default function NewCharacterPage() {
       </h1>
 
       <form action={createCharacter} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>First Name</label>
+            <input name="firstName" className="arcane-input" placeholder="e.g. Vanessa" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Last Name</label>
+            <input name="lastName" className="arcane-input" placeholder="e.g. Miller" />
+          </div>
+        </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>
-            Name <span style={{ color: '#ef4444' }}>*</span>
+            Full Name <span style={{ color: '#ef4444' }}>*</span>
           </label>
-          <input name="name" required className="arcane-input" placeholder="e.g. Special Agent Sarah Chen" />
+          <input name="name" required className="arcane-input" placeholder="e.g. Vanessa Miller" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Race</label>
+            <input name="race" className="arcane-input" placeholder="e.g. Human" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Gender</label>
+            <input name="gender" className="arcane-input" placeholder="e.g. Female" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Age</label>
+            <input name="age" type="number" className="arcane-input" placeholder="e.g. 33" />
+          </div>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Role</label>
           <input name="role" className="arcane-input" placeholder="e.g. Lead Investigator" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Affiliation</label>
+          <input name="affiliation" className="arcane-input" placeholder="e.g. Bureau of Supernatural Investigation" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Case</label>
+          <input name="currentCase" className="arcane-input" placeholder="e.g. Vanessa's Incursion" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Current Location</label>
+            <input name="currentLocation" className="arcane-input" placeholder="e.g. Waukesha, WI" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Home / Origin</label>
+            <input name="homeOrigin" className="arcane-input" placeholder="e.g. Waukesha, WI" />
+          </div>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Description</label>
@@ -36,10 +78,6 @@ export default function NewCharacterPage() {
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Stats (BRP)</label>
           <textarea name="stats" rows={3} className="arcane-input" placeholder="STR 12, CON 11, SIZ 10, DEX 14, INT 16, POW 15, CHA 13 | HP: 11 | Sanity: 75" />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Affiliation</label>
-          <input name="affiliation" className="arcane-input" placeholder="e.g. Bureau of Supernatural Investigation" />
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Status</label>
