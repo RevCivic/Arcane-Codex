@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { deleteCharacter } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
+import { SyncFromSheetButton } from '@/components/SyncFromSheetButton'
 
 export default async function CharactersPage() {
   const characters = await prisma.character.findMany({ orderBy: { name: 'asc' } })
@@ -22,13 +23,16 @@ export default async function CharactersPage() {
             Agents, suspects, and persons of interest
           </p>
         </div>
-        <Link
-          href="/characters/new"
-          className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90"
-          style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
-        >
-          + New Character
-        </Link>
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+          <SyncFromSheetButton />
+          <Link
+            href="/characters/new"
+            className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90"
+            style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
+          >
+            + New Character
+          </Link>
+        </div>
       </div>
 
       {characters.length === 0 ? (

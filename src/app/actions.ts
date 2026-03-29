@@ -4,6 +4,149 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+// ─── Google Sheet Sync ────────────────────────────────────────────────────────
+
+/** Splits a raw CSV string into a 2-D array of cell values. */
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let cell = ''
+  let inQuotes = false
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          cell += '"'
+          i++ // skip escaped quote
+        } else {
+          inQuotes = false
+        }
+      } else {
+        cell += ch
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true
+      } else if (ch === ',') {
+        row.push(cell)
+        cell = ''
+      } else if (ch === '\n') {
+        row.push(cell)
+        rows.push(row)
+        row = []
+        cell = ''
+      } else if (ch !== '\r') {
+        cell += ch
+      }
+    }
+  }
+  // flush the last cell / row
+  if (cell || row.length > 0) {
+    row.push(cell)
+    rows.push(row)
+  }
+  return rows
+}
+
+type ColMap = Partial<Record<'name' | 'role' | 'description' | 'stats' | 'affiliation' | 'status', number>>
+
+/** Maps the header row to the Character field indices we care about. */
+function mapHeaders(headers: string[]): ColMap {
+  const map: ColMap = {}
+  for (let i = 0; i < headers.length; i++) {
+    const h = headers[i].trim().toLowerCase()
+    if (['name', 'character name', 'character'].includes(h)) {
+      map.name = i
+    } else if (['role', 'class', 'job', 'title'].includes(h)) {
+      map.role = i
+    } else if (['description', 'desc', 'background', 'notes', 'bio'].includes(h)) {
+      map.description = i
+    } else if (['stats', 'stats (brp)', 'brp stats', 'brp', 'attributes', 'stat'].includes(h)) {
+      map.stats = i
+    } else if (['affiliation', 'faction', 'group', 'organization', 'org'].includes(h)) {
+      map.affiliation = i
+    } else if (['status', 'state', 'condition'].includes(h)) {
+      map.status = i
+    }
+  }
+  return map
+}
+
+/** Fetches the public Google Sheet as CSV and upserts characters by name. */
+export async function syncCharactersFromSheet(): Promise<{
+  created: number
+  updated: number
+  error?: string
+}> {
+  const sheetId =
+    process.env.GOOGLE_SHEET_ID ?? '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
+  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`
+
+  let text: string
+  try {
+    const res = await fetch(csvUrl, { cache: 'no-store' })
+    if (!res.ok) {
+      return { created: 0, updated: 0, error: `Failed to fetch sheet (HTTP ${res.status})` }
+    }
+    text = await res.text()
+  } catch {
+    return { created: 0, updated: 0, error: 'Network error — could not reach Google Sheets' }
+  }
+
+  const rows = parseCSV(text)
+  if (rows.length < 2) {
+    return { created: 0, updated: 0, error: 'Sheet appears empty or has no data rows' }
+  }
+
+  const col = mapHeaders(rows[0])
+  if (col.name === undefined) {
+    return {
+      created: 0,
+      updated: 0,
+      error: 'Could not find a "Name" column in the sheet headers',
+    }
+  }
+
+  let created = 0
+  let updated = 0
+
+  // Fetch all existing characters once to avoid N+1 queries inside the loop.
+  const existing = await prisma.character.findMany({ select: { id: true, name: true } })
+  const existingByName = new Map(existing.map((c) => [c.name, c.id]))
+
+  for (const row of rows.slice(1)) {
+    if (row.every((c) => !c.trim())) continue // skip blank rows
+
+    const name = row[col.name]?.trim()
+    if (!name) continue
+
+    const get = (idx: number | undefined) => (idx !== undefined ? row[idx]?.trim() || null : undefined)
+
+    const data = {
+      role: get(col.role),
+      description: get(col.description),
+      stats: get(col.stats),
+      affiliation: get(col.affiliation),
+      status: (col.status !== undefined ? row[col.status]?.trim() : null) || 'Active',
+    }
+
+    const existingId = existingByName.get(name)
+    if (existingId !== undefined) {
+      await prisma.character.update({ where: { id: existingId }, data })
+      updated++
+    } else {
+      const created_ = await prisma.character.create({ data: { name, ...data } })
+      existingByName.set(name, created_.id)
+      created++
+    }
+  }
+
+  revalidatePath('/characters')
+  return { created, updated }
+}
+
 // ─── Characters ───────────────────────────────────────────────────────────────
 
 export async function createCharacter(formData: FormData) {
