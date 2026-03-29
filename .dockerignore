@@ -1,0 +1,35 @@
+# Dependencies (rebuilt inside Docker)
+node_modules/
+
+# Next.js build output (rebuilt inside Docker)
+.next/
+out/
+
+# Prisma generated client (regenerated inside Docker)
+src/generated/
+
+# SQLite database files
+*.db
+*.db-journal
+prisma/dev.db
+prisma/dev.db-journal
+data/
+
+# Environment files (secrets must not be baked into the image)
+.env
+.env.local
+.env.*.local
+
+# Development / editor artefacts
+.git/
+.gitignore
+.DS_Store
+*.log
+
+# Docker files themselves (no need to COPY them)
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# README
+README.md
