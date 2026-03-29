@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      # HOST_PORT controls which port on the host machine maps to the app.
+      # Set HOST_PORT in a .env file or export it before running `docker compose up`.
+      # Defaults to 3000 if not set.
+      - "${HOST_PORT:-3000}:3000"
+    volumes:
+      # Persist the SQLite database across container restarts
+      - db_data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/arcane-codex.db
+    restart: unless-stopped
+
+volumes:
+  db_data:
