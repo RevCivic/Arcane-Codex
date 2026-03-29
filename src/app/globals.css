@@ -93,6 +93,11 @@ body {
   color: #4b5563;
 }
 
+/* List view row hover */
+.hover-row-arcane:hover {
+  background-color: rgba(59, 31, 110, 0.15);
+}
+
 /* Divider with arcane style */
 .arcane-divider {
   border: none;
