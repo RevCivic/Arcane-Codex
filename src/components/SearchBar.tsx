@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function SearchBar({ placeholder }: { placeholder?: string }) {
   const router = useRouter()
@@ -9,6 +9,12 @@ export function SearchBar({ placeholder }: { placeholder?: string }) {
   const pathname = usePathname()
   const [value, setValue] = useState(searchParams.get('search') ?? '')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
