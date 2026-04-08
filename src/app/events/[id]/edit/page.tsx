@@ -8,7 +8,7 @@ import Link from 'next/link'
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const [event, characters] = await Promise.all([
-    prisma.event.findUnique({ where: { id: parseInt(id) } }),
+    prisma.event.findUnique({ where: { id: parseInt(id) }, include: { people: true } }),
     prisma.character.findMany({ orderBy: { name: 'asc' } }),
   ])
   if (!event) notFound()
@@ -47,13 +47,13 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
           <textarea name="outcome" rows={2} defaultValue={event.outcome ?? ''} className="arcane-input" />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Person Involved</label>
-          <select name="personId" defaultValue={event.personId ?? ''} className="arcane-input">
-            <option value="">None</option>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>People Involved</label>
+          <select name="peopleIds" multiple size={Math.min(characters.length, 6)} defaultValue={event.people.map((p) => String(p.id))} className="arcane-input">
             {characters.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+          <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Hold Ctrl / Cmd to select multiple</p>
         </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>

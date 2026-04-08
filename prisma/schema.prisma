@@ -58,16 +58,15 @@ model InventoryItem {
 }
 
 model Event {
-  id           Int        @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   name         String
   description  String?
   date         String?
   significance String?
   outcome      String?
-  personId     Int?
-  person       Character? @relation(fields: [personId], references: [id], onDelete: SetNull)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  people       Character[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model Power {

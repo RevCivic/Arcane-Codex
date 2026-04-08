@@ -330,10 +330,16 @@ export async function createEvent(formData: FormData) {
   const date = formData.get('date') as string
   const significance = formData.get('significance') as string
   const outcome = formData.get('outcome') as string
-  const personIdRaw = formData.get('personId') as string
-  const personId = personIdRaw ? parseInt(personIdRaw, 10) : null
+  const peopleIds = (formData.getAll('peopleIds') as string[])
+    .map((v) => parseInt(v, 10))
+    .filter((n) => !isNaN(n))
 
-  await prisma.event.create({ data: { name, description, date, significance, outcome, personId } })
+  await prisma.event.create({
+    data: {
+      name, description, date, significance, outcome,
+      people: peopleIds.length > 0 ? { connect: peopleIds.map((id) => ({ id })) } : undefined,
+    },
+  })
   revalidatePath('/events')
   redirect('/events')
 }
@@ -344,12 +350,16 @@ export async function updateEvent(id: number, formData: FormData) {
   const date = formData.get('date') as string
   const significance = formData.get('significance') as string
   const outcome = formData.get('outcome') as string
-  const personIdRaw = formData.get('personId') as string
-  const personId = personIdRaw ? parseInt(personIdRaw, 10) : null
+  const peopleIds = (formData.getAll('peopleIds') as string[])
+    .map((v) => parseInt(v, 10))
+    .filter((n) => !isNaN(n))
 
   await prisma.event.update({
     where: { id },
-    data: { name, description, date, significance, outcome, personId },
+    data: {
+      name, description, date, significance, outcome,
+      people: { set: peopleIds.map((pid) => ({ id: pid })) },
+    },
   })
   revalidatePath('/events')
   revalidatePath(`/events/${id}`)
