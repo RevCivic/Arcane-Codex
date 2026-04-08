@@ -10,7 +10,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const event = await prisma.event.findUnique({
     where: { id: parseInt(id) },
-    include: { person: true },
+    include: { people: true },
   })
   if (!event) notFound()
 
@@ -52,13 +52,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
               <dd className="text-sm leading-6 p-3 rounded" style={{ color: '#4ade80', backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>{event.outcome}</dd>
             </div>
           )}
-          {event.person && (
+          {event.people.length > 0 && (
             <div>
-              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Person Involved</dt>
-              <dd className="text-sm">
-                <Link href={`/characters/${event.person.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>
-                  {event.person.name}
-                </Link>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>People Involved</dt>
+              <dd className="text-sm flex flex-wrap gap-2">
+                {event.people.map((person) => (
+                  <Link key={person.id} href={`/characters/${person.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>
+                    {person.name}
+                  </Link>
+                ))}
               </dd>
             </div>
           )}
