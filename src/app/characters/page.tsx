@@ -7,14 +7,16 @@ import { deleteCharacter } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
 import { SyncFromSheetButton } from '@/components/SyncFromSheetButton'
 import { ViewToggle } from '@/components/ViewToggle'
+import { SearchBar } from '@/components/SearchBar'
 
 type SortOrder = 'asc' | 'desc'
 const VALID_SORT_FIELDS = ['name', 'role', 'status', 'race', 'age', 'affiliation'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
 
-function sortLink(view: string, currentSortBy: string, currentSortOrder: string, col: string) {
+function sortLink(view: string, currentSortBy: string, currentSortOrder: string, col: string, search: string) {
   const order = currentSortBy === col ? (currentSortOrder === 'asc' ? 'desc' : 'asc') : 'asc'
-  return `?view=${view}&sortBy=${col}&sortOrder=${order}`
+  const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
+  return `?view=${view}&sortBy=${col}&sortOrder=${order}${searchParam}`
 }
 
 function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: string; column: string }) {
@@ -25,13 +27,28 @@ function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: st
 export default async function CharactersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string }>
+  searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string; search?: string }>
 }) {
-  const { view = 'card', sortBy: rawSortBy = 'name', sortOrder: rawSortOrder = 'asc' } = await searchParams
+  const { view = 'card', sortBy: rawSortBy = 'name', sortOrder: rawSortOrder = 'asc', search = '' } = await searchParams
   const sortBy: SortField = VALID_SORT_FIELDS.includes(rawSortBy as SortField) ? (rawSortBy as SortField) : 'name'
   const sortOrder: SortOrder = rawSortOrder === 'desc' ? 'desc' : 'asc'
 
-  const characters = await prisma.character.findMany({ orderBy: { [sortBy]: sortOrder } })
+  const where = search
+    ? {
+        OR: [
+          { name: { contains: search } },
+          { role: { contains: search } },
+          { status: { contains: search } },
+          { race: { contains: search } },
+          { affiliation: { contains: search } },
+          { description: { contains: search } },
+          { currentCase: { contains: search } },
+          { gender: { contains: search } },
+        ],
+      }
+    : {}
+
+  const characters = await prisma.character.findMany({ where, orderBy: { [sortBy]: sortOrder } })
 
   const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
@@ -50,6 +67,9 @@ export default async function CharactersPage({
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+          <Suspense fallback={null}>
+            <SearchBar placeholder="Search characters…" />
+          </Suspense>
           <Suspense fallback={null}>
             <ViewToggle />
           </Suspense>
@@ -77,32 +97,32 @@ export default async function CharactersPage({
             <thead>
               <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'name')} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'role')} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'role', search)} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Role<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="role" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'status')} style={{ color: sortBy === 'status' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'status', search)} style={{ color: sortBy === 'status' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Status<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="status" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'race')} style={{ color: sortBy === 'race' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'race', search)} style={{ color: sortBy === 'race' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Race<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="race" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'age')} style={{ color: sortBy === 'age' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'age', search)} style={{ color: sortBy === 'age' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Age<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="age" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'affiliation')} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'affiliation', search)} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Affiliation<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="affiliation" />
                   </Link>
                 </th>
