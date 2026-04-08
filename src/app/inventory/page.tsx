@@ -30,7 +30,7 @@ export default async function InventoryPage({
   const sortBy: SortField = VALID_SORT_FIELDS.includes(rawSortBy as SortField) ? (rawSortBy as SortField) : 'name'
   const sortOrder: SortOrder = rawSortOrder === 'desc' ? 'desc' : 'asc'
 
-  const items = await prisma.inventoryItem.findMany({ orderBy: { [sortBy]: sortOrder } })
+  const items = await prisma.inventoryItem.findMany({ orderBy: { [sortBy]: sortOrder }, include: { carrier: true } })
 
   const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
@@ -77,6 +77,9 @@ export default async function InventoryPage({
                     Location<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="location" />
                   </Link>
                 </th>
+                <th style={{ ...thStyle, color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Carrier
+                </th>
                 <th style={{ ...thStyle, textAlign: 'right', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Actions
                 </th>
@@ -93,6 +96,11 @@ export default async function InventoryPage({
                   </td>
                   <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: '13px' }}>
                     {item.location ?? <span style={{ color: '#374151' }}>—</span>}
+                  </td>
+                  <td style={{ padding: '10px 12px', fontSize: '13px' }}>
+                    {item.carrier
+                      ? <Link href={`/characters/${item.carrier.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>{item.carrier.name}</Link>
+                      : <span style={{ color: '#374151' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                     <div className="flex items-center justify-end gap-2">
@@ -119,6 +127,11 @@ export default async function InventoryPage({
               {item.description && <p className="text-sm mb-2 line-clamp-2" style={{ color: '#9ca3af' }}>{item.description}</p>}
               {item.effect && <p className="text-xs mb-2 italic" style={{ color: '#a78bfa' }}>⚡ {item.effect}</p>}
               {item.location && <p className="text-xs" style={{ color: '#6b7280' }}>📍 {item.location}</p>}
+              {item.carrier && (
+                <p className="text-xs mt-1">
+                  <Link href={`/characters/${item.carrier.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>👤 {item.carrier.name}</Link>
+                </p>
+              )}
               <div className="flex items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link href={`/inventory/${item.id}`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                 <Link href={`/inventory/${item.id}/edit`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>

@@ -7,7 +7,10 @@ import Link from 'next/link'
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const event = await prisma.event.findUnique({ where: { id: parseInt(id) } })
+  const [event, characters] = await Promise.all([
+    prisma.event.findUnique({ where: { id: parseInt(id) } }),
+    prisma.character.findMany({ orderBy: { name: 'asc' } }),
+  ])
   if (!event) notFound()
 
   const action = updateEvent.bind(null, event.id)
@@ -42,6 +45,15 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Outcome</label>
           <textarea name="outcome" rows={2} defaultValue={event.outcome ?? ''} className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Person Involved</label>
+          <select name="personId" defaultValue={event.personId ?? ''} className="arcane-input">
+            <option value="">None</option>
+            {characters.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>

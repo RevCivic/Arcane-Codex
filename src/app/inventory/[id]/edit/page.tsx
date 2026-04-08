@@ -7,7 +7,10 @@ import Link from 'next/link'
 
 export default async function EditInventoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const item = await prisma.inventoryItem.findUnique({ where: { id: parseInt(id) } })
+  const [item, characters] = await Promise.all([
+    prisma.inventoryItem.findUnique({ where: { id: parseInt(id) } }),
+    prisma.character.findMany({ orderBy: { name: 'asc' } }),
+  ])
   if (!item) notFound()
 
   const action = updateInventoryItem.bind(null, item.id)
@@ -42,6 +45,15 @@ export default async function EditInventoryPage({ params }: { params: Promise<{ 
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Location</label>
           <input name="location" defaultValue={item.location ?? ''} className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Carried / Wielded By</label>
+          <select name="carrierId" defaultValue={item.carrierId ?? ''} className="arcane-input">
+            <option value="">None</option>
+            {characters.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>

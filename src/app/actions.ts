@@ -290,8 +290,10 @@ export async function createInventoryItem(formData: FormData) {
   const effect = formData.get('effect') as string
   const location = formData.get('location') as string
   const category = formData.get('category') as string
+  const carrierIdRaw = formData.get('carrierId') as string
+  const carrierId = carrierIdRaw ? parseInt(carrierIdRaw, 10) : null
 
-  await prisma.inventoryItem.create({ data: { name, description, effect, location, category } })
+  await prisma.inventoryItem.create({ data: { name, description, effect, location, category, carrierId } })
   revalidatePath('/inventory')
   redirect('/inventory')
 }
@@ -302,10 +304,12 @@ export async function updateInventoryItem(id: number, formData: FormData) {
   const effect = formData.get('effect') as string
   const location = formData.get('location') as string
   const category = formData.get('category') as string
+  const carrierIdRaw = formData.get('carrierId') as string
+  const carrierId = carrierIdRaw ? parseInt(carrierIdRaw, 10) : null
 
   await prisma.inventoryItem.update({
     where: { id },
-    data: { name, description, effect, location, category },
+    data: { name, description, effect, location, category, carrierId },
   })
   revalidatePath('/inventory')
   revalidatePath(`/inventory/${id}`)
@@ -326,8 +330,10 @@ export async function createEvent(formData: FormData) {
   const date = formData.get('date') as string
   const significance = formData.get('significance') as string
   const outcome = formData.get('outcome') as string
+  const personIdRaw = formData.get('personId') as string
+  const personId = personIdRaw ? parseInt(personIdRaw, 10) : null
 
-  await prisma.event.create({ data: { name, description, date, significance, outcome } })
+  await prisma.event.create({ data: { name, description, date, significance, outcome, personId } })
   revalidatePath('/events')
   redirect('/events')
 }
@@ -338,10 +344,12 @@ export async function updateEvent(id: number, formData: FormData) {
   const date = formData.get('date') as string
   const significance = formData.get('significance') as string
   const outcome = formData.get('outcome') as string
+  const personIdRaw = formData.get('personId') as string
+  const personId = personIdRaw ? parseInt(personIdRaw, 10) : null
 
   await prisma.event.update({
     where: { id },
-    data: { name, description, date, significance, outcome },
+    data: { name, description, date, significance, outcome, personId },
   })
   revalidatePath('/events')
   revalidatePath(`/events/${id}`)

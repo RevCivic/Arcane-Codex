@@ -1,7 +1,12 @@
+export const dynamic = 'force-dynamic'
+
+import { prisma } from '@/lib/prisma'
 import { createInventoryItem } from '@/app/actions'
 import Link from 'next/link'
 
-export default function NewInventoryPage() {
+export default async function NewInventoryPage() {
+  const characters = await prisma.character.findMany({ orderBy: { name: 'asc' } })
+
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
@@ -32,6 +37,15 @@ export default function NewInventoryPage() {
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Location</label>
           <input name="location" className="arcane-input" placeholder="e.g. Bureau Vault, Agent's possession" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Carried / Wielded By</label>
+          <select name="carrierId" defaultValue="" className="arcane-input">
+            <option value="">None</option>
+            {characters.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>
