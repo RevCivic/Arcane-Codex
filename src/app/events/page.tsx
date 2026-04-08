@@ -6,14 +6,16 @@ import { Suspense } from 'react'
 import { deleteEvent } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
 import { ViewToggle } from '@/components/ViewToggle'
+import { SearchBar } from '@/components/SearchBar'
 
 type SortOrder = 'asc' | 'desc'
 const VALID_SORT_FIELDS = ['name', 'date', 'significance', 'createdAt'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
 
-function sortLink(view: string, currentSortBy: string, currentSortOrder: string, col: string) {
+function sortLink(view: string, currentSortBy: string, currentSortOrder: string, col: string, search: string) {
   const order = currentSortBy === col ? (currentSortOrder === 'asc' ? 'desc' : 'asc') : 'asc'
-  return `?view=${view}&sortBy=${col}&sortOrder=${order}`
+  const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
+  return `?view=${view}&sortBy=${col}&sortOrder=${order}${searchParam}`
 }
 
 function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: string; column: string }) {
@@ -24,13 +26,25 @@ function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: st
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string }>
+  searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string; search?: string }>
 }) {
-  const { view = 'card', sortBy: rawSortBy = 'createdAt', sortOrder: rawSortOrder = 'desc' } = await searchParams
+  const { view = 'card', sortBy: rawSortBy = 'createdAt', sortOrder: rawSortOrder = 'desc', search = '' } = await searchParams
   const sortBy: SortField = VALID_SORT_FIELDS.includes(rawSortBy as SortField) ? (rawSortBy as SortField) : 'createdAt'
   const sortOrder: SortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc'
 
-  const events = await prisma.event.findMany({ orderBy: { [sortBy]: sortOrder }, include: { people: true } })
+  const where = search
+    ? {
+        OR: [
+          { name: { contains: search } },
+          { description: { contains: search } },
+          { significance: { contains: search } },
+          { date: { contains: search } },
+          { outcome: { contains: search } },
+        ],
+      }
+    : {}
+
+  const events = await prisma.event.findMany({ where, orderBy: { [sortBy]: sortOrder }, include: { people: true } })
 
   const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
@@ -44,6 +58,9 @@ export default async function EventsPage({
           <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>Case incidents and milestones</p>
         </div>
         <div className="flex items-center gap-2">
+          <Suspense fallback={null}>
+            <SearchBar placeholder="Search events…" />
+          </Suspense>
           <Suspense fallback={null}>
             <ViewToggle />
           </Suspense>
@@ -63,17 +80,17 @@ export default async function EventsPage({
             <thead>
               <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'name')} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'date')} style={{ color: sortBy === 'date' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'date', search)} style={{ color: sortBy === 'date' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Date<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="date" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'significance')} style={{ color: sortBy === 'significance' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'significance', search)} style={{ color: sortBy === 'significance' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Significance<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="significance" />
                   </Link>
                 </th>
