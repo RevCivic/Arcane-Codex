@@ -8,7 +8,10 @@ import { DeleteButton } from '@/components/DeleteButton'
 
 export default async function InventoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const item = await prisma.inventoryItem.findUnique({ where: { id: parseInt(id) } })
+  const item = await prisma.inventoryItem.findUnique({
+    where: { id: parseInt(id) },
+    include: { carrier: true },
+  })
   if (!item) notFound()
 
   return (
@@ -49,6 +52,16 @@ export default async function InventoryDetailPage({ params }: { params: Promise<
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Location</dt>
               <dd className="text-sm" style={{ color: '#e2e8f0' }}>{item.location}</dd>
+            </div>
+          )}
+          {item.carrier && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Carried / Wielded By</dt>
+              <dd className="text-sm">
+                <Link href={`/characters/${item.carrier.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>
+                  {item.carrier.name}
+                </Link>
+              </dd>
             </div>
           )}
         </dl>

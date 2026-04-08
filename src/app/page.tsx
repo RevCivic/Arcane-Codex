@@ -7,6 +7,7 @@ const sections = [
   {
     href: '/characters',
     label: 'Characters',
+    newLabel: 'Character',
     icon: '👤',
     desc: 'Agents, suspects, and persons of interest',
     color: '#8b5cf6',
@@ -14,6 +15,7 @@ const sections = [
   {
     href: '/places',
     label: 'Places',
+    newLabel: 'Place',
     icon: '🗺️',
     desc: 'Locations under investigation',
     color: '#6366f1',
@@ -21,6 +23,7 @@ const sections = [
   {
     href: '/inventory',
     label: 'Inventory',
+    newLabel: 'Item',
     icon: '🎒',
     desc: 'Artifacts, equipment, and evidence',
     color: '#d97706',
@@ -28,6 +31,7 @@ const sections = [
   {
     href: '/events',
     label: 'Events',
+    newLabel: 'Event',
     icon: '📜',
     desc: 'Incidents and case milestones',
     color: '#7c3aed',
@@ -35,6 +39,7 @@ const sections = [
   {
     href: '/powers',
     label: 'Powers',
+    newLabel: 'Power',
     icon: '⚡',
     desc: 'Supernatural abilities and phenomena',
     color: '#f59e0b',
@@ -121,13 +126,13 @@ export default async function Home() {
               href={`${section.href}/new`}
               className="flex items-center gap-2 px-3 py-2 rounded border text-sm transition-all duration-200 hover:border-purple-500 hover:text-purple-300"
               style={{
-                borderColor: '#374151',
-                color: '#9ca3af',
+                borderColor: section.href === '/inventory' ? '#7f1d1d' : '#374151',
+                color: section.href === '/inventory' ? '#f87171' : '#9ca3af',
                 fontFamily: 'Georgia, serif',
               }}
             >
               <span>+</span>
-              <span>New {section.label.slice(0, -1)}</span>
+              <span>New {section.newLabel}</span>
             </Link>
           ))}
         </div>

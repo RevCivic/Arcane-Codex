@@ -11,7 +11,7 @@ datasource db {
 }
 
 model Character {
-  id              Int      @id @default(autoincrement())
+  id              Int             @id @default(autoincrement())
   name            String
   firstName       String?
   lastName        String?
@@ -25,10 +25,12 @@ model Character {
   currentCase     String?
   currentLocation String?
   homeOrigin      String?
-  status          String?  @default("Active")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  status          String?         @default("Active")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   powers          Power[]
+  inventoryItems  InventoryItem[]
+  events          Event[]
 }
 
 model Place {
@@ -43,25 +45,29 @@ model Place {
 }
 
 model InventoryItem {
-  id          Int      @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String
   description String?
   effect      String?
   location    String?
   category    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  carrierId   Int?
+  carrier     Character? @relation(fields: [carrierId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model Event {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  date        String?
+  id           Int        @id @default(autoincrement())
+  name         String
+  description  String?
+  date         String?
   significance String?
-  outcome     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  outcome      String?
+  personId     Int?
+  person       Character? @relation(fields: [personId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Power {

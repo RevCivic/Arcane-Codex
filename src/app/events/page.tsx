@@ -30,7 +30,7 @@ export default async function EventsPage({
   const sortBy: SortField = VALID_SORT_FIELDS.includes(rawSortBy as SortField) ? (rawSortBy as SortField) : 'createdAt'
   const sortOrder: SortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc'
 
-  const events = await prisma.event.findMany({ orderBy: { [sortBy]: sortOrder } })
+  const events = await prisma.event.findMany({ orderBy: { [sortBy]: sortOrder }, include: { person: true } })
 
   const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
@@ -77,6 +77,9 @@ export default async function EventsPage({
                     Significance<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="significance" />
                   </Link>
                 </th>
+                <th style={{ ...thStyle, color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Person
+                </th>
                 <th style={{ ...thStyle, textAlign: 'right', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Actions
                 </th>
@@ -91,6 +94,11 @@ export default async function EventsPage({
                   </td>
                   <td style={{ padding: '10px 12px', color: '#a78bfa', fontSize: '13px', fontStyle: 'italic' }}>
                     {event.significance ?? <span style={{ color: '#374151', fontStyle: 'normal' }}>—</span>}
+                  </td>
+                  <td style={{ padding: '10px 12px', fontSize: '13px' }}>
+                    {event.person
+                      ? <Link href={`/characters/${event.person.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>{event.person.name}</Link>
+                      : <span style={{ color: '#374151' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                     <div className="flex items-center justify-end gap-2">
@@ -115,6 +123,11 @@ export default async function EventsPage({
               {event.description && <p className="text-sm mb-2 line-clamp-2" style={{ color: '#9ca3af' }}>{event.description}</p>}
               {event.significance && (
                 <p className="text-xs italic" style={{ color: '#a78bfa' }}>Significance: {event.significance}</p>
+              )}
+              {event.person && (
+                <p className="text-xs mt-1">
+                  <Link href={`/characters/${event.person.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>👤 {event.person.name}</Link>
+                </p>
               )}
               <div className="flex items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link href={`/events/${event.id}`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
