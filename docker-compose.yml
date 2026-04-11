@@ -14,6 +14,12 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/arcane-codex.db
+      - GOOGLE_SHEET_ID=${GOOGLE_SHEET_ID}
+      - AUTH_GOOGLE_ID=${AUTH_GOOGLE_ID}
+      - AUTH_GOOGLE_SECRET=${AUTH_GOOGLE_SECRET}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_URL=${AUTH_URL}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST}
     restart: unless-stopped
 
 volumes:
