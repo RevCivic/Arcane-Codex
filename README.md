@@ -89,7 +89,7 @@ For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set
 
 - **`Unknown Action` from Auth.js**
   - Use the in-app **Log in with Google** button (server action), not a bookmarked callback URL.
-  - Confirm `AUTH_URL` is origin-only (for example `http://localhost:3000`, not `/api/auth`).
+  - Confirm `AUTH_URL` is origin-only (for example `http://localhost:3000`), not a path (for example `http://localhost:3000/api/auth`).
   - Confirm route handler exists at `src/app/api/auth/[...nextauth]/route.ts`.
   - Visit `/api/auth/signin` directly to verify Auth.js can list the Google provider.
 

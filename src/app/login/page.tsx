@@ -36,7 +36,7 @@ export default async function LoginPage({
 
       {authError && (
         <p className="text-center mb-6" style={{ color: '#f87171', fontFamily: 'Georgia, serif' }}>
-          Auth request was not understood. Try signing in again.
+          Authentication routing error occurred. Use the sign-in button below.
         </p>
       )}
 
