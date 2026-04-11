@@ -34,7 +34,7 @@ export default async function LoginPage({
       )}
 
       <Link
-        href="/api/auth/signin/google?callbackUrl=%2F"
+        href="/api/auth/signin/google?callbackUrl=/"
         className="block w-full px-4 py-3 rounded border font-semibold uppercase tracking-wider transition-all duration-200 hover:text-purple-200 text-center"
         style={{ borderColor: '#7c3aed', color: '#e2e8f0', fontFamily: 'Georgia, serif' }}
       >
