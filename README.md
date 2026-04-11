@@ -61,3 +61,23 @@ Arcane Codex now requires Google sign-in for all app routes.
      - Example (custom host): `http://hq.shank-home.net:3001`
 
 For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set `AUTH_URL` to that exact public URL so Auth.js can trust and generate the correct auth endpoints. `AUTH_URL` must be an origin only (scheme + host + optional port), not a path like `/api/auth` or `/api/auth/callback/google`.
+
+### OAuth troubleshooting (common misconfigurations)
+
+- **`redirect_uri_mismatch` from Google**
+  - Ensure your Google OAuth app includes the exact callback URL:
+    - `AUTH_URL/api/auth/callback/google`
+  - Scheme (`http` vs `https`), host, and port must match exactly.
+
+- **Login succeeds with Google but app denies access**
+  - The signed-in email is not in the Arcane Codex allowlist.
+  - Ask an admin to add the email at `/admin/access`.
+
+- **Auth callback or state/cookie errors**
+  - `AUTH_URL` must be the exact public origin users browse to.
+  - Do not include a path in `AUTH_URL`.
+  - Keep `AUTH_TRUST_HOST=true` when running behind Docker/reverse proxies you control.
+
+- **`invalid_client` or OAuth client authentication failed**
+  - Verify `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are from the same Google OAuth client.
+  - Confirm there are no trailing spaces/quotes in `.env`.
