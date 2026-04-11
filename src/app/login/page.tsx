@@ -1,4 +1,5 @@
-import { auth, signIn } from '@/auth'
+import { auth } from '@/auth'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 export default async function LoginPage({
@@ -32,20 +33,13 @@ export default async function LoginPage({
         </p>
       )}
 
-      <form
-        action={async () => {
-          'use server'
-          await signIn('google', { redirectTo: '/' })
-        }}
+      <Link
+        href="/api/auth/signin/google?callbackUrl=/"
+        className="block w-full px-4 py-3 rounded border font-semibold uppercase tracking-wider transition-all duration-200 hover:text-purple-200 text-center"
+        style={{ borderColor: '#7c3aed', color: '#e2e8f0', fontFamily: 'Georgia, serif' }}
       >
-        <button
-          type="submit"
-          className="w-full px-4 py-3 rounded border font-semibold uppercase tracking-wider transition-all duration-200 hover:text-purple-200"
-          style={{ borderColor: '#7c3aed', color: '#e2e8f0', fontFamily: 'Georgia, serif' }}
-        >
-          Log in with Google
-        </button>
-      </form>
+        Log in with Google
+      </Link>
     </div>
   )
 }
