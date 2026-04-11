@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { auth, signOut } from '@/auth'
 import { AccessRole } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -20,8 +22,15 @@ const navLinks = [
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
+  const email = session?.user?.email?.trim().toLowerCase()
+  const access = email ? await prisma.allowedEmail.findUnique({ where: { email } }) : null
+
+  if (session?.user && !access) {
+    redirect('/login?error=AccessDenied')
+  }
+
   const isSignedIn = !!session?.user
-  const isAdmin = session?.user?.role === AccessRole.ADMIN
+  const isAdmin = access?.role === AccessRole.ADMIN
 
   return (
     <html lang="en" className="h-full">
