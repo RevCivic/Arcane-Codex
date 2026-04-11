@@ -62,10 +62,3 @@ CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token"
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AllowedEmail_email_key" ON "AllowedEmail"("email");
-
--- Seed initial allowlist
-INSERT INTO "AllowedEmail" ("email", "role", "createdAt", "updatedAt")
-VALUES ('mjshank225@gmail.com', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-
-INSERT INTO "AllowedEmail" ("email", "role", "createdAt", "updatedAt")
-VALUES ('peightonashlee@gmail.com', 'USER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

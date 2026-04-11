@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { auth, signOut } from '@/auth'
 import { AccessRole } from '@/generated/prisma'
+import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -22,7 +23,7 @@ const navLinks = [
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
-  const email = session?.user?.email?.trim().toLowerCase()
+  const email = normalizeEmail(session?.user?.email)
   const access = email ? await prisma.allowedEmail.findUnique({ where: { email } }) : null
 
   if (session?.user && !access) {

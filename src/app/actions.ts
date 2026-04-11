@@ -2,15 +2,12 @@
 
 import { auth } from '@/auth'
 import { AccessRole } from '@/generated/prisma'
+import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 // ─── Google Sheet Sync ────────────────────────────────────────────────────────
-
-function normalizeEmail(email?: string | null) {
-  return email?.trim().toLowerCase() ?? null
-}
 
 async function requireAuthorizedUser() {
   const session = await auth()

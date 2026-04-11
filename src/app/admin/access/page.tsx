@@ -1,12 +1,9 @@
 import { auth } from '@/auth'
 import { addAllowedEmail } from '@/app/actions'
 import { AccessRole } from '@/generated/prisma'
+import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-
-function normalizeEmail(email?: string | null) {
-  return email?.trim().toLowerCase() ?? null
-}
 
 export default async function AccessAdminPage() {
   const session = await auth()

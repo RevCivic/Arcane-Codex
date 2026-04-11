@@ -1,11 +1,12 @@
 import type { NextAuthConfig } from 'next-auth'
+import { normalizeEmail } from '@/lib/normalizeEmail'
 import Google from 'next-auth/providers/google'
 
 const authConfig: NextAuthConfig = {
   providers: [
     Google({
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      clientId: process.env.AUTH_GOOGLE_ID ?? '',
+      clientSecret: process.env.AUTH_GOOGLE_SECRET ?? '',
     }),
   ],
   pages: {
@@ -18,7 +19,7 @@ const authConfig: NextAuthConfig = {
         return true
       }
 
-      return !!auth?.user
+      return !!normalizeEmail(auth?.user?.email)
     },
   },
 }
