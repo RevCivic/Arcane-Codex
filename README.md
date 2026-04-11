@@ -50,9 +50,14 @@ Arcane Codex now requires Google sign-in for all app routes.
 
 1. Copy `.env.example` to `.env`.
 2. Set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET`, `AUTH_URL`, and `AUTH_TRUST_HOST`.
-3. In Google Cloud OAuth settings, add this redirect URI:
-   - Your `AUTH_URL` value + `/api/auth/callback/google`
-   - Example (local): `http://localhost:3000/api/auth/callback/google`
-   - Example (custom host): `http://hq.shank-home.net:3001/api/auth/callback/google`
+3. In Google Cloud OAuth settings, configure URLs for every environment you use:
+   - **Authorized redirect URIs**:
+     - `YOUR_AUTH_URL/api/auth/callback/google`
+     - Example (local): `http://localhost:3000/api/auth/callback/google`
+     - Example (custom host): `http://hq.shank-home.net:3001/api/auth/callback/google`
+   - **Authorized JavaScript origins** (if Google requires it in your OAuth app config):
+     - `YOUR_AUTH_URL`
+     - Example (local): `http://localhost:3000`
+     - Example (custom host): `http://hq.shank-home.net:3001`
 
-For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set `AUTH_URL` to that exact public URL so Auth.js can trust and generate the correct auth endpoints.
+For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set `AUTH_URL` to that exact public URL so Auth.js can trust and generate the correct auth endpoints. `AUTH_URL` must be an origin only (scheme + host + optional port), not a path like `/api/auth` or `/api/auth/callback/google`.
