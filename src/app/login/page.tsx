@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { auth, signIn } from '@/auth'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -14,6 +14,7 @@ export default async function LoginPage({
 
   const params = await searchParams
   const accessDenied = params.error === 'AccessDenied'
+  const authError = params.error === 'UnknownAction'
 
   return (
     <div className="max-w-xl mx-auto mt-20 rounded-lg p-8" style={{ backgroundColor: '#111118', border: '1px solid #1f2937' }}>
@@ -33,13 +34,34 @@ export default async function LoginPage({
         </p>
       )}
 
-      <Link
-        href="/api/auth/signin/google?callbackUrl=/"
-        className="block w-full px-4 py-3 rounded border font-semibold uppercase tracking-wider transition-all duration-200 hover:text-purple-200 text-center"
-        style={{ borderColor: '#7c3aed', color: '#e2e8f0', fontFamily: 'Georgia, serif' }}
+      {authError && (
+        <p className="text-center mb-6" style={{ color: '#f87171', fontFamily: 'Georgia, serif' }}>
+          Auth request was not understood. Try signing in again.
+        </p>
+      )}
+
+      <form
+        action={async () => {
+          'use server'
+          await signIn('google', { redirectTo: '/' })
+        }}
       >
-        Log in with Google
-      </Link>
+        <button
+          type="submit"
+          className="block w-full px-4 py-3 rounded border font-semibold uppercase tracking-wider transition-all duration-200 hover:text-purple-200 text-center"
+          style={{ borderColor: '#7c3aed', color: '#e2e8f0', fontFamily: 'Georgia, serif' }}
+        >
+          Log in with Google
+        </button>
+      </form>
+
+      <p className="text-center mt-6 text-xs" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        Having trouble? Use{' '}
+        <Link href="/api/auth/signin" className="underline hover:text-gray-300">
+          Auth.js sign-in
+        </Link>{' '}
+        to inspect available providers.
+      </p>
     </div>
   )
 }

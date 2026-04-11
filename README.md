@@ -50,15 +50,24 @@ Arcane Codex now requires Google sign-in for all app routes.
 
 1. Copy `.env.example` to `.env`.
 2. Set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET`, `AUTH_URL`, and `AUTH_TRUST_HOST`.
-3. In Google Cloud OAuth settings, configure URLs for every environment you use:
-   - **Authorized redirect URIs**:
-     - `YOUR_AUTH_URL/api/auth/callback/google`
-     - Example (local): `http://localhost:3000/api/auth/callback/google`
-     - Example (custom host): `http://hq.shank-home.net:3001/api/auth/callback/google`
-   - **Authorized JavaScript origins** (if Google requires it in your OAuth app config):
-     - `YOUR_AUTH_URL`
-     - Example (local): `http://localhost:3000`
-     - Example (custom host): `http://hq.shank-home.net:3001`
+3. In Google Cloud Console:
+   - Open **APIs & Services** → **OAuth consent screen**.
+   - Configure app name/email and add scopes `openid`, `email`, and `profile`.
+   - Add test users if your app is in testing mode.
+4. Still in Google Cloud Console, create the OAuth client:
+   - Go to **APIs & Services** → **Credentials**.
+   - Click **Create Credentials** → **OAuth client ID**.
+   - Choose **Web application**.
+   - Configure URLs for every environment you use:
+     - **Authorized redirect URIs**:
+       - `YOUR_AUTH_URL/api/auth/callback/google`
+       - Example (local): `http://localhost:3000/api/auth/callback/google`
+       - Example (custom host): `http://hq.shank-home.net:3001/api/auth/callback/google`
+     - **Authorized JavaScript origins** (if Google requires it in your OAuth app config):
+       - `YOUR_AUTH_URL`
+       - Example (local): `http://localhost:3000`
+       - Example (custom host): `http://hq.shank-home.net:3001`
+5. Copy the generated Client ID and Client Secret into `.env` as `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`.
 
 For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set `AUTH_URL` to that exact public URL so Auth.js can trust and generate the correct auth endpoints. `AUTH_URL` must be an origin only (scheme + host + optional port), not a path like `/api/auth` or `/api/auth/callback/google`.
 
@@ -77,6 +86,12 @@ For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set
   - `AUTH_URL` must be the exact public origin users browse to.
   - Do not include a path in `AUTH_URL`.
   - Keep `AUTH_TRUST_HOST=true` when running behind Docker/reverse proxies you control.
+
+- **`Unknown Action` from Auth.js**
+  - Use the in-app **Log in with Google** button (server action), not a bookmarked callback URL.
+  - Confirm `AUTH_URL` is origin-only (for example `http://localhost:3000`, not `/api/auth`).
+  - Confirm route handler exists at `src/app/api/auth/[...nextauth]/route.ts`.
+  - Visit `/api/auth/signin` directly to verify Auth.js can list the Google provider.
 
 - **`invalid_client` or OAuth client authentication failed**
   - Verify `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are from the same Google OAuth client.
