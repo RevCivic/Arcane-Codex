@@ -3,6 +3,9 @@ import { normalizeEmail } from '@/lib/normalizeEmail'
 import Google from 'next-auth/providers/google'
 
 const authConfig: NextAuthConfig = {
+  session: {
+    strategy: 'jwt',
+  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID ?? '',
