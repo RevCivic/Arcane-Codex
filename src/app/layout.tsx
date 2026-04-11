@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
+import { auth, signOut } from '@/auth'
+import { AccessRole } from '@/generated/prisma'
+import { normalizeEmail } from '@/lib/normalizeEmail'
+import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -16,7 +21,18 @@ const navLinks = [
   { href: '/powers', label: 'Powers', icon: '⚡' },
 ]
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth()
+  const email = normalizeEmail(session?.user?.email)
+  const access = email ? await prisma.allowedEmail.findUnique({ where: { email } }) : null
+
+  if (session?.user && !access) {
+    redirect('/login?error=AccessDenied')
+  }
+
+  const isSignedIn = !!session?.user
+  const isAdmin = access?.role === AccessRole.ADMIN
+
   return (
     <html lang="en" className="h-full">
       <body className="min-h-full flex flex-col" style={{ backgroundColor: '#0a0a0f', color: '#e2e8f0' }}>
@@ -52,6 +68,43 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <span className="hidden sm:inline">{link.label}</span>
                 </Link>
               ))}
+              {isAdmin && (
+                <Link
+                  href="/admin/access"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
+                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                >
+                  <span>🛡️</span>
+                  <span className="hidden sm:inline">Access</span>
+                </Link>
+              )}
+
+              {isSignedIn ? (
+                <form
+                  action={async () => {
+                    'use server'
+                    await signOut({ redirectTo: '/login' })
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
+                    style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                  >
+                    <span>🚪</span>
+                    <span className="hidden sm:inline">Sign Out</span>
+                  </button>
+                </form>
+              ) : (
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
+                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                >
+                  <span>🔐</span>
+                  <span className="hidden sm:inline">Sign In</span>
+                </Link>
+              )}
             </nav>
           </div>
         </header>
@@ -81,4 +134,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
-

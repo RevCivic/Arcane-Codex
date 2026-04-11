@@ -1,10 +1,29 @@
 'use server'
 
+import { auth } from '@/auth'
+import { AccessRole } from '@/generated/prisma'
+import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 // ─── Google Sheet Sync ────────────────────────────────────────────────────────
+
+async function requireAuthorizedUser() {
+  const session = await auth()
+  const email = normalizeEmail(session?.user?.email)
+  if (!email) throw new Error('Unauthorized')
+
+  const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
+  if (!allowed) throw new Error('Unauthorized')
+  return { email, role: allowed.role }
+}
+
+async function requireAdminUser() {
+  const user = await requireAuthorizedUser()
+  if (user.role !== AccessRole.ADMIN) throw new Error('Forbidden')
+  return user
+}
 
 /** Splits a raw CSV string into a 2-D array of cell values. */
 function parseCSV(text: string): string[][] {
@@ -101,6 +120,8 @@ export async function syncCharactersFromSheet(): Promise<{
   updated: number
   error?: string
 }> {
+  await requireAuthorizedUser()
+
   const sheetId =
     process.env.GOOGLE_SHEET_ID ?? '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
   const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`
@@ -192,6 +213,8 @@ export async function syncCharactersFromSheet(): Promise<{
 // ─── Characters ───────────────────────────────────────────────────────────────
 
 export async function createCharacter(formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const firstName = formData.get('firstName') as string
   const lastName = formData.get('lastName') as string
@@ -217,6 +240,8 @@ export async function createCharacter(formData: FormData) {
 }
 
 export async function updateCharacter(id: number, formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const firstName = formData.get('firstName') as string
   const lastName = formData.get('lastName') as string
@@ -244,6 +269,8 @@ export async function updateCharacter(id: number, formData: FormData) {
 }
 
 export async function deleteCharacter(id: number) {
+  await requireAuthorizedUser()
+
   await prisma.character.delete({ where: { id } })
   revalidatePath('/characters')
   redirect('/characters')
@@ -252,6 +279,8 @@ export async function deleteCharacter(id: number) {
 // ─── Places ───────────────────────────────────────────────────────────────────
 
 export async function createPlace(formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const type = formData.get('type') as string
   const description = formData.get('description') as string
@@ -264,6 +293,8 @@ export async function createPlace(formData: FormData) {
 }
 
 export async function updatePlace(id: number, formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const type = formData.get('type') as string
   const description = formData.get('description') as string
@@ -277,6 +308,8 @@ export async function updatePlace(id: number, formData: FormData) {
 }
 
 export async function deletePlace(id: number) {
+  await requireAuthorizedUser()
+
   await prisma.place.delete({ where: { id } })
   revalidatePath('/places')
   redirect('/places')
@@ -285,6 +318,8 @@ export async function deletePlace(id: number) {
 // ─── Inventory Items ──────────────────────────────────────────────────────────
 
 export async function createInventoryItem(formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
@@ -299,6 +334,8 @@ export async function createInventoryItem(formData: FormData) {
 }
 
 export async function updateInventoryItem(id: number, formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
@@ -317,6 +354,8 @@ export async function updateInventoryItem(id: number, formData: FormData) {
 }
 
 export async function deleteInventoryItem(id: number) {
+  await requireAuthorizedUser()
+
   await prisma.inventoryItem.delete({ where: { id } })
   revalidatePath('/inventory')
   redirect('/inventory')
@@ -325,6 +364,8 @@ export async function deleteInventoryItem(id: number) {
 // ─── Events ───────────────────────────────────────────────────────────────────
 
 export async function createEvent(formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const description = formData.get('description') as string
   const date = formData.get('date') as string
@@ -345,6 +386,8 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function updateEvent(id: number, formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const description = formData.get('description') as string
   const date = formData.get('date') as string
@@ -367,6 +410,8 @@ export async function updateEvent(id: number, formData: FormData) {
 }
 
 export async function deleteEvent(id: number) {
+  await requireAuthorizedUser()
+
   await prisma.event.delete({ where: { id } })
   revalidatePath('/events')
   redirect('/events')
@@ -375,6 +420,8 @@ export async function deleteEvent(id: number) {
 // ─── Powers ───────────────────────────────────────────────────────────────────
 
 export async function createPower(formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
@@ -386,6 +433,8 @@ export async function createPower(formData: FormData) {
 }
 
 export async function updatePower(id: number, formData: FormData) {
+  await requireAuthorizedUser()
+
   const name = formData.get('name') as string
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
@@ -401,7 +450,28 @@ export async function updatePower(id: number, formData: FormData) {
 }
 
 export async function deletePower(id: number) {
+  await requireAuthorizedUser()
+
   await prisma.power.delete({ where: { id } })
   revalidatePath('/powers')
   redirect('/powers')
+}
+
+export async function addAllowedEmail(formData: FormData) {
+  await requireAdminUser()
+
+  const rawEmail = formData.get('email') as string
+  const rawRole = formData.get('role') as string
+  const email = normalizeEmail(rawEmail)
+  if (!email) throw new Error('Email is required')
+
+  const role = rawRole === AccessRole.ADMIN ? AccessRole.ADMIN : AccessRole.USER
+
+  await prisma.allowedEmail.upsert({
+    where: { email },
+    update: { role },
+    create: { email, role },
+  })
+
+  revalidatePath('/admin/access')
 }

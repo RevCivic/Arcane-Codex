@@ -35,3 +35,20 @@ npm install
 npx prisma migrate dev
 npm run dev
 ```
+
+## Authentication and access control
+
+Arcane Codex now requires Google sign-in for all app routes.
+
+- Only emails in the allowlist can log in.
+- Initial allowlist entries:
+  - `mjshank225@gmail.com` (ADMIN)
+  - `peightonashlee@gmail.com` (USER)
+- Admin users can manage allowed emails at `/admin/access`.
+
+### Google OAuth setup
+
+1. Copy `.env.example` to `.env`.
+2. Set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and `AUTH_SECRET`.
+3. In Google Cloud OAuth settings, add this redirect URI:
+   - `http://localhost:3000/api/auth/callback/google`

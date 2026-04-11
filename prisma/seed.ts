@@ -9,6 +9,17 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   console.log('🔮 Seeding Arcane Codex database...')
 
+  await prisma.allowedEmail.upsert({
+    where: { email: 'mjshank225@gmail.com' },
+    update: { role: 'ADMIN' },
+    create: { email: 'mjshank225@gmail.com', role: 'ADMIN' },
+  })
+  await prisma.allowedEmail.upsert({
+    where: { email: 'peightonashlee@gmail.com' },
+    update: { role: 'USER' },
+    create: { email: 'peightonashlee@gmail.com', role: 'USER' },
+  })
+
   // Clean up existing data
   await prisma.power.deleteMany()
   await prisma.character.deleteMany()
