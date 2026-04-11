@@ -51,6 +51,8 @@ Arcane Codex now requires Google sign-in for all app routes.
 1. Copy `.env.example` to `.env`.
 2. Set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET`, `AUTH_URL`, and `AUTH_TRUST_HOST`.
 3. In Google Cloud OAuth settings, add this redirect URI:
-   - `${AUTH_URL}/api/auth/callback/google`
+   - Your `AUTH_URL` value + `/api/auth/callback/google`
+   - Example (local): `http://localhost:3000/api/auth/callback/google`
+   - Example (custom host): `http://hq.shank-home.net:3001/api/auth/callback/google`
 
 For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set `AUTH_URL` to that exact public URL so Auth.js can trust and generate the correct auth endpoints.
