@@ -2,6 +2,7 @@ import 'dotenv/config'
 
 import Database from 'better-sqlite3'
 import path from 'path'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 import { AccessRole, PrismaClient } from '../src/generated/prisma'
 
@@ -63,12 +64,15 @@ async function main() {
   const sqliteUrl = process.env.SQLITE_DATABASE_URL ?? 'file:./prisma/dev.db'
   const sqlitePath = resolveSqlitePath(sqliteUrl)
 
-  if (!process.env.DATABASE_URL?.startsWith('postgresql://')) {
+  const postgresUrl =
+    process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/arcane_codex?schema=public'
+  if (!postgresUrl.startsWith('postgresql://')) {
     throw new Error('Set DATABASE_URL to a PostgreSQL connection string before running this migration.')
   }
 
   const sqlite = new Database(sqlitePath, { readonly: true })
-  const prisma = new PrismaClient()
+  const postgresAdapter = new PrismaPg({ connectionString: postgresUrl })
+  const prisma = new PrismaClient({ adapter: postgresAdapter })
 
   try {
     console.log(`Reading from SQLite: ${sqlitePath}`)

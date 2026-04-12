@@ -1,5 +1,10 @@
 import { PrismaClient } from '../src/generated/prisma'
-const prisma = new PrismaClient()
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const connectionString =
+  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/arcane_codex?schema=public'
+const adapter = new PrismaPg({ connectionString })
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log('🔮 Seeding Arcane Codex database...')

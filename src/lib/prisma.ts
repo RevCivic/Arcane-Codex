@@ -1,11 +1,15 @@
 import { PrismaClient } from '@/generated/prisma'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
 function createPrismaClient() {
-  return new PrismaClient()
+  const connectionString =
+    process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/arcane_codex?schema=public'
+  const adapter = new PrismaPg({ connectionString })
+  return new PrismaClient({ adapter })
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
