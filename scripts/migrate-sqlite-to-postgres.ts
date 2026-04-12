@@ -7,6 +7,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import { AccessRole, PrismaClient } from '../src/generated/prisma'
 
 type TableRow = Record<string, unknown>
+type CharacterEventLinkRow = { A: number; B: number }
 
 function toDate(value: unknown): Date {
   if (value instanceof Date) return value
@@ -101,11 +102,12 @@ async function main() {
     const events = tableExists(sqlite, 'Event') ? (sqlite.prepare('SELECT * FROM "Event"').all() as TableRow[]) : []
     const powers = tableExists(sqlite, 'Power') ? (sqlite.prepare('SELECT * FROM "Power"').all() as TableRow[]) : []
     const characterEvents = tableExists(sqlite, '_CharacterToEvent')
-      ? (sqlite.prepare('SELECT * FROM "_CharacterToEvent"').all() as TableRow[])
+      ? (sqlite.prepare('SELECT * FROM "_CharacterToEvent"').all() as CharacterEventLinkRow[])
       : []
-    const eventPersonLinks = events
+    const eventPersonLinks: CharacterEventLinkRow[] = events
       .filter((event) => event.personId != null)
       .map((event) => ({ A: Number(event.personId), B: Number(event.id) }))
+    // Prisma's implicit many-to-many join table uses "A" => Character.id and "B" => Event.id.
     const allCharacterEventLinks = [...characterEvents, ...eventPersonLinks]
 
     await prisma.$transaction(async (tx) => {
