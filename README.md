@@ -3,7 +3,7 @@ A codex for a supernatural investigation TTRPG utilizing the Basic Roleplaying s
 
 ## Running with Docker Compose
 
-The easiest way to run Arcane Codex is with Docker Compose. The database is persisted automatically in a named Docker volume.
+The easiest way to run Arcane Codex is with Docker Compose. A PostgreSQL database is started automatically and persisted in a named Docker volume.
 
 ```bash
 # Copy the example env file and (optionally) edit HOST_PORT
@@ -32,9 +32,32 @@ docker compose up -d
 
 ```bash
 npm install
+cp .env.example .env
+# ensure DATABASE_URL points to your local PostgreSQL instance
 npx prisma migrate dev
 npm run dev
 ```
+
+## Migrating existing SQLite data to PostgreSQL
+
+If you have an existing SQLite database (for example `prisma/dev.db`) you can migrate it into a fresh PostgreSQL database:
+
+```bash
+# 1) start postgres (or use your own postgres instance)
+docker compose up -d db
+
+# 2) set env vars (example values)
+export DATABASE_URL='postgresql://postgres:postgres@localhost:5432/arcane_codex?schema=public'
+export SQLITE_DATABASE_URL='file:./prisma/dev.db'
+
+# 3) apply postgres schema and migrate data
+npx prisma migrate deploy
+npm run db:migrate:sqlite-to-postgres
+```
+
+Notes:
+- The PostgreSQL target must be empty before running `db:migrate:sqlite-to-postgres`.
+- The migration preserves primary keys and relationship links.
 
 ## Authentication and access control
 

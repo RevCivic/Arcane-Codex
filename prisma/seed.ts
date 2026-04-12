@@ -1,10 +1,9 @@
 import { PrismaClient } from '../src/generated/prisma'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-import path from 'path'
+import { PrismaPg } from '@prisma/adapter-pg'
 
-const dbPath = path.join(process.cwd(), 'prisma', 'dev.db')
-const dbUrl = process.env.DATABASE_URL ?? `file:${dbPath}`
-const adapter = new PrismaBetterSqlite3({ url: dbUrl })
+const connectionString =
+  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/arcane_codex?schema=public'
+const adapter = new PrismaPg({ connectionString })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {

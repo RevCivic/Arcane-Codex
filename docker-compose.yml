@@ -1,19 +1,34 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-arcane_codex}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-arcane_codex}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       # HOST_PORT controls which port on the host machine maps to the app.
       # Set HOST_PORT in a .env file or export it before running `docker compose up`.
       # Defaults to 3000 if not set.
       - "${HOST_PORT:-3000}:3000"
-    volumes:
-      # Persist the SQLite database across container restarts
-      - db_data:/app/data
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:/app/data/arcane-codex.db
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-arcane_codex}?schema=public
       - GOOGLE_SHEET_ID=${GOOGLE_SHEET_ID}
       - AUTH_GOOGLE_ID=${AUTH_GOOGLE_ID}
       - AUTH_GOOGLE_SECRET=${AUTH_GOOGLE_SECRET}
@@ -23,4 +38,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  db_data:
+  postgres_data:

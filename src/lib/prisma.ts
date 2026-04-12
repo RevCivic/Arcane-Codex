@@ -1,18 +1,14 @@
 import { PrismaClient } from '@/generated/prisma'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-import path from 'path'
-
-// In Docker the DATABASE_URL env var points to the volume-mounted database.
-// Locally it falls back to the prisma/dev.db used during development.
-const localDbPath = path.join(process.cwd(), 'prisma', 'dev.db')
-const dbUrl = process.env.DATABASE_URL ?? `file:${localDbPath}`
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
 function createPrismaClient() {
-  const adapter = new PrismaBetterSqlite3({ url: dbUrl })
+  const connectionString =
+    process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/arcane_codex?schema=public'
+  const adapter = new PrismaPg({ connectionString })
   return new PrismaClient({ adapter })
 }
 
