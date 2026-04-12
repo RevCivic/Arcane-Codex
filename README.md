@@ -100,6 +100,10 @@ For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set
   - Do not include a path in `AUTH_URL`.
   - Keep `AUTH_TRUST_HOST=true` when running behind Docker/reverse proxies you control.
 
+- **`JWTSessionError` / `Invalid Compact JWE` with login reload loops**
+  - Ensure `AUTH_SECRET` is set and stable across restarts/deploys.
+  - If you recently changed `AUTH_SECRET` or auth session settings, clear browser cookies for the app origin and sign in again.
+
 - **`invalid_client` or OAuth client authentication failed**
   - Verify `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are from the same Google OAuth client.
   - Confirm there are no trailing spaces/quotes in `.env`.
