@@ -1,4 +1,3 @@
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import authConfig from '@/auth.config'
 import { AccessRole } from '@/generated/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
@@ -13,7 +12,6 @@ function assertGoogleAuthConfigured() {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
   callbacks: {
     ...authConfig.callbacks,
     async signIn({ user, account }) {
