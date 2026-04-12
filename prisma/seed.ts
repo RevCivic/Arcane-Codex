@@ -1,11 +1,5 @@
 import { PrismaClient } from '../src/generated/prisma'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-import path from 'path'
-
-const dbPath = path.join(process.cwd(), 'prisma', 'dev.db')
-const dbUrl = process.env.DATABASE_URL ?? `file:${dbPath}`
-const adapter = new PrismaBetterSqlite3({ url: dbUrl })
-const prisma = new PrismaClient({ adapter })
+const prisma = new PrismaClient()
 
 async function main() {
   console.log('🔮 Seeding Arcane Codex database...')

@@ -1,7 +1,7 @@
 # ---- Stage 1: Install dependencies ----
 FROM node:20-slim AS deps
 
-# Required for native modules (better-sqlite3) and Prisma migrations
+# Required for native modules and Prisma migrations
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ openssl \
     && rm -rf /var/lib/apt/lists/*
@@ -52,9 +52,6 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
-
-# Persistent data directory for the SQLite database
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
 # Copy and configure the entrypoint
 COPY docker-entrypoint.sh ./
