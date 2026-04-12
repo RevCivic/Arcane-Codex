@@ -124,13 +124,26 @@ export async function syncCharactersFromSheet(): Promise<{
 
   const sheetId =
     process.env.GOOGLE_SHEET_ID ?? '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
-  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`
+  // Use the gviz/tq endpoint which reliably returns CSV without triggering
+  // Google's HTML confirm-download warning page (which the /export endpoint
+  // can return with a 200 status, silently breaking CSV parsing).
+  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0`
 
   let text: string
   try {
     const res = await fetch(csvUrl, { cache: 'no-store' })
     if (!res.ok) {
       return { created: 0, updated: 0, error: `Failed to fetch sheet (HTTP ${res.status})` }
+    }
+    const contentType = res.headers.get('content-type') ?? ''
+    if (contentType.includes('text/html')) {
+      return {
+        created: 0,
+        updated: 0,
+        error:
+          'Google returned an HTML page instead of CSV data. ' +
+          'Make sure the sheet is shared as "Anyone with the link can view".',
+      }
     }
     text = await res.text()
   } catch {
