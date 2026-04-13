@@ -470,6 +470,199 @@ export async function deletePower(id: number) {
   redirect('/powers')
 }
 
+// ─── Character Claim / Ownership ─────────────────────────────────────────────
+
+/** Any signed-in USER can claim an unclaimed character (max one claim per user). */
+export async function claimCharacter(characterId: number) {
+  const user = await requireAuthorizedUser()
+
+  const existingClaim = await prisma.character.findFirst({
+    where: { claimedByEmail: user.email },
+  })
+  if (existingClaim) throw new Error('You already have a claimed character')
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail) throw new Error('This character is already claimed by another user')
+
+  await prisma.character.update({ where: { id: characterId }, data: { claimedByEmail: user.email } })
+  revalidatePath('/characters')
+  revalidatePath(`/characters/${characterId}`)
+  revalidatePath('/my-character')
+}
+
+/** The owning USER can unclaim their character; admins can unclaim any character. */
+export async function unclaimCharacter(characterId: number) {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  await prisma.character.update({ where: { id: characterId }, data: { claimedByEmail: null } })
+  revalidatePath('/characters')
+  revalidatePath(`/characters/${characterId}`)
+  revalidatePath('/my-character')
+}
+
+/** Admin only: assign (or clear) a character claim to any allowlisted email. */
+export async function adminAssignCharacter(characterId: number, formData: FormData) {
+  await requireAdminUser()
+
+  const rawEmail = (formData.get('email') as string | null)?.trim() || null
+  const targetEmail = rawEmail ? normalizeEmail(rawEmail) : null
+
+  if (targetEmail) {
+    const allowed = await prisma.allowedEmail.findUnique({ where: { email: targetEmail } })
+    if (!allowed) throw new Error('Email is not on the allowlist')
+
+    const existingClaim = await prisma.character.findFirst({
+      where: { claimedByEmail: targetEmail, NOT: { id: characterId } },
+    })
+    if (existingClaim) throw new Error(`${targetEmail} already claims "${existingClaim.name}"`)
+  }
+
+  await prisma.character.update({ where: { id: characterId }, data: { claimedByEmail: targetEmail } })
+  revalidatePath('/characters')
+  revalidatePath(`/characters/${characterId}`)
+  revalidatePath('/my-character')
+}
+
+// ─── Character Sheet ──────────────────────────────────────────────────────────
+
+/** Owner or admin can update the character sheet (BRP stats, derived stats, skills, notes). */
+export async function updateCharacterSheet(characterId: number, formData: FormData) {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  const toInt = (key: string): number | null => {
+    const val = (formData.get(key) as string | null)?.trim()
+    if (!val) return null
+    const n = parseInt(val, 10)
+    return isNaN(n) ? null : n
+  }
+
+  const sheetData = {
+    str:          toInt('str'),
+    con:          toInt('con'),
+    siz:          toInt('siz'),
+    dex:          toInt('dex'),
+    intelligence: toInt('intelligence'),
+    pow:          toInt('pow'),
+    cha:          toInt('cha'),
+    app:          toInt('app'),
+    edu:          toInt('edu'),
+    currentHp:    toInt('currentHp'),
+    maxHp:        toInt('maxHp'),
+    currentSanity: toInt('currentSanity'),
+    maxSanity:    toInt('maxSanity'),
+    currentMp:    toInt('currentMp'),
+    maxMp:        toInt('maxMp'),
+    luck:         toInt('luck'),
+    build:        toInt('build'),
+    wounds:       (formData.get('wounds') as string | null) || null,
+    notes:        (formData.get('notes') as string | null) || null,
+  }
+
+  const sheet = await prisma.characterSheet.upsert({
+    where: { characterId },
+    update: sheetData,
+    create: { characterId, ...sheetData },
+  })
+
+  // Update skill values — form fields named `skill_<skillId>`
+  const allSkills = await prisma.skill.findMany({ select: { id: true } })
+  for (const skill of allSkills) {
+    const raw = (formData.get(`skill_${skill.id}`) as string | null)?.trim()
+    if (raw === null || raw === '') {
+      // Clear any existing custom value so the base value is shown
+      await prisma.characterSkillValue.deleteMany({
+        where: { sheetId: sheet.id, skillId: skill.id },
+      })
+    } else {
+      const val = parseInt(raw, 10)
+      if (!isNaN(val)) {
+        await prisma.characterSkillValue.upsert({
+          where: { sheetId_skillId: { sheetId: sheet.id, skillId: skill.id } },
+          update: { value: val },
+          create: { sheetId: sheet.id, skillId: skill.id, value: val },
+        })
+      }
+    }
+  }
+
+  revalidatePath(`/characters/${characterId}`)
+  revalidatePath(`/characters/${characterId}/sheet`)
+  revalidatePath('/my-character')
+  redirect(`/characters/${characterId}/sheet`)
+}
+
+// ─── Skills (admin-managed) ───────────────────────────────────────────────────
+
+export async function createSkill(formData: FormData) {
+  await requireAdminUser()
+
+  const name = (formData.get('name') as string).trim()
+  const category = (formData.get('category') as string | null)?.trim() || null
+  const baseValue = parseInt(formData.get('baseValue') as string, 10)
+  const description = (formData.get('description') as string | null)?.trim() || null
+  const sortOrder = parseInt((formData.get('sortOrder') as string | null) ?? '0', 10)
+
+  if (!name) throw new Error('Skill name is required')
+
+  await prisma.skill.create({
+    data: {
+      name,
+      category,
+      baseValue: isNaN(baseValue) ? 0 : baseValue,
+      description,
+      sortOrder: isNaN(sortOrder) ? 0 : sortOrder,
+    },
+  })
+  revalidatePath('/admin/skills')
+  redirect('/admin/skills')
+}
+
+export async function updateSkill(id: number, formData: FormData) {
+  await requireAdminUser()
+
+  const name = (formData.get('name') as string).trim()
+  const category = (formData.get('category') as string | null)?.trim() || null
+  const baseValue = parseInt(formData.get('baseValue') as string, 10)
+  const description = (formData.get('description') as string | null)?.trim() || null
+  const sortOrder = parseInt((formData.get('sortOrder') as string | null) ?? '0', 10)
+
+  if (!name) throw new Error('Skill name is required')
+
+  await prisma.skill.update({
+    where: { id },
+    data: {
+      name,
+      category,
+      baseValue: isNaN(baseValue) ? 0 : baseValue,
+      description,
+      sortOrder: isNaN(sortOrder) ? 0 : sortOrder,
+    },
+  })
+  revalidatePath('/admin/skills')
+  redirect('/admin/skills')
+}
+
+export async function deleteSkill(id: number) {
+  await requireAdminUser()
+  await prisma.skill.delete({ where: { id } })
+  revalidatePath('/admin/skills')
+}
+
+// ─── Access Control ───────────────────────────────────────────────────────────
+
 export async function addAllowedEmail(formData: FormData) {
   await requireAdminUser()
 

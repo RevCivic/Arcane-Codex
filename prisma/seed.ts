@@ -6,6 +6,48 @@ const connectionString =
 const adapter = new PrismaPg({ connectionString })
 const prisma = new PrismaClient({ adapter })
 
+// ─── Default BRP Skills ────────────────────────────────────────────────────────
+
+const DEFAULT_SKILLS = [
+  // Combat
+  { name: 'Dodge',               category: 'Combat',        baseValue: 50, description: 'Evade attacks and hazards',                 sortOrder: 10 },
+  { name: 'Fighting (Brawl)',     category: 'Combat',        baseValue: 25, description: 'Unarmed combat',                            sortOrder: 11 },
+  { name: 'Firearms (Handgun)',   category: 'Combat',        baseValue: 20, description: 'Pistols and revolvers',                     sortOrder: 12 },
+  { name: 'Firearms (Rifle)',     category: 'Combat',        baseValue: 25, description: 'Rifles and shotguns',                       sortOrder: 13 },
+  { name: 'Throw',                category: 'Combat',        baseValue: 20, description: 'Throwing objects accurately',               sortOrder: 14 },
+  // Investigation
+  { name: 'Spot Hidden',          category: 'Investigation', baseValue: 25, description: 'Notice concealed or obscure things',        sortOrder: 20 },
+  { name: 'Listen',               category: 'Investigation', baseValue: 20, description: 'Detect sounds and voices',                  sortOrder: 21 },
+  { name: 'Track',                category: 'Investigation', baseValue: 10, description: 'Follow trails and signs of passage',        sortOrder: 22 },
+  // Academic
+  { name: 'Library Use',          category: 'Academic',      baseValue: 20, description: 'Research in archives and books',            sortOrder: 30 },
+  { name: 'Occult',               category: 'Academic',      baseValue:  5, description: 'Knowledge of supernatural lore',            sortOrder: 31 },
+  { name: 'History',              category: 'Academic',      baseValue:  5, description: 'Historical and cultural knowledge',         sortOrder: 32 },
+  { name: 'Cthulhu Mythos',       category: 'Academic',      baseValue:  0, description: 'Forbidden knowledge of the Great Old Ones', sortOrder: 33 },
+  { name: 'Science (Biology)',    category: 'Academic',      baseValue:  1, description: 'Biological sciences',                       sortOrder: 34 },
+  { name: 'Science (Chemistry)',  category: 'Academic',      baseValue:  1, description: 'Chemistry and materials',                   sortOrder: 35 },
+  // Social
+  { name: 'Persuade',             category: 'Social',        baseValue: 10, description: 'Convince through logic and reason',         sortOrder: 40 },
+  { name: 'Fast Talk',            category: 'Social',        baseValue:  5, description: 'Deceive or bluff quickly',                  sortOrder: 41 },
+  { name: 'Intimidate',           category: 'Social',        baseValue: 15, description: 'Coerce through threat or force of will',    sortOrder: 42 },
+  { name: 'Psychology',           category: 'Social',        baseValue: 10, description: 'Read emotions and motivations',             sortOrder: 43 },
+  // Physical
+  { name: 'Climb',                category: 'Physical',      baseValue: 20, description: 'Scale surfaces and obstacles',              sortOrder: 50 },
+  { name: 'Swim',                 category: 'Physical',      baseValue: 20, description: 'Move through water',                       sortOrder: 51 },
+  { name: 'Jump',                 category: 'Physical',      baseValue: 20, description: 'Leaping distance and height',               sortOrder: 52 },
+  { name: 'Stealth',              category: 'Physical',      baseValue: 20, description: 'Move silently and remain unseen',           sortOrder: 53 },
+  { name: 'Drive Auto',           category: 'Physical',      baseValue: 20, description: 'Operate a motor vehicle',                   sortOrder: 54 },
+  // Technical
+  { name: 'First Aid',            category: 'Technical',     baseValue: 30, description: 'Basic emergency medical care',              sortOrder: 60 },
+  { name: 'Mechanical Repair',    category: 'Technical',     baseValue: 10, description: 'Fix machinery and mechanisms',              sortOrder: 61 },
+  { name: 'Electrical Repair',    category: 'Technical',     baseValue: 10, description: 'Repair electronics and wiring',             sortOrder: 62 },
+  { name: 'Locksmith',            category: 'Technical',     baseValue:  1, description: 'Pick locks and bypass security',            sortOrder: 63 },
+  // Other
+  { name: 'Sleight of Hand',      category: 'Other',         baseValue: 10, description: 'Misdirection and manual dexterity',         sortOrder: 70 },
+  { name: 'Natural World',        category: 'Other',         baseValue: 10, description: 'Knowledge of flora, fauna, and ecology',    sortOrder: 71 },
+  { name: 'Navigate',             category: 'Other',         baseValue: 10, description: 'Find direction without instruments',        sortOrder: 72 },
+]
+
 async function main() {
   console.log('🔮 Seeding Arcane Codex database...')
 
@@ -21,11 +63,24 @@ async function main() {
   })
 
   // Clean up existing data
+  await prisma.characterSkillValue.deleteMany()
+  await prisma.characterSheet.deleteMany()
+  await prisma.skill.deleteMany()
   await prisma.power.deleteMany()
   await prisma.character.deleteMany()
   await prisma.place.deleteMany()
   await prisma.inventoryItem.deleteMany()
   await prisma.event.deleteMany()
+
+  // ─── Skills ───────────────────────────────────────────────────────────────────
+  for (const skill of DEFAULT_SKILLS) {
+    await prisma.skill.upsert({
+      where: { name: skill.name },
+      update: skill,
+      create: skill,
+    })
+  }
+  console.log(`✅ ${DEFAULT_SKILLS.length} skills seeded`)
 
   // ─── Characters ───────────────────────────────────────────────────────────────
   const sarah = await prisma.character.create({
@@ -33,11 +88,12 @@ async function main() {
       name: 'Special Agent Sarah Chen',
       role: 'Lead Investigator',
       description:
-        'A seasoned field operative with an uncanny ability to sense supernatural disturbances. Chen has led the Bureau\'s most classified investigations for over a decade, surviving encounters that would shatter a lesser mind.',
+        "A seasoned field operative with an uncanny ability to sense supernatural disturbances. Chen has led the Bureau's most classified investigations for over a decade, surviving encounters that would shatter a lesser mind.",
       stats:
         'STR 12, CON 13, SIZ 10, DEX 15, INT 17, POW 16, CHA 14 | HP: 12 | Sanity: 78 | Skills: Spot Hidden 85%, Occult 60%, Firearms 75%, Persuade 70%',
       affiliation: 'Bureau of Supernatural Investigation — Field Division',
       status: 'Active',
+      claimedByEmail: 'peightonashlee@gmail.com',
     },
   })
 
@@ -46,7 +102,7 @@ async function main() {
       name: 'Dr. Marcus Webb',
       role: 'Bureau Occultist',
       description:
-        'A former professor of comparative mythology turned Bureau consultant. Webb\'s encyclopedic knowledge of arcane traditions has saved countless lives, though his own sanity bears the cost of too many dark revelations.',
+        "A former professor of comparative mythology turned Bureau consultant. Webb's encyclopedic knowledge of arcane traditions has saved countless lives, though his own sanity bears the cost of too many dark revelations.",
       stats:
         'STR 9, CON 10, SIZ 11, DEX 10, INT 18, POW 17, CHA 12 | HP: 11 | Sanity: 62 | Skills: Occult 95%, Library Use 90%, Cthulhu Mythos 25%, Latin 80%',
       affiliation: 'Bureau of Supernatural Investigation — Research Division',
@@ -59,7 +115,7 @@ async function main() {
       name: 'Detective James Holt',
       role: 'Police Liaison',
       description:
-        'A grizzled homicide detective who stumbled onto a Bureau investigation five years ago and never quite made it back to regular police work. Holt serves as the Bureau\'s bridge to mundane law enforcement.',
+        "A grizzled homicide detective who stumbled onto a Bureau investigation five years ago and never quite made it back to regular police work. Holt serves as the Bureau's bridge to mundane law enforcement.",
       stats:
         'STR 14, CON 13, SIZ 13, DEX 13, INT 14, POW 12, CHA 11 | HP: 13 | Sanity: 70 | Skills: Law 70%, Firearms 80%, Intimidate 65%, Track 55%',
       affiliation: 'Metropolitan Police Department (seconded to BSI)',
@@ -85,7 +141,7 @@ async function main() {
       name: 'Victor Saros',
       role: 'Cult Leader',
       description:
-        'Founder and high priest of the Saros Covenant, a secretive cult seeking to tear open the veil between worlds. Saros is highly intelligent, magnetically charismatic, and utterly ruthless in pursuit of his apocalyptic agenda.',
+        "Founder and high priest of the Saros Covenant, a secretive cult seeking to tear open the veil between worlds. Saros is highly intelligent, magnetically charismatic, and utterly ruthless in pursuit of his apocalyptic agenda.",
       stats:
         'STR 11, CON 14, SIZ 12, DEX 13, INT 16, POW 19, CHA 18 | HP: 13 | Sanity: 12 | Skills: Occult 90%, Persuade 85%, Cthulhu Mythos 40%, Dodge 70%',
       affiliation: 'The Saros Covenant',
@@ -95,6 +151,54 @@ async function main() {
 
   console.log('✅ Characters created')
 
+  // ─── Character Sheet for Sarah Chen ──────────────────────────────────────────
+  const sarahSheet = await prisma.characterSheet.create({
+    data: {
+      characterId:   sarah.id,
+      str:           12,
+      con:           13,
+      siz:           10,
+      dex:           15,
+      intelligence:  17,
+      pow:           16,
+      cha:           14,
+      app:           14,
+      edu:           16,
+      maxHp:         12,
+      currentHp:     12,
+      maxSanity:     78,
+      currentSanity: 78,
+      maxMp:         16,
+      currentMp:     16,
+      luck:          65,
+      build:         0,
+      notes:         'Lead investigator on Operation LAST WARD. Keep silver rounds available.',
+    },
+  })
+
+  const allSkills = await prisma.skill.findMany()
+  const sarahSkillValues: Record<string, number> = {
+    'Spot Hidden':        85,
+    'Occult':             60,
+    'Firearms (Handgun)': 75,
+    'Persuade':           70,
+    'Dodge':              60,
+    'Psychology':         55,
+    'Listen':             65,
+    'Library Use':        45,
+    'First Aid':          50,
+    'Stealth':            40,
+  }
+  for (const skill of allSkills) {
+    const value = sarahSkillValues[skill.name]
+    if (value !== undefined) {
+      await prisma.characterSkillValue.create({
+        data: { sheetId: sarahSheet.id, skillId: skill.id, value },
+      })
+    }
+  }
+  console.log('✅ Character sheet for Sarah Chen created')
+
   // ─── Places ───────────────────────────────────────────────────────────────────
   await prisma.place.createMany({
     data: [
@@ -102,7 +206,7 @@ async function main() {
         name: 'Bureau Headquarters',
         type: 'Government Facility',
         description:
-          'A nondescript federal building in downtown Washington D.C. that officially houses a minor regulatory agency. The Bureau\'s true operations occupy three basement levels of restricted access, cataloguing the strange and dangerous.',
+          "A nondescript federal building in downtown Washington D.C. that officially houses a minor regulatory agency. The Bureau's true operations occupy three basement levels of restricted access, cataloguing the strange and dangerous.",
         region: 'Washington D.C.',
         notes: 'Security Level: ULTRA. Biometric access required below Sub-Level 1.',
       },
@@ -110,7 +214,7 @@ async function main() {
         name: 'The Restricted Archives',
         type: 'Secure Vault',
         description:
-          'Deep in Bureau HQ, the Restricted Archives hold documentation of every supernatural incident in Bureau history. Certain sections — Vault 7 through Vault 12 — are accessible only to agents with Clearance OBSIDIAN.',
+          "Deep in Bureau HQ, the Restricted Archives hold documentation of every supernatural incident in Bureau history. Certain sections — Vault 7 through Vault 12 — are accessible only to agents with Clearance OBSIDIAN.",
         region: 'Washington D.C.',
         notes: 'Vault 7 contains artifacts of particular danger. Do not handle without containment protocols.',
       },
@@ -118,7 +222,7 @@ async function main() {
         name: 'Saros Manor',
         type: 'Cult Stronghold',
         description:
-          'A sprawling Victorian estate in rural Connecticut, inherited by Victor Saros and converted into the ceremonial heart of his Covenant. The basement contains ritual chambers of considerable supernatural charge.',
+          "A sprawling Victorian estate in rural Connecticut, inherited by Victor Saros and converted into the ceremonial heart of his Covenant. The basement contains ritual chambers of considerable supernatural charge.",
         region: 'Connecticut',
         notes: 'Multiple wards and protective sigils detected. Approach requires counter-ritual preparation.',
       },
@@ -134,13 +238,12 @@ async function main() {
         name: 'Blackwood Cemetery',
         type: 'Investigation Site',
         description:
-          'An old cemetery on the outskirts of Millbrook where the Bureau\'s first major contact with the Saros Covenant occurred. Several graves show signs of ritual disturbance, and witnesses report seeing figures among the headstones at night.',
+          "An old cemetery on the outskirts of Millbrook where the Bureau's first major contact with the Saros Covenant occurred. Several graves show signs of ritual disturbance, and witnesses report seeing figures among the headstones at night.",
         region: 'Millbrook, Vermont',
         notes: 'Night surveillance active. Do not enter alone.',
       },
     ],
   })
-
   console.log('✅ Places created')
 
   // ─── Inventory Items ──────────────────────────────────────────────────────────
@@ -190,7 +293,6 @@ async function main() {
       },
     ],
   })
-
   console.log('✅ Inventory items created')
 
   // ─── Events ───────────────────────────────────────────────────────────────────
@@ -200,7 +302,7 @@ async function main() {
         name: 'The Millbrook Incident',
         date: 'March 3',
         description:
-          'A series of unexplained disappearances and livestock deaths in the small town of Millbrook, Vermont. Bureau field agents discovered evidence of ritual activity at Blackwood Cemetery, establishing the first confirmed contact with the Saros Covenant.',
+          "A series of unexplained disappearances and livestock deaths in the small town of Millbrook, Vermont. Bureau field agents discovered evidence of ritual activity at Blackwood Cemetery, establishing the first confirmed contact with the Saros Covenant.",
         significance: 'First contact with the Saros Covenant. Established the cult as a credible threat requiring full Bureau resources.',
         outcome: 'Two civilians recovered. Three cult members detained. Victor Saros escaped. Investigation ongoing.',
       },
@@ -224,7 +326,7 @@ async function main() {
         name: "Dr. Webb's Revelation",
         date: 'June 2',
         description:
-          'After weeks of research, Dr. Webb revealed the Saros Covenant\'s true objective: they intend to use the Nexus Point as a focal lens to permanently widen the dimensional rift, allowing entities of vast power to enter our world.',
+          "After weeks of research, Dr. Webb revealed the Saros Covenant's true objective: they intend to use the Nexus Point as a focal lens to permanently widen the dimensional rift, allowing entities of vast power to enter our world.",
         significance: 'Reframes the entire investigation. All previous Covenant activity was preparation for this single catastrophic event. Threat level upgraded to OMEGA.',
         outcome: 'Emergency briefing with Bureau Director. Operation LAST WARD authorized. All agents recalled.',
       },
@@ -238,7 +340,6 @@ async function main() {
       },
     ],
   })
-
   console.log('✅ Events created')
 
   // ─── Powers ───────────────────────────────────────────────────────────────────
@@ -246,7 +347,7 @@ async function main() {
     data: [
       {
         name: 'Intuition Surge',
-        description: 'Sarah\'s most reliable ability — a sudden overwhelming certainty about the supernatural nature of a person, object, or location. It manifests as a visceral gut feeling that has never been wrong.',
+        description: "Sarah's most reliable ability — a sudden overwhelming certainty about the supernatural nature of a person, object, or location. It manifests as a visceral gut feeling that has never been wrong.",
         effect: 'Once per session, may declare supernatural truth about a target without a roll. GM confirms if accurate. Also provides +20% to Spot Hidden when supernatural entities are nearby.',
         personId: sarah.id,
       },
@@ -258,7 +359,7 @@ async function main() {
       },
       {
         name: 'Binding Ritual',
-        description: 'A complex ritual that Webb developed by combining elements from three different magical traditions. It creates a temporary containment field that suppresses a supernatural entity\'s ability to act.',
+        description: "A complex ritual that Webb developed by combining elements from three different magical traditions. It creates a temporary containment field that suppresses a supernatural entity's ability to act.",
         effect: 'Temporarily neutralizes a supernatural entity for 1d6 hours. Requires 10 minutes of preparation and a POW vs POW roll. Costs 5 Magic Points and 1 Sanity.',
         personId: marcus.id,
       },
@@ -282,7 +383,6 @@ async function main() {
       },
     ],
   })
-
   console.log('✅ Powers created')
   console.log('🔮 Seed complete. The Arcane Codex is ready.')
 }

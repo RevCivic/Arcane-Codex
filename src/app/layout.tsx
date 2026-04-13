@@ -78,6 +78,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <span className="hidden sm:inline">Access</span>
                 </Link>
               )}
+              {isAdmin && (
+                <Link
+                  href="/admin/skills"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
+                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                >
+                  <span>🎯</span>
+                  <span className="hidden sm:inline">Skills</span>
+                </Link>
+              )}
+              {isSignedIn && !isAdmin && (
+                <Link
+                  href="/my-character"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
+                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                >
+                  <span>📋</span>
+                  <span className="hidden sm:inline">My Character</span>
+                </Link>
+              )}
 
               {isSignedIn ? (
                 <form
