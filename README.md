@@ -59,6 +59,51 @@ Notes:
 - The PostgreSQL target must be empty before running `db:migrate:sqlite-to-postgres`.
 - The migration preserves primary keys and relationship links.
 
+## Character sheets and ownership
+
+### How claim / ownership works
+
+Each player user can claim **exactly one** character. Once claimed, the character is linked to that user's Google account email.
+
+| Actor | What they can do |
+|-------|-----------------|
+| **USER** (unclaimed) | Browse all characters; claim any unclaimed character |
+| **USER** (owner) | View + edit their own character sheet; unclaim their character |
+| **ADMIN** | View + edit any character sheet; assign or clear any claim from the admin assign form on the character detail page |
+
+Rules:
+- One user → one character, one character → one user (1 : 1).
+- A user must unclaim their current character before claiming a new one.
+- Admins cannot claim characters themselves (`/my-character` redirects admins to `/characters`).
+
+### Claiming a character
+
+1. Sign in with your Google account.
+2. Go to **Characters** and open any unclaimed character.
+3. Click **Claim**. The character is now linked to your account.
+4. Click **📋 Sheet** on the character detail page, or use **My Character** in the nav bar, to open your character sheet.
+
+### Character sheet
+
+The character sheet at `/characters/[id]/sheet` contains:
+
+- **Primary Characteristics** — STR, CON, SIZ, DEX, INT, POW, CHA, APP, EDU
+- **Derived Statistics** — Hit Points (current/max), Sanity (current/max), Magic Points (current/max), Luck, Build
+- **Skills** — grouped by category (Combat, Investigation, Academic, Social, Physical, Technical, Other); each skill shows the global base % and can be overridden with a character-specific value
+- **Wounds & Notes** — free-text fields for injuries and session notes
+- **Carried Items** — read-only list of inventory items whose `carrierId` is this character
+- **Powers** — read-only list of powers assigned to this character
+
+### Admin skill management
+
+Admins can define, edit, and remove the global skill list at `/admin/skills`. Skills are shared across all character sheets.
+
+- **Add skill** — set name, category, base value (%), description, and sort order
+- **Edit skill** — change any field; existing character skill values are preserved
+- **Delete skill** — removes the skill definition and all character-specific values (with confirmation)
+
+The default seed includes 29 standard BRP / Call of Cthulhu skills grouped across six categories.
+
 ## Authentication and access control
 
 Arcane Codex now requires Google sign-in for all app routes.

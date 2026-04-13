@@ -63,6 +63,7 @@ model AllowedEmail {
   role      AccessRole @default(USER)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  character Character?
 }
 
 model Character {
@@ -81,11 +82,72 @@ model Character {
   currentLocation String?
   homeOrigin      String?
   status          String?         @default("Active")
+  claimedByEmail  String?         @unique
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  claimedBy       AllowedEmail?   @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
+  sheet           CharacterSheet?
   powers          Power[]
   inventoryItems  InventoryItem[]
   events          Event[]
+}
+
+model CharacterSheet {
+  id            Int                   @id @default(autoincrement())
+  characterId   Int                   @unique
+  character     Character             @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  // BRP Primary Characteristics
+  str           Int?
+  con           Int?
+  siz           Int?
+  dex           Int?
+  intelligence  Int?
+  pow           Int?
+  cha           Int?
+  app           Int?
+  edu           Int?
+  // Derived / current values
+  currentHp     Int?
+  maxHp         Int?
+  currentSanity Int?
+  maxSanity     Int?
+  currentMp     Int?
+  maxMp         Int?
+  luck          Int?
+  build         Int?
+  // Free-text
+  wounds        String?
+  notes         String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  skillValues   CharacterSkillValue[]
+}
+
+/// Admin-managed skill definitions shared across all character sheets.
+model Skill {
+  id              Int                   @id @default(autoincrement())
+  name            String                @unique
+  category        String?
+  baseValue       Int                   @default(0)
+  description     String?
+  sortOrder       Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  characterValues CharacterSkillValue[]
+}
+
+/// A character's specific value for a skill.
+model CharacterSkillValue {
+  id        Int            @id @default(autoincrement())
+  sheetId   Int
+  sheet     CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  skillId   Int
+  skill     Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  value     Int
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([sheetId, skillId])
 }
 
 model Place {

@@ -1,19 +1,49 @@
 export const dynamic = 'force-dynamic'
 
+import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { normalizeEmail } from '@/lib/normalizeEmail'
+import { AccessRole } from '@/generated/prisma'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
-import { deleteCharacter } from '@/app/actions'
+import { notFound, redirect } from 'next/navigation'
+import { deleteCharacter, claimCharacter, unclaimCharacter, adminAssignCharacter } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
 
 export default async function CharacterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const character = await prisma.character.findUnique({
-    where: { id: parseInt(id) },
-    include: { powers: true },
-  })
+  const characterId = parseInt(id)
+
+  const session = await auth()
+  const email = normalizeEmail(session?.user?.email)
+  if (!email) redirect('/login')
+
+  const [character, allowed] = await Promise.all([
+    prisma.character.findUnique({
+      where: { id: characterId },
+      include: { powers: true },
+    }),
+    prisma.allowedEmail.findUnique({ where: { email } }),
+  ])
 
   if (!character) notFound()
+  if (!allowed) redirect('/login')
+
+  const isAdmin = allowed.role === AccessRole.ADMIN
+  const isOwner = character.claimedByEmail === email
+
+  // For admin assign form: fetch all allowlisted emails
+  const allowedEmails = isAdmin
+    ? await prisma.allowedEmail.findMany({ orderBy: { email: 'asc' } })
+    : []
+
+  // Does the current USER already own a different character?
+  const userAlreadyClaims = !isAdmin && !isOwner
+    ? await prisma.character.findFirst({ where: { claimedByEmail: email } })
+    : null
+
+  const claimAction   = claimCharacter.bind(null, characterId)
+  const unclaimAction = unclaimCharacter.bind(null, characterId)
+  const assignAction  = adminAssignCharacter.bind(null, characterId)
 
   return (
     <div className="max-w-3xl">
@@ -42,22 +72,124 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
               >
                 {character.status ?? 'Unknown'}
               </span>
+              {/* Claim badge */}
+              {character.claimedByEmail ? (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#0c1a2e', color: '#60a5fa' }}>
+                  🔗 {isAdmin ? character.claimedByEmail : isOwner ? 'Claimed by you' : 'Claimed'}
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#111118', color: '#4b5563' }}>
+                  Unclaimed
+                </span>
+              )}
             </div>
           </div>
-          <div className="flex gap-2">
-            <Link
-              href={`/characters/${character.id}/edit`}
-              className="text-xs px-3 py-1.5 rounded transition-colors hover:text-amber-300"
-              style={{ color: '#d97706', border: '1px solid #451a03' }}
-            >
-              Edit
-            </Link>
-            <DeleteButton action={deleteCharacter.bind(null, character.id)} label={character.name} />
+
+          <div className="flex gap-2 flex-wrap">
+            {/* Sheet link — owner or admin */}
+            {(isOwner || isAdmin) && (
+              <Link
+                href={`/characters/${characterId}/sheet`}
+                className="text-xs px-3 py-1.5 rounded transition-colors hover:text-blue-300"
+                style={{ color: '#60a5fa', border: '1px solid #1e3a5f' }}
+              >
+                📋 Sheet
+              </Link>
+            )}
+            {isAdmin && (
+              <>
+                <Link
+                  href={`/characters/${character.id}/edit`}
+                  className="text-xs px-3 py-1.5 rounded transition-colors hover:text-amber-300"
+                  style={{ color: '#d97706', border: '1px solid #451a03' }}
+                >
+                  Edit
+                </Link>
+                <DeleteButton action={deleteCharacter.bind(null, character.id)} label={character.name} />
+              </>
+            )}
           </div>
         </div>
 
         <hr style={{ borderColor: '#1f2937', margin: '1rem 0' }} />
 
+        {/* ── Claim / Unclaim controls (non-admin users) ─────────────────────── */}
+        {!isAdmin && (
+          <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
+            {isOwner ? (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs" style={{ color: '#4ade80' }}>
+                  ✓ This is your character. Visit your sheet to update stats and skills.
+                </p>
+                <form action={unclaimAction}>
+                  <button
+                    type="submit"
+                    className="text-xs px-3 py-1.5 rounded transition-colors hover:text-red-300"
+                    style={{ color: '#f87171', border: '1px solid #3f1212' }}
+                  >
+                    Unclaim
+                  </button>
+                </form>
+              </div>
+            ) : character.claimedByEmail ? (
+              <p className="text-xs" style={{ color: '#6b7280' }}>
+                This character has already been claimed by another player.
+              </p>
+            ) : userAlreadyClaims ? (
+              <p className="text-xs" style={{ color: '#6b7280' }}>
+                You already claim <strong style={{ color: '#e2e8f0' }}>{userAlreadyClaims.name}</strong>. Unclaim that character first if you want to claim this one.
+              </p>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs" style={{ color: '#9ca3af' }}>
+                  This character is available. Claim it to access your personal character sheet.
+                </p>
+                <form action={claimAction}>
+                  <button
+                    type="submit"
+                    className="text-xs px-3 py-1.5 rounded transition-colors hover:opacity-90"
+                    style={{ backgroundColor: '#7c3aed', color: '#fff' }}
+                  >
+                    Claim
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Admin: assign form ─────────────────────────────────────────────── */}
+        {isAdmin && (
+          <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: '#0d0d15', border: '1px solid #2d1b69' }}>
+            <h3 className="text-xs uppercase tracking-widest mb-3" style={{ color: '#a78bfa' }}>
+              🛡️ Admin: Assign Character
+            </h3>
+            <form action={assignAction} className="flex items-end gap-3 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>
+                  Assign to Email (leave blank to clear)
+                </label>
+                <select name="email" defaultValue={character.claimedByEmail ?? ''} className="arcane-input">
+                  <option value="" style={{ backgroundColor: '#111118' }}>— None (unclaim) —</option>
+                  {allowedEmails.map((ae) => (
+                    <option key={ae.id} value={ae.email} style={{ backgroundColor: '#111118' }}>
+                      {ae.email} ({ae.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="text-xs px-4 py-2 rounded transition-colors hover:opacity-90 shrink-0"
+                style={{ backgroundColor: '#5b21b6', color: '#e9d5ff' }}
+              >
+                Assign
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Character details */}
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {character.description && (
             <div className="sm:col-span-2">
@@ -124,13 +256,15 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
           <h2 className="text-xl font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
             ⚡ Powers
           </h2>
-          <Link
-            href={`/powers/new?personId=${character.id}`}
-            className="text-xs px-3 py-1.5 rounded transition-colors"
-            style={{ color: '#a78bfa', border: '1px solid #3b1f6e', fontFamily: 'Georgia, serif' }}
-          >
-            + Add Power
-          </Link>
+          {isAdmin && (
+            <Link
+              href={`/powers/new?personId=${character.id}`}
+              className="text-xs px-3 py-1.5 rounded transition-colors"
+              style={{ color: '#a78bfa', border: '1px solid #3b1f6e', fontFamily: 'Georgia, serif' }}
+            >
+              + Add Power
+            </Link>
+          )}
         </div>
         {character.powers.length === 0 ? (
           <p className="text-sm" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>No powers recorded for this character.</p>
