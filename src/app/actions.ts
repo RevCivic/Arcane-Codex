@@ -580,8 +580,8 @@ export async function updateCharacterSheet(characterId: number, formData: FormDa
   // Update skill values — form fields named `skill_<skillId>`
   const allSkills = await prisma.skill.findMany({ select: { id: true } })
   for (const skill of allSkills) {
-    const raw = (formData.get(`skill_${skill.id}`) as string | null)?.trim()
-    if (raw === null || raw === '') {
+    const raw = (formData.get(`skill_${skill.id}`) as string | null)?.trim() ?? ''
+    if (raw === '') {
       // Clear any existing custom value so the base value is shown
       await prisma.characterSkillValue.deleteMany({
         where: { sheetId: sheet.id, skillId: skill.id },
