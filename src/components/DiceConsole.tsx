@@ -53,6 +53,7 @@ const TIERS: {
   { tier: 'Difficult',  label: 'Difficult',   mult: 0.50, color: '#f59e0b', desc: '÷2'  },
   { tier: 'Hard',       label: 'Hard',        mult: 0.20, color: '#f97316', desc: '÷5'  },
   { tier: 'Extreme',    label: 'Extreme',     mult: 0.10, color: '#ef4444', desc: '÷10' },
+  // mult is unused for Impossible — applyDifficulty() always returns 1 for this tier
   { tier: 'Impossible', label: 'Impossible',  mult: 0.00, color: '#dc2626', desc: '1%'  },
 ]
 
@@ -90,6 +91,11 @@ function rollDie(sides: number): number { return Math.floor(Math.random() * side
 function parseDice(json: string | null): number[] | null {
   if (!json) return null
   try { return JSON.parse(json) as number[] } catch { return null }
+}
+
+/** Returns true when the character has enough Luck to cover the given cost. */
+function canAffordLuck(currentLuck: number | null, cost: number): boolean {
+  return cost > 0 && (currentLuck ?? 0) >= cost
 }
 
 function relativeTime(isoStr: string): string {
@@ -166,7 +172,7 @@ function LuckSpendPrompt({
   onDismiss: () => void
   isPending: boolean
 }) {
-  const canAfford = (currentLuck ?? 0) >= cost
+  const affordable = canAffordLuck(currentLuck, cost)
   return (
     <div className="rounded-lg p-4" style={{ backgroundColor: '#1a0f00', border: '1px solid #92400e66' }}>
       <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#f59e0b', fontFamily: 'Georgia, serif' }}>
@@ -176,14 +182,14 @@ function LuckSpendPrompt({
         Spend{' '}
         <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>{cost}</span>{' '}
         Luck to convert this Failure into a Success.
-        {!canAfford && (
+        {!affordable && (
           <span style={{ color: '#f87171' }}> (Not enough — you have {currentLuck ?? 0})</span>
         )}
       </p>
       <div className="flex gap-2">
         <button
           type="button"
-          disabled={!canAfford || isPending}
+          disabled={!affordable || isPending}
           onClick={() => onSpend(rollHistoryId, cost)}
           className="px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ backgroundColor: '#92400e', color: '#fef3c7', fontFamily: 'Georgia, serif' }}
@@ -274,7 +280,7 @@ export function DiceConsole({
 
         if (entry.resultType === 'FAILURE' && effectiveTarget !== null) {
           const cost = rawRoll - effectiveTarget
-          if (cost > 0 && (clientLuck ?? 0) >= cost) {
+          if (canAffordLuck(clientLuck, cost)) {
             setPendingLuck({ rollHistoryId: saved.id, cost })
           }
         }

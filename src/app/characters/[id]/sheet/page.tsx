@@ -152,7 +152,8 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     effectiveValue: skillValueMap.get(skill.id) ?? skill.baseValue,
   }))
 
-  // Serialise DB roll history for client component (Date → ISO string)
+  // Serialise DB roll history for client component (Date → ISO string).
+  // This mapping must stay in sync with the HistoryEntry interface in DiceConsole.tsx.
   const initialHistory = rollHistory.map((r) => ({
     id:         r.id,
     rollType:   r.rollType,
