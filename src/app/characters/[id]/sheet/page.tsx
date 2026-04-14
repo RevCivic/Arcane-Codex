@@ -89,7 +89,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
   const email = normalizeEmail(session?.user?.email)
   if (!email) redirect('/login')
 
-  const [character, allowed, allSkills] = await Promise.all([
+  const [character, allowed, allSkills, rollHistory] = await Promise.all([
     prisma.character.findUnique({
       where: { id: characterId },
       include: {
@@ -100,6 +100,11 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     }),
     prisma.allowedEmail.findUnique({ where: { email } }),
     prisma.skill.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+    prisma.rollHistory.findMany({
+      where: { characterId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    }),
   ])
 
   if (!character) notFound()
@@ -145,6 +150,21 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     name: skill.name,
     category: skill.category,
     effectiveValue: skillValueMap.get(skill.id) ?? skill.baseValue,
+  }))
+
+  // Serialise DB roll history for client component (Date → ISO string)
+  const initialHistory = rollHistory.map((r) => ({
+    id:         r.id,
+    rollType:   r.rollType,
+    label:      r.label,
+    roll:       r.roll,
+    target:     r.target,
+    difficulty: r.difficulty,
+    resultType: r.resultType,
+    dice:       r.dice,
+    modifier:   r.modifier,
+    luckSpent:  r.luckSpent,
+    createdAt:  r.createdAt.toISOString(),
   }))
 
   const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
@@ -327,7 +347,13 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
 
       {/* ── Dice Console ─────────────────────────────────────────────────── */}
       <div className="mt-10">
-        <DiceConsole stats={consoleStats} skills={consoleSkills} />
+        <DiceConsole
+          characterId={characterId}
+          stats={consoleStats}
+          skills={consoleSkills}
+          initialLuck={sheet?.luck ?? null}
+          initialHistory={initialHistory}
+        />
       </div>
 
       {/* ── Read-only: Inventory ──────────────────────────────────────────── */}

@@ -604,7 +604,88 @@ export async function updateCharacterSheet(characterId: number, formData: FormDa
   redirect(`/characters/${characterId}/sheet`)
 }
 
-// ─── Skills (admin-managed) ───────────────────────────────────────────────────
+// ─── Roll History ─────────────────────────────────────────────────────────────
+
+/**
+ * Persists a single roll to the database.
+ * Returns the created record (including its auto-assigned id).
+ * Accessible to the character owner or any admin.
+ */
+export async function saveRoll(
+  characterId: number,
+  data: {
+    rollType: string
+    label: string
+    roll: number
+    target?: number | null
+    difficulty?: string | null
+    resultType?: string | null
+    dice?: number[] | null
+    modifier?: number | null
+  }
+) {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  return prisma.rollHistory.create({
+    data: {
+      characterId,
+      rollType: data.rollType,
+      label: data.label,
+      roll: data.roll,
+      target: data.target ?? null,
+      difficulty: data.difficulty ?? null,
+      resultType: data.resultType ?? null,
+      dice: data.dice ? JSON.stringify(data.dice) : null,
+      modifier: data.modifier ?? null,
+    },
+  })
+}
+
+/**
+ * Converts a FAILURE roll to SUCCESS by spending Luck points.
+ * Deducts `luckToSpend` from the character's sheet and marks the roll record.
+ * Accessible to the character owner or any admin.
+ */
+export async function spendLuckOnRoll(
+  characterId: number,
+  rollHistoryId: number,
+  luckToSpend: number
+) {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
+  if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
+  if (roll.resultType !== 'FAILURE') throw new Error('Can only spend Luck on a Failure')
+
+  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
+  const currentLuck = sheet?.luck ?? 0
+  if (currentLuck < luckToSpend) throw new Error('Not enough Luck')
+
+  await prisma.$transaction([
+    prisma.rollHistory.update({
+      where: { id: rollHistoryId },
+      data: { resultType: 'SUCCESS', luckSpent: luckToSpend },
+    }),
+    prisma.characterSheet.update({
+      where: { characterId },
+      data: { luck: currentLuck - luckToSpend },
+    }),
+  ])
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
 
 export async function createSkill(formData: FormData) {
   await requireAdminUser()
