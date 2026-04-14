@@ -13,7 +13,6 @@ export const metadata: Metadata = {
 }
 
 const navLinks = [
-  { href: '/', label: 'Dashboard', icon: '🏛️' },
   { href: '/characters', label: 'Characters', icon: '👤' },
   { href: '/places', label: 'Places', icon: '🗺️' },
   { href: '/inventory', label: 'Inventory', icon: '🎒' },
@@ -69,24 +68,36 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </Link>
               ))}
               {isAdmin && (
-                <Link
-                  href="/admin/access"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
-                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                >
-                  <span>🛡️</span>
-                  <span className="hidden sm:inline">Access</span>
-                </Link>
-              )}
-              {isAdmin && (
-                <Link
-                  href="/admin/skills"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
-                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                >
-                  <span>🎯</span>
-                  <span className="hidden sm:inline">Skills</span>
-                </Link>
+                <details className="relative">
+                  <summary
+                    className="list-none flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400 cursor-pointer"
+                    style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                  >
+                    <span>🛠️</span>
+                    <span className="hidden sm:inline">Admin</span>
+                  </summary>
+                  <div
+                    className="absolute right-0 mt-1 min-w-36 rounded border shadow-lg z-20"
+                    style={{ backgroundColor: '#07070d', borderColor: '#1a1a2e' }}
+                  >
+                    <Link
+                      href="/admin/access"
+                      className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+                      style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                    >
+                      <span>🛡️</span>
+                      <span>Access</span>
+                    </Link>
+                    <Link
+                      href="/admin/skills"
+                      className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+                      style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                    >
+                      <span>🎯</span>
+                      <span>Skills</span>
+                    </Link>
+                  </div>
+                </details>
               )}
               {isSignedIn && !isAdmin && (
                 <Link
