@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { auth } from '@/auth'
-import { AdminMenu } from '@/components/AdminMenu'
 import { ResponsiveNav } from '@/components/ResponsiveNav'
 import { AccessRole } from '@/generated/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'

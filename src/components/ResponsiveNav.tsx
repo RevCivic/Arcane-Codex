@@ -3,7 +3,6 @@
 import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
 import { AdminMenu } from '@/components/AdminMenu'
 
 type NavLinkItem = {
@@ -23,11 +22,6 @@ const navItemClass =
 
 export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const pathname = usePathname()
-
-  useEffect(() => {
-    setMobileOpen(false)
-  }, [pathname])
 
   useEffect(() => {
     if (!mobileOpen) return
@@ -121,6 +115,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
                   <Link
                     key={link.href}
                     href={link.href}
+                    onClick={() => setMobileOpen(false)}
                     className="flex min-h-11 items-center gap-2 rounded px-3 py-2 text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
                     style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
                   >
@@ -133,6 +128,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
                   <>
                     <Link
                       href="/admin/access"
+                      onClick={() => setMobileOpen(false)}
                       className="flex min-h-11 items-center gap-2 rounded px-3 py-2 text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
                       style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
                     >
@@ -141,6 +137,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
                     </Link>
                     <Link
                       href="/admin/skills"
+                      onClick={() => setMobileOpen(false)}
                       className="flex min-h-11 items-center gap-2 rounded px-3 py-2 text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
                       style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
                     >
@@ -153,6 +150,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
                 {isSignedIn && !isAdmin && (
                   <Link
                     href="/my-character"
+                    onClick={() => setMobileOpen(false)}
                     className="flex min-h-11 items-center gap-2 rounded px-3 py-2 text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
                     style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
                   >
@@ -164,7 +162,10 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
                 {isSignedIn ? (
                   <button
                     type="button"
-                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    onClick={() => {
+                      setMobileOpen(false)
+                      signOut({ callbackUrl: '/login' })
+                    }}
                     className="flex min-h-11 items-center gap-2 rounded px-3 py-2 text-left text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
                     style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
                   >
@@ -174,6 +175,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
                 ) : (
                   <Link
                     href="/login"
+                    onClick={() => setMobileOpen(false)}
                     className="flex min-h-11 items-center gap-2 rounded px-3 py-2 text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
                     style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
                   >
