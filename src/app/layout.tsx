@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { auth, signOut } from '@/auth'
+import { AdminMenu } from '@/components/AdminMenu'
 import { AccessRole } from '@/generated/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
@@ -67,38 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <span className="hidden sm:inline">{link.label}</span>
                 </Link>
               ))}
-              {isAdmin && (
-                <details className="relative">
-                  <summary
-                    className="list-none flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400 cursor-pointer"
-                    style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                  >
-                    <span>🛠️</span>
-                    <span className="hidden sm:inline">Admin</span>
-                  </summary>
-                  <div
-                    className="absolute right-0 mt-1 min-w-36 rounded border shadow-lg z-20"
-                    style={{ backgroundColor: '#07070d', borderColor: '#1a1a2e' }}
-                  >
-                    <Link
-                      href="/admin/access"
-                      className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-                      style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                    >
-                      <span>🛡️</span>
-                      <span>Access</span>
-                    </Link>
-                    <Link
-                      href="/admin/skills"
-                      className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-                      style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                    >
-                      <span>🎯</span>
-                      <span>Skills</span>
-                    </Link>
-                  </div>
-                </details>
-              )}
+              {isAdmin && <AdminMenu />}
               {isSignedIn && !isAdmin && (
                 <Link
                   href="/my-character"
