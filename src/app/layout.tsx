@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
-import { auth, signOut } from '@/auth'
+import { auth } from '@/auth'
 import { AdminMenu } from '@/components/AdminMenu'
+import { ResponsiveNav } from '@/components/ResponsiveNav'
 import { AccessRole } from '@/generated/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
@@ -56,57 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               </div>
             </Link>
-            <nav className="flex items-center gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
-                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                >
-                  <span>{link.icon}</span>
-                  <span className="hidden sm:inline">{link.label}</span>
-                </Link>
-              ))}
-              {isAdmin && <AdminMenu />}
-              {isSignedIn && !isAdmin && (
-                <Link
-                  href="/my-character"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
-                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                >
-                  <span>📋</span>
-                  <span className="hidden sm:inline">My Character</span>
-                </Link>
-              )}
-
-              {isSignedIn ? (
-                <form
-                  action={async () => {
-                    'use server'
-                    await signOut({ redirectTo: '/login' })
-                  }}
-                >
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
-                    style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                  >
-                    <span>🚪</span>
-                    <span className="hidden sm:inline">Sign Out</span>
-                  </button>
-                </form>
-              ) : (
-                <Link
-                  href="/login"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
-                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-                >
-                  <span>🔐</span>
-                  <span className="hidden sm:inline">Sign In</span>
-                </Link>
-              )}
-            </nav>
+            <ResponsiveNav navLinks={navLinks} isSignedIn={isSignedIn} isAdmin={isAdmin} />
           </div>
         </header>
 
