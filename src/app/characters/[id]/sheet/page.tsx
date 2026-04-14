@@ -7,6 +7,8 @@ import { AccessRole } from '@/generated/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { updateCharacterSheet } from '@/app/actions'
+import { DiceConsole } from '@/components/DiceConsole'
+import type { StatEntry, SkillEntry } from '@/components/DiceConsole'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -87,7 +89,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
   const email = normalizeEmail(session?.user?.email)
   if (!email) redirect('/login')
 
-  const [character, allowed, allSkills] = await Promise.all([
+  const [character, allowed, allSkills, rollHistory] = await Promise.all([
     prisma.character.findUnique({
       where: { id: characterId },
       include: {
@@ -98,6 +100,11 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     }),
     prisma.allowedEmail.findUnique({ where: { email } }),
     prisma.skill.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+    prisma.rollHistory.findMany({
+      where: { characterId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    }),
   ])
 
   if (!character) notFound()
@@ -123,6 +130,43 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     if (!skillsByCategory.has(cat)) skillsByCategory.set(cat, [])
     skillsByCategory.get(cat)!.push(skill)
   }
+
+  // ── Dice Console data ────────────────────────────────────────────────────────
+
+  const consoleStats: StatEntry[] = [
+    { key: 'str',          label: 'STR', value: sheet?.str          ?? null },
+    { key: 'con',          label: 'CON', value: sheet?.con          ?? null },
+    { key: 'siz',          label: 'SIZ', value: sheet?.siz          ?? null },
+    { key: 'dex',          label: 'DEX', value: sheet?.dex          ?? null },
+    { key: 'intelligence', label: 'INT', value: sheet?.intelligence ?? null },
+    { key: 'pow',          label: 'POW', value: sheet?.pow          ?? null },
+    { key: 'cha',          label: 'CHA', value: sheet?.cha          ?? null },
+    { key: 'app',          label: 'APP', value: sheet?.app          ?? null },
+    { key: 'edu',          label: 'EDU', value: sheet?.edu          ?? null },
+  ]
+
+  const consoleSkills: SkillEntry[] = allSkills.map((skill) => ({
+    id: skill.id,
+    name: skill.name,
+    category: skill.category,
+    effectiveValue: skillValueMap.get(skill.id) ?? skill.baseValue,
+  }))
+
+  // Serialise DB roll history for client component (Date → ISO string).
+  // This mapping must stay in sync with the HistoryEntry interface in DiceConsole.tsx.
+  const initialHistory = rollHistory.map((r) => ({
+    id:         r.id,
+    rollType:   r.rollType,
+    label:      r.label,
+    roll:       r.roll,
+    target:     r.target,
+    difficulty: r.difficulty,
+    resultType: r.resultType,
+    dice:       r.dice,
+    modifier:   r.modifier,
+    luckSpent:  r.luckSpent,
+    createdAt:  r.createdAt.toISOString(),
+  }))
 
   const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
   const sectionHead: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif', letterSpacing: '0.1em' }
@@ -301,6 +345,17 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
           </Link>
         </div>
       </form>
+
+      {/* ── Dice Console ─────────────────────────────────────────────────── */}
+      <div className="mt-10">
+        <DiceConsole
+          characterId={characterId}
+          stats={consoleStats}
+          skills={consoleSkills}
+          initialLuck={sheet?.luck ?? null}
+          initialHistory={initialHistory}
+        />
+      </div>
 
       {/* ── Read-only: Inventory ──────────────────────────────────────────── */}
       {character.inventoryItems.length > 0 && (

@@ -90,6 +90,7 @@ model Character {
   powers          Power[]
   inventoryItems  InventoryItem[]
   events          Event[]
+  rollHistory     RollHistory[]
 }
 
 model CharacterSheet {
@@ -195,4 +196,30 @@ model Power {
   person      Character @relation(fields: [personId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+/// Persisted roll records visible to the character owner and admins.
+model RollHistory {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  /// 'ability' | 'skill' | 'free'
+  rollType    String
+  /// Human-readable label, e.g. "STR Check", "Spot Hidden", "2d6+1"
+  label       String
+  /// The raw d100 result (or summed total for free rolls)
+  roll        Int
+  /// Effective target after difficulty modifier (null for free rolls)
+  target      Int?
+  /// Difficulty tier name (null for free rolls)
+  difficulty  String?
+  /// 'CRITICAL' | 'SUCCESS' | 'FAILURE' | 'FUMBLE' (null for free rolls)
+  resultType  String?
+  /// JSON-encoded number[] of individual die values (free rolls only)
+  dice        String?
+  /// Flat modifier added to free rolls
+  modifier    Int?
+  /// Luck points spent to convert this roll to a SUCCESS (null if none)
+  luckSpent   Int?
+  createdAt   DateTime  @default(now())
 }
