@@ -7,6 +7,8 @@ import { AccessRole } from '@/generated/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { updateCharacterSheet } from '@/app/actions'
+import { DiceConsole } from '@/components/DiceConsole'
+import type { StatEntry, SkillEntry } from '@/components/DiceConsole'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -123,6 +125,27 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     if (!skillsByCategory.has(cat)) skillsByCategory.set(cat, [])
     skillsByCategory.get(cat)!.push(skill)
   }
+
+  // ── Dice Console data ────────────────────────────────────────────────────────
+
+  const consoleStats: StatEntry[] = [
+    { key: 'str',          label: 'STR', value: sheet?.str          ?? null },
+    { key: 'con',          label: 'CON', value: sheet?.con          ?? null },
+    { key: 'siz',          label: 'SIZ', value: sheet?.siz          ?? null },
+    { key: 'dex',          label: 'DEX', value: sheet?.dex          ?? null },
+    { key: 'intelligence', label: 'INT', value: sheet?.intelligence ?? null },
+    { key: 'pow',          label: 'POW', value: sheet?.pow          ?? null },
+    { key: 'cha',          label: 'CHA', value: sheet?.cha          ?? null },
+    { key: 'app',          label: 'APP', value: sheet?.app          ?? null },
+    { key: 'edu',          label: 'EDU', value: sheet?.edu          ?? null },
+  ]
+
+  const consoleSkills: SkillEntry[] = allSkills.map((skill) => ({
+    id: skill.id,
+    name: skill.name,
+    category: skill.category,
+    effectiveValue: skillValueMap.get(skill.id) ?? skill.baseValue,
+  }))
 
   const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
   const sectionHead: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif', letterSpacing: '0.1em' }
@@ -301,6 +324,11 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
           </Link>
         </div>
       </form>
+
+      {/* ── Dice Console ─────────────────────────────────────────────────── */}
+      <div className="mt-10">
+        <DiceConsole stats={consoleStats} skills={consoleSkills} />
+      </div>
 
       {/* ── Read-only: Inventory ──────────────────────────────────────────── */}
       {character.inventoryItems.length > 0 && (
