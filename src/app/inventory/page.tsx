@@ -50,21 +50,21 @@ export default async function InventoryPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
             🎒 Inventory
           </h1>
           <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>Artifacts, equipment, and evidence</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Suspense fallback={null}>
             <SearchBar placeholder="Search inventory…" />
           </Suspense>
           <Suspense fallback={null}>
             <ViewToggle />
           </Suspense>
-          <Link href="/inventory/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
+          <Link href="/inventory/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90 whitespace-nowrap" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
             + New Item
           </Link>
         </div>
@@ -120,7 +120,7 @@ export default async function InventoryPage({
                       : <span style={{ color: '#374151' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link href={`/inventory/${item.id}`} className="text-xs px-3 py-1 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                       <Link href={`/inventory/${item.id}/edit`} className="text-xs px-3 py-1 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                       <DeleteButton action={deleteInventoryItem.bind(null, item.id)} label={item.name} />
@@ -149,7 +149,7 @@ export default async function InventoryPage({
                   <Link href={`/characters/${item.carrier.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>👤 {item.carrier.name}</Link>
                 </p>
               )}
-              <div className="flex items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>
+              <div className="flex flex-wrap items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link href={`/inventory/${item.id}`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                 <Link href={`/inventory/${item.id}/edit`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                 <div className="ml-auto">

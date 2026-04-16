@@ -86,7 +86,7 @@ export default async function Home() {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
         {sections.map((section, i) => (
           <Link key={section.href} href={section.href}>
             <div
@@ -119,7 +119,7 @@ export default async function Home() {
         >
           ✦ Quick Access
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {sections.map((section) => (
             <Link
               key={section.href}

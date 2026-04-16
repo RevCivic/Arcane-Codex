@@ -68,7 +68,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
 
   return (
     <>
-      <nav className="hidden md:flex items-center gap-1" aria-label="Primary navigation">
+      <nav className="hidden md:flex flex-wrap items-center gap-1" aria-label="Primary navigation">
         {navLinks.map((link) => (
           <Link key={link.href} href={link.href} className={navItemClass} style={navItemStyle}>
             <span>{link.icon}</span>

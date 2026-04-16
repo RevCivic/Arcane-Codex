@@ -50,21 +50,21 @@ export default async function PlacesPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
             🗺️ Places
           </h1>
           <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>Locations under investigation</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Suspense fallback={null}>
             <SearchBar placeholder="Search places…" />
           </Suspense>
           <Suspense fallback={null}>
             <ViewToggle />
           </Suspense>
-          <Link href="/places/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
+          <Link href="/places/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90 whitespace-nowrap" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
             + New Place
           </Link>
         </div>
@@ -112,7 +112,7 @@ export default async function PlacesPage({
                     {place.region ?? <span style={{ color: '#374151' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link href={`/places/${place.id}`} className="text-xs px-3 py-1 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                       <Link href={`/places/${place.id}/edit`} className="text-xs px-3 py-1 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                       <DeleteButton action={deletePlace.bind(null, place.id)} label={place.name} />
@@ -137,7 +137,7 @@ export default async function PlacesPage({
               </div>
               {place.region && <p className="text-xs mb-2" style={{ color: '#6b7280' }}>📍 {place.region}</p>}
               {place.description && <p className="text-sm mb-3 line-clamp-2" style={{ color: '#9ca3af' }}>{place.description}</p>}
-              <div className="flex items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
+              <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link href={`/places/${place.id}`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                 <Link href={`/places/${place.id}/edit`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                 <div className="ml-auto">
