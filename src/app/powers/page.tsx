@@ -58,21 +58,21 @@ export default async function PowersPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
             ⚡ Powers
           </h1>
           <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>Supernatural abilities and phenomena</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Suspense fallback={null}>
             <SearchBar placeholder="Search powers…" />
           </Suspense>
           <Suspense fallback={null}>
             <ViewToggle />
           </Suspense>
-          <Link href="/powers/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
+          <Link href="/powers/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90 whitespace-nowrap" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
             + New Power
           </Link>
         </div>
@@ -120,7 +120,7 @@ export default async function PowersPage({
                     {power.effect ?? <span style={{ color: '#374151', fontStyle: 'normal' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link href={`/powers/${power.id}`} className="text-xs px-3 py-1 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                       <Link href={`/powers/${power.id}/edit`} className="text-xs px-3 py-1 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                       <DeleteButton action={deletePower.bind(null, power.id)} label={power.name} />
@@ -144,7 +144,7 @@ export default async function PowersPage({
               </Link>
               {power.description && <p className="text-sm mb-2 line-clamp-2" style={{ color: '#9ca3af' }}>{power.description}</p>}
               {power.effect && <p className="text-xs italic" style={{ color: '#f59e0b' }}>⚡ {power.effect}</p>}
-              <div className="flex items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>
+              <div className="flex flex-wrap items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link href={`/powers/${power.id}`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                 <Link href={`/powers/${power.id}/edit`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                 <div className="ml-auto">

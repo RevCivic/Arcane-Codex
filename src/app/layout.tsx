@@ -38,18 +38,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-full flex flex-col" style={{ backgroundColor: '#0a0a0f', color: '#e2e8f0' }}>
         {/* Top Nav */}
         <header style={{ backgroundColor: '#07070d', borderBottom: '1px solid #1a1a2e' }}>
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3 group">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2 min-w-0">
+            <Link href="/" className="flex items-center gap-2 group shrink-0 min-w-0">
               <span className="text-2xl">🔮</span>
-              <div>
+              <div className="min-w-0">
                 <div
-                  className="text-xl font-bold tracking-widest uppercase arcane-glow"
+                  className="text-lg sm:text-xl font-bold tracking-widest uppercase arcane-glow truncate"
                   style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}
                 >
                   Arcane Codex
                 </div>
                 <div
-                  className="text-xs tracking-widest uppercase"
+                  className="text-xs tracking-wide sm:tracking-widest uppercase truncate"
                   style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}
                 >
                   Bureau of Supernatural Investigation

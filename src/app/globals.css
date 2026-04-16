@@ -28,12 +28,16 @@
 html,
 body {
   height: 100%;
+  /* Prevent content from causing horizontal page scroll */
+  overflow-x: hidden;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: 'Georgia', 'Times New Roman', serif;
+  /* Ensure body never exceeds viewport width */
+  max-width: 100vw;
 }
 
 /* Custom scrollbar */

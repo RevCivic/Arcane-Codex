@@ -54,7 +54,7 @@ export default async function CharactersPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
           <h1
             className="text-3xl font-bold tracking-widest uppercase arcane-glow"
@@ -66,7 +66,7 @@ export default async function CharactersPage({
             Agents, suspects, and persons of interest
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Suspense fallback={null}>
             <SearchBar placeholder="Search characters…" />
           </Suspense>
@@ -76,7 +76,7 @@ export default async function CharactersPage({
           <SyncFromSheetButton />
           <Link
             href="/characters/new"
-            className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90"
+            className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 whitespace-nowrap"
             style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
           >
             + New Character
@@ -159,8 +159,9 @@ export default async function CharactersPage({
                     {character.affiliation ?? <span style={{ color: '#374151' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link href={`/characters/${character.id}`} className="text-xs px-3 py-1 rounded transition-colors hover:text-purple-300" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
+                      <Link href={`/characters/${character.id}/sheet`} className="text-xs px-3 py-1 rounded transition-colors hover:text-cyan-300" style={{ color: '#06b6d4', border: '1px solid #164e63' }}>Sheet</Link>
                       <Link href={`/characters/${character.id}/edit`} className="text-xs px-3 py-1 rounded transition-colors hover:text-amber-300" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                       <DeleteButton action={deleteCharacter.bind(null, character.id)} label={character.name} />
                     </div>
@@ -218,13 +219,20 @@ export default async function CharactersPage({
                   🗂 {character.currentCase}
                 </p>
               )}
-              <div className="flex items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
+              <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link
                   href={`/characters/${character.id}`}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
                   style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}
                 >
                   View
+                </Link>
+                <Link
+                  href={`/characters/${character.id}/sheet`}
+                  className="text-xs px-3 py-1.5 rounded transition-colors hover:text-cyan-300"
+                  style={{ color: '#06b6d4', border: '1px solid #164e63' }}
+                >
+                  Sheet
                 </Link>
                 <Link
                   href={`/characters/${character.id}/edit`}
