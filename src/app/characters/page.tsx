@@ -66,21 +66,23 @@ export default async function CharactersPage({
             Agents, suspects, and persons of interest
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <Suspense fallback={null}>
             <SearchBar placeholder="Search characters…" />
           </Suspense>
-          <Suspense fallback={null}>
-            <ViewToggle />
-          </Suspense>
-          <SyncFromSheetButton />
-          <Link
-            href="/characters/new"
-            className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 whitespace-nowrap"
-            style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
-          >
-            + New Character
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Suspense fallback={null}>
+              <ViewToggle />
+            </Suspense>
+            <SyncFromSheetButton />
+            <Link
+              href="/characters/new"
+              className="w-full px-4 py-2 rounded text-center text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 sm:w-auto sm:text-left sm:whitespace-nowrap"
+              style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
+            >
+              + New Character
+            </Link>
+          </div>
         </div>
       </div>
 

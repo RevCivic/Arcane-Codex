@@ -35,7 +35,7 @@ export function SearchBar({ placeholder }: { placeholder?: string }) {
   )
 
   return (
-    <div className="relative flex-1 min-w-0" style={{ fontFamily: 'Georgia, serif' }}>
+    <div className="relative w-full min-w-0 sm:flex-1" style={{ fontFamily: 'Georgia, serif' }}>
       <span
         style={{
           position: 'absolute',
