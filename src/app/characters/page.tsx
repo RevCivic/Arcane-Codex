@@ -77,7 +77,7 @@ export default async function CharactersPage({
             <SyncFromSheetButton />
             <Link
               href="/characters/new"
-              className="w-full px-4 py-2 rounded text-center text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 whitespace-nowrap sm:w-auto"
+              className="w-full px-4 py-2 rounded text-center text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 sm:w-auto sm:whitespace-nowrap"
               style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
             >
               + New Character
