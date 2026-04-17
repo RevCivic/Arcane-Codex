@@ -34,7 +34,7 @@ export function SyncFromSheetButton() {
       </button>
       {result && (
         <p
-          className="text-xs break-words text-left sm:text-right"
+          className="text-xs text-left sm:text-right"
           style={{
             color: result.error ? '#f87171' : '#4ade80',
             fontFamily: 'Georgia, serif',
