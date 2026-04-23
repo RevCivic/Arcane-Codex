@@ -920,19 +920,20 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
   const user = await requireAuthorizedUser()
 
   const character = await prisma.character.findUnique({ where: { id: characterId } })
-  if (!character) throw new Error('Character not found')
+  if (!character) throw new Error(`Character with ID ${characterId} does not exist`)
   if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
-    throw new Error('Forbidden')
+    throw new Error('You do not have permission to import data for this character')
   }
 
   const rawJson = (formData.get('foundryJson') as string | null)?.trim() ?? ''
-  if (!rawJson) throw new Error('Foundry JSON is required')
+  if (!rawJson) throw new Error('No JSON data provided. Paste your FoundryVTT actor export in the import field.')
 
   let parsed: unknown
   try {
     parsed = JSON.parse(rawJson)
-  } catch {
-    throw new Error('Foundry JSON is invalid')
+  } catch (error) {
+    const detail = error instanceof Error ? ` ${error.message}` : ''
+    throw new Error(`Invalid JSON format. Please paste a complete FoundryVTT actor export.${detail}`)
   }
 
   if (!parsed || typeof parsed !== 'object') {
