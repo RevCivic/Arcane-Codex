@@ -90,6 +90,7 @@ The character sheet at `/characters/[id]/sheet` contains:
 - **Primary Characteristics** — STR, CON, SIZ, DEX, INT, POW, CHA, APP, EDU
 - **Derived Statistics** — Hit Points (current/max), Sanity (current/max), Magic Points (current/max), Luck, Build
 - **Skills** — grouped by category (Combat, Investigation, Academic, Social, Physical, Technical, Other); each skill shows the global base % and can be overridden with a character-specific value
+- **FoundryVTT JSON import** — paste a Foundry actor export directly on the sheet to import stats and skills; missing skills are auto-created
 - **Wounds & Notes** — free-text fields for injuries and session notes
 - **Carried Items** — read-only list of inventory items whose `carrierId` is this character
 - **Powers** — read-only list of powers assigned to this character
