@@ -2,13 +2,14 @@
 
 import { useState, useRef, useTransition } from 'react'
 import { saveRoll, spendLuckOnRoll } from '@/app/actions'
+import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type DifficultyTier = 'Easy' | 'Average' | 'Difficult' | 'Hard' | 'Extreme' | 'Impossible'
 type DiceType = 2 | 4 | 6 | 8 | 10 | 12 | 20 | 100
 type ActiveTab = 'ability' | 'skill' | 'free'
-type ResultType = 'CRITICAL' | 'SUCCESS' | 'FAILURE' | 'FUMBLE'
+type ResultType = D100ResultType
 
 export interface StatEntry {
   key: string
@@ -75,14 +76,6 @@ function applyDifficulty(base: number, tier: DifficultyTier): number {
   if (tier === 'Impossible') return 1
   const t = TIERS.find((t) => t.tier === tier)!
   return Math.max(1, Math.min(99, Math.floor(base * t.mult)))
-}
-
-function getResultType(roll: number, target: number): ResultType {
-  if (roll === 1) return 'CRITICAL'
-  if (roll === 100) return 'FUMBLE'
-  if (target < 50 && roll >= 96) return 'FUMBLE'
-  if (roll <= target) return 'SUCCESS'
-  return 'FAILURE'
 }
 
 function rollD100(): number { return Math.floor(Math.random() * 100) + 1 }
@@ -276,9 +269,18 @@ export function DiceConsole({
           dice:       parseDice(entry.dice),
           modifier:   entry.modifier,
         })
-        setHistory((prev) => prev.map((r) => (r.id === tempId ? { ...r, id: saved.id } : r)))
+        setHistory((prev) =>
+          prev.map((r) =>
+            r.id === tempId ? { ...r, id: saved.id, resultType: saved.resultType ?? r.resultType } : r
+          )
+        )
 
-        if (entry.resultType === 'FAILURE' && effectiveTarget !== null) {
+        if (typeof saved.currentLuck === 'number') {
+          setClientLuck(saved.currentLuck)
+        }
+
+        const resolvedResultType = (saved.resultType ?? entry.resultType) as ResultType | null
+        if (resolvedResultType === 'FAILURE' && effectiveTarget !== null) {
           const cost = rawRoll - effectiveTarget
           if (canAffordLuck(clientLuck, cost)) {
             setPendingLuck({ rollHistoryId: saved.id, cost })
@@ -300,7 +302,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'ability', label: `${stat.label} Check`, roll, target, difficulty: abilityTier,
-        resultType: getResultType(roll, target), dice: null, modifier: null, luckSpent: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null },
       roll, target
     )
   }
@@ -312,7 +314,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'skill', label: skill.name, roll, target, difficulty: skillTier,
-        resultType: getResultType(roll, target), dice: null, modifier: null, luckSpent: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null },
       roll, target
     )
   }

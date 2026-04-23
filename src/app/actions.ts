@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import { AccessRole, Prisma } from '@/generated/prisma'
+import { getD100ResultType, getLuckGainForCriticalRoll } from '@/lib/diceRules'
 import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
@@ -1136,18 +1137,53 @@ export async function saveRoll(
     throw new Error('Forbidden')
   }
 
-  return prisma.rollHistory.create({
-    data: {
-      characterId,
-      rollType: data.rollType,
-      label: data.label,
-      roll: data.roll,
-      target: data.target ?? null,
-      difficulty: data.difficulty ?? null,
-      resultType: data.resultType ?? null,
-      dice: data.dice ? JSON.stringify(data.dice) : null,
-      modifier: data.modifier ?? null,
-    },
+  const target = data.target ?? null
+  const resultType =
+    target !== null ? getD100ResultType(data.roll, target) : (data.resultType ?? null)
+  const luckAwarded =
+    target !== null && resultType
+      ? getLuckGainForCriticalRoll(data.roll, resultType)
+      : 0
+
+  return prisma.$transaction(async (tx) => {
+    const createdRoll = await tx.rollHistory.create({
+      data: {
+        characterId,
+        rollType: data.rollType,
+        label: data.label,
+        roll: data.roll,
+        target,
+        difficulty: data.difficulty ?? null,
+        resultType,
+        dice: data.dice ? JSON.stringify(data.dice) : null,
+        modifier: data.modifier ?? null,
+      },
+    })
+
+    if (luckAwarded <= 0) {
+      return { ...createdRoll, luckAwarded: 0, currentLuck: null }
+    }
+
+    const existingSheet = await tx.characterSheet.findUnique({
+      where: { characterId },
+      select: { luck: true },
+    })
+
+    if (!existingSheet) {
+      const createdSheet = await tx.characterSheet.create({
+        data: { characterId, luck: luckAwarded },
+        select: { luck: true },
+      })
+      return { ...createdRoll, luckAwarded, currentLuck: createdSheet.luck ?? luckAwarded }
+    }
+
+    const updatedSheet = await tx.characterSheet.update({
+      where: { characterId },
+      data: { luck: (existingSheet.luck ?? 0) + luckAwarded },
+      select: { luck: true },
+    })
+
+    return { ...createdRoll, luckAwarded, currentLuck: updatedSheet.luck ?? 0 }
   })
 }
 
