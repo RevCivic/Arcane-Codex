@@ -47,6 +47,10 @@ export default async function NewInventoryPage() {
             ))}
           </select>
         </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
+          <textarea name="referenceLinks" rows={4} className="arcane-input" placeholder={'One per line: URL | Note\nhttps://example.com/rules | Rules reference'} />
+        </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>
             Create Item

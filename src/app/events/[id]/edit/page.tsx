@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
+import { referenceLinksToText } from '@/lib/referenceLinks'
 import { notFound } from 'next/navigation'
 import { updateEvent } from '@/app/actions'
 import Link from 'next/link'
@@ -54,6 +55,10 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
             ))}
           </select>
           <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Hold Ctrl / Cmd to select multiple</p>
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
+          <textarea name="referenceLinks" rows={4} defaultValue={referenceLinksToText(event.referenceLinks)} className="arcane-input" />
         </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>

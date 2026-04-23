@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
+import { referenceLinksToText } from '@/lib/referenceLinks'
 import { notFound } from 'next/navigation'
 import { updatePower } from '@/app/actions'
 import Link from 'next/link'
@@ -45,6 +46,10 @@ export default async function EditPowerPage({ params }: { params: Promise<{ id: 
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Effect</label>
           <textarea name="effect" rows={2} defaultValue={power.effect ?? ''} className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
+          <textarea name="referenceLinks" rows={4} defaultValue={referenceLinksToText(power.referenceLinks)} className="arcane-input" />
         </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>
