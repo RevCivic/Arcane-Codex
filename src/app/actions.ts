@@ -50,6 +50,7 @@ function toNullableInt(value: unknown): number | null {
 
 const FOUNDRY_SKILL_CATEGORY_MAP: Record<string, string> = {
   zcmbtmod: 'Combat',
+  cmbtmod: 'Combat',
   cmmnmod: 'Social',
   mntlmod: 'Academic',
   mnplmod: 'Technical',
@@ -1007,6 +1008,15 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
     })
 
   const items = Array.isArray(foundry.items) ? foundry.items : []
+  const importedSkillsByName = new Map<string, {
+    name: string
+    category: string
+    baseValue: number
+    description: string | null
+    sortOrder: number
+    importedValue: number | null
+  }>()
+
   for (const item of items) {
     if (!item || typeof item !== 'object') continue
     const typedItem = item as Record<string, unknown>
@@ -1019,29 +1029,66 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
       ? typedItem.system
       : {}) as Record<string, unknown>
 
-    const skill = await prisma.skill.upsert({
-      where: { name: skillName },
-      update: {},
-      create: {
-        name: skillName,
-        category: normalizeFoundrySkillCategory(skillSystem.category),
-        baseValue: toNullableInt(skillSystem.base) ?? 0,
-        description: typeof skillSystem.description === 'string' && skillSystem.description.trim()
-          ? skillSystem.description.trim()
-          : null,
-        sortOrder: toNullableInt(typedItem.sort) ?? 0,
-      },
-      select: { id: true },
+    importedSkillsByName.set(skillName, {
+      name: skillName,
+      category: normalizeFoundrySkillCategory(skillSystem.category),
+      baseValue: toNullableInt(skillSystem.base) ?? 0,
+      description: typeof skillSystem.description === 'string' && skillSystem.description.trim()
+        ? skillSystem.description.trim()
+        : null,
+      sortOrder: toNullableInt(typedItem.sort) ?? 0,
+      importedValue: getFoundrySkillValue(skillSystem),
     })
+  }
 
-    const importedValue = getFoundrySkillValue(skillSystem)
-    if (importedValue === null) continue
-
-    await prisma.characterSkillValue.upsert({
-      where: { sheetId_skillId: { sheetId: sheet.id, skillId: skill.id } },
-      update: { value: importedValue },
-      create: { sheetId: sheet.id, skillId: skill.id, value: importedValue },
+  const importedSkills = Array.from(importedSkillsByName.values())
+  if (importedSkills.length > 0) {
+    const importedSkillNames = importedSkills.map((s) => s.name)
+    const existingSkills = await prisma.skill.findMany({
+      where: { name: { in: importedSkillNames } },
+      select: { name: true },
     })
+    const existingSkillNameSet = new Set(existingSkills.map((s) => s.name))
+
+    const skillsToCreate = importedSkills
+      .filter((skill) => !existingSkillNameSet.has(skill.name))
+      .map((skill) => ({
+        name: skill.name,
+        category: skill.category,
+        baseValue: skill.baseValue,
+        description: skill.description,
+        sortOrder: skill.sortOrder,
+      }))
+
+    if (skillsToCreate.length > 0) {
+      await prisma.skill.createMany({
+        data: skillsToCreate,
+        skipDuplicates: true,
+      })
+    }
+
+    const allImportedSkills = await prisma.skill.findMany({
+      where: { name: { in: importedSkillNames } },
+      select: { id: true, name: true },
+    })
+    const skillIdByName = new Map(allImportedSkills.map((s) => [s.name, s.id]))
+
+    const characterSkillValueWrites = importedSkills
+      .filter((skill) => skill.importedValue !== null)
+      .map((skill) => {
+        const skillId = skillIdByName.get(skill.name)
+        if (!skillId) return null
+        return prisma.characterSkillValue.upsert({
+          where: { sheetId_skillId: { sheetId: sheet.id, skillId } },
+          update: { value: skill.importedValue as number },
+          create: { sheetId: sheet.id, skillId, value: skill.importedValue as number },
+        })
+      })
+      .filter((write): write is ReturnType<typeof prisma.characterSkillValue.upsert> => write !== null)
+
+    if (characterSkillValueWrites.length > 0) {
+      await prisma.$transaction(characterSkillValueWrites)
+    }
   }
 
   revalidatePath(`/characters/${characterId}`)
