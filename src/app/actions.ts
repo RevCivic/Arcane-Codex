@@ -1180,7 +1180,7 @@ export async function saveRoll(
       select: { luck: true },
     })
 
-    return { ...createdRoll, luckAwarded, currentLuck: updatedSheet.luck ?? 0 }
+    return { ...createdRoll, luckAwarded, currentLuck: updatedSheet.luck }
   })
 }
 
