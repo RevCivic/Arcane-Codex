@@ -1,9 +1,13 @@
 'use server'
 
 import { auth } from '@/auth'
-import { AccessRole } from '@/generated/prisma'
+import { AccessRole, Prisma } from '@/generated/prisma'
+import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
+import { randomUUID } from 'node:crypto'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -31,6 +35,59 @@ function getFormStrings(formData: FormData, key: string) {
 
 function getNullableString(value: string) {
   return value || null
+}
+
+const IMAGE_MIME_TO_EXTENSION: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/avif': '.avif',
+}
+const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
+
+function getReferenceLinksFromForm(formData: FormData) {
+  const raw = (formData.get('referenceLinks') as string | null)?.trim() || ''
+  const parsed = parseReferenceLinksText(raw)
+  return parsed.length > 0 ? parsed : Prisma.JsonNull
+}
+
+async function resolveImageUrlFromForm(formData: FormData, existingImageUrl?: string | null) {
+  const directImageUrl = (formData.get('imageUrl') as string | null)?.trim() || ''
+  const maybeFile = formData.get('imageFile')
+
+  if (maybeFile instanceof File && maybeFile.size > 0) {
+    if (maybeFile.size > MAX_IMAGE_UPLOAD_BYTES) {
+      throw new Error('Image upload must be 5 MB or less')
+    }
+    const extension = IMAGE_MIME_TO_EXTENSION[maybeFile.type]
+    if (!extension) {
+      throw new Error('Unsupported image format')
+    }
+
+    const fileName = `${randomUUID()}${extension}`
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+    const destinationPath = path.join(uploadsDir, fileName)
+    const bytes = Buffer.from(await maybeFile.arrayBuffer())
+
+    await mkdir(uploadsDir, { recursive: true })
+    await writeFile(destinationPath, bytes)
+    return `/uploads/${fileName}`
+  }
+
+  if (directImageUrl) {
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(directImageUrl)
+    } catch {
+      throw new Error('Image URL must be a valid URL')
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      throw new Error('Image URL must use http or https')
+    }
+    return parsedUrl.toString()
+  }
+  return existingImageUrl ?? null
 }
 
 /** Splits a raw CSV string into a 2-D array of cell values. */
@@ -252,9 +309,11 @@ export async function createCharacter(formData: FormData) {
   const currentLocation = formData.get('currentLocation') as string
   const homeOrigin = formData.get('homeOrigin') as string
   const status = formData.get('status') as string
+  const imageUrl = await resolveImageUrlFromForm(formData)
+  const referenceLinks = getReferenceLinksFromForm(formData)
 
   await prisma.character.create({
-    data: { name, firstName, lastName, race, gender, age, role, description, stats, affiliation, currentCase, currentLocation, homeOrigin, status: status || 'Active' },
+    data: { name, firstName, lastName, race, gender, age, role, description, stats, affiliation, currentCase, currentLocation, homeOrigin, imageUrl, referenceLinks, status: status || 'Active' },
   })
   revalidatePath('/characters')
   redirect('/characters')
@@ -309,10 +368,13 @@ export async function updateCharacter(id: number, formData: FormData) {
   const currentLocation = formData.get('currentLocation') as string
   const homeOrigin = formData.get('homeOrigin') as string
   const status = formData.get('status') as string
+  const existingCharacter = await prisma.character.findUnique({ where: { id }, select: { imageUrl: true } })
+  const imageUrl = await resolveImageUrlFromForm(formData, existingCharacter?.imageUrl)
+  const referenceLinks = getReferenceLinksFromForm(formData)
 
   await prisma.character.update({
     where: { id },
-    data: { name, firstName, lastName, race, gender, age, role, description, stats, affiliation, currentCase, currentLocation, homeOrigin, status },
+    data: { name, firstName, lastName, race, gender, age, role, description, stats, affiliation, currentCase, currentLocation, homeOrigin, imageUrl, referenceLinks, status },
   })
   revalidatePath('/characters')
   revalidatePath(`/characters/${id}`)
@@ -336,9 +398,13 @@ export async function createPlace(formData: FormData) {
   const type = formData.get('type') as string
   const description = formData.get('description') as string
   const region = formData.get('region') as string
+  const coordinates = formData.get('coordinates') as string
+  const mapsLink = formData.get('mapsLink') as string
   const notes = formData.get('notes') as string
+  const imageUrl = await resolveImageUrlFromForm(formData)
+  const referenceLinks = getReferenceLinksFromForm(formData)
 
-  await prisma.place.create({ data: { name, type, description, region, notes } })
+  await prisma.place.create({ data: { name, type, description, region, coordinates, mapsLink, imageUrl, referenceLinks, notes } })
   revalidatePath('/places')
   redirect('/places')
 }
@@ -378,9 +444,14 @@ export async function updatePlace(id: number, formData: FormData) {
   const type = formData.get('type') as string
   const description = formData.get('description') as string
   const region = formData.get('region') as string
+  const coordinates = formData.get('coordinates') as string
+  const mapsLink = formData.get('mapsLink') as string
   const notes = formData.get('notes') as string
+  const existingPlace = await prisma.place.findUnique({ where: { id }, select: { imageUrl: true } })
+  const imageUrl = await resolveImageUrlFromForm(formData, existingPlace?.imageUrl)
+  const referenceLinks = getReferenceLinksFromForm(formData)
 
-  await prisma.place.update({ where: { id }, data: { name, type, description, region, notes } })
+  await prisma.place.update({ where: { id }, data: { name, type, description, region, coordinates, mapsLink, imageUrl, referenceLinks, notes } })
   revalidatePath('/places')
   revalidatePath(`/places/${id}`)
   redirect(`/places/${id}`)
@@ -406,8 +477,9 @@ export async function createInventoryItem(formData: FormData) {
   const category = formData.get('category') as string
   const carrierIdRaw = formData.get('carrierId') as string
   const carrierId = carrierIdRaw ? parseInt(carrierIdRaw, 10) : null
+  const referenceLinks = getReferenceLinksFromForm(formData)
 
-  await prisma.inventoryItem.create({ data: { name, description, effect, location, category, carrierId } })
+  await prisma.inventoryItem.create({ data: { name, description, effect, location, category, carrierId, referenceLinks } })
   revalidatePath('/inventory')
   redirect('/inventory')
 }
@@ -457,10 +529,11 @@ export async function updateInventoryItem(id: number, formData: FormData) {
   const category = formData.get('category') as string
   const carrierIdRaw = formData.get('carrierId') as string
   const carrierId = carrierIdRaw ? parseInt(carrierIdRaw, 10) : null
+  const referenceLinks = getReferenceLinksFromForm(formData)
 
   await prisma.inventoryItem.update({
     where: { id },
-    data: { name, description, effect, location, category, carrierId },
+    data: { name, description, effect, location, category, carrierId, referenceLinks },
   })
   revalidatePath('/inventory')
   revalidatePath(`/inventory/${id}`)
@@ -485,6 +558,7 @@ export async function createEvent(formData: FormData) {
   const date = formData.get('date') as string
   const significance = formData.get('significance') as string
   const outcome = formData.get('outcome') as string
+  const referenceLinks = getReferenceLinksFromForm(formData)
   const peopleIds = (formData.getAll('peopleIds') as string[])
     .map((v) => parseInt(v, 10))
     .filter((n) => !isNaN(n))
@@ -492,6 +566,7 @@ export async function createEvent(formData: FormData) {
   await prisma.event.create({
     data: {
       name, description, date, significance, outcome,
+      referenceLinks,
       people: peopleIds.length > 0 ? { connect: peopleIds.map((id) => ({ id })) } : undefined,
     },
   })
@@ -535,6 +610,7 @@ export async function updateEvent(id: number, formData: FormData) {
   const date = formData.get('date') as string
   const significance = formData.get('significance') as string
   const outcome = formData.get('outcome') as string
+  const referenceLinks = getReferenceLinksFromForm(formData)
   const peopleIds = (formData.getAll('peopleIds') as string[])
     .map((v) => parseInt(v, 10))
     .filter((n) => !isNaN(n))
@@ -542,7 +618,7 @@ export async function updateEvent(id: number, formData: FormData) {
   await prisma.event.update({
     where: { id },
     data: {
-      name, description, date, significance, outcome,
+      name, description, date, significance, outcome, referenceLinks,
       people: { set: peopleIds.map((pid) => ({ id: pid })) },
     },
   })
@@ -568,8 +644,9 @@ export async function createPower(formData: FormData) {
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
   const personId = parseInt(formData.get('personId') as string, 10)
+  const referenceLinks = getReferenceLinksFromForm(formData)
 
-  await prisma.power.create({ data: { name, description, effect, personId } })
+  await prisma.power.create({ data: { name, description, effect, personId, referenceLinks } })
   revalidatePath('/powers')
   redirect('/powers')
 }
@@ -612,10 +689,11 @@ export async function updatePower(id: number, formData: FormData) {
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
   const personId = parseInt(formData.get('personId') as string, 10)
+  const referenceLinks = getReferenceLinksFromForm(formData)
 
   await prisma.power.update({
     where: { id },
-    data: { name, description, effect, personId },
+    data: { name, description, effect, personId, referenceLinks },
   })
   revalidatePath('/powers')
   revalidatePath(`/powers/${id}`)

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
+import { normalizeReferenceLinks } from '@/lib/referenceLinks'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { deleteInventoryItem } from '@/app/actions'
@@ -13,6 +14,7 @@ export default async function InventoryDetailPage({ params }: { params: Promise<
     include: { carrier: true },
   })
   if (!item) notFound()
+  const referenceLinks = normalizeReferenceLinks(item.referenceLinks)
 
   return (
     <div className="max-w-3xl">
@@ -61,6 +63,22 @@ export default async function InventoryDetailPage({ params }: { params: Promise<
                 <Link href={`/characters/${item.carrier.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>
                   {item.carrier.name}
                 </Link>
+              </dd>
+            </div>
+          )}
+          {referenceLinks.length > 0 && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Reference Links</dt>
+              <dd className="space-y-2">
+                {referenceLinks.map((link) => (
+                  <p key={`${link.url}-${link.note}`} className="text-sm" style={{ color: '#e2e8f0' }}>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 break-all" style={{ color: '#a78bfa' }}>
+                      {link.url}
+                    </a>
+                    {' — '}
+                    <span>{link.note}</span>
+                  </p>
+                ))}
               </dd>
             </div>
           )}

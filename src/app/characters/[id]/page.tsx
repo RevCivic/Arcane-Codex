@@ -4,7 +4,9 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { AccessRole } from '@/generated/prisma'
+import { normalizeReferenceLinks } from '@/lib/referenceLinks'
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { deleteCharacter, claimCharacter, unclaimCharacter, adminAssignCharacter } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
@@ -44,6 +46,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
   const claimAction   = claimCharacter.bind(null, characterId)
   const unclaimAction = unclaimCharacter.bind(null, characterId)
   const assignAction  = adminAssignCharacter.bind(null, characterId)
+  const referenceLinks = normalizeReferenceLinks(character.referenceLinks)
 
   return (
     <div className="max-w-3xl">
@@ -191,6 +194,14 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
 
         {/* Character details */}
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {character.imageUrl && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>Image</dt>
+              <dd>
+                <Image src={character.imageUrl} alt={character.name} width={960} height={540} unoptimized className="w-full max-w-xl rounded border" style={{ borderColor: '#1f2937' }} />
+              </dd>
+            </div>
+          )}
           {character.description && (
             <div className="sm:col-span-2">
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Description</dt>
@@ -244,6 +255,22 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Stats (BRP)</dt>
               <dd className="text-sm font-mono p-2 rounded" style={{ backgroundColor: '#0d0d15', color: '#a78bfa', border: '1px solid #1f2937' }}>
                 {character.stats}
+              </dd>
+            </div>
+          )}
+          {referenceLinks.length > 0 && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Reference Links</dt>
+              <dd className="space-y-2">
+                {referenceLinks.map((link) => (
+                  <p key={`${link.url}-${link.note}`} className="text-sm" style={{ color: '#e2e8f0' }}>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 break-all" style={{ color: '#a78bfa' }}>
+                      {link.url}
+                    </a>
+                    {' — '}
+                    <span>{link.note}</span>
+                  </p>
+                ))}
               </dd>
             </div>
           )}

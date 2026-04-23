@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
+import { referenceLinksToText } from '@/lib/referenceLinks'
 import { notFound } from 'next/navigation'
 import { updateCharacter } from '@/app/actions'
 import Link from 'next/link'
@@ -26,7 +27,7 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
         ✏️ Edit Character
       </h1>
 
-      <form action={action} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+      <form action={action} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>First Name</label>
@@ -86,6 +87,18 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Stats (BRP)</label>
           <textarea name="stats" rows={3} defaultValue={character.stats ?? ''} className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL (Google Drive or hosted image)</label>
+          <input name="imageUrl" type="url" defaultValue={character.imageUrl ?? ''} className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Or Upload Image</label>
+          <input name="imageFile" type="file" accept="image/*" className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
+          <textarea name="referenceLinks" rows={4} defaultValue={referenceLinksToText(character.referenceLinks)} className="arcane-input" />
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Status</label>

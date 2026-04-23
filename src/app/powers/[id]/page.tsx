@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
+import { normalizeReferenceLinks } from '@/lib/referenceLinks'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { deletePower } from '@/app/actions'
@@ -13,6 +14,7 @@ export default async function PowerDetailPage({ params }: { params: Promise<{ id
     include: { person: { select: { id: true, name: true } } },
   })
   if (!power) notFound()
+  const referenceLinks = normalizeReferenceLinks(power.referenceLinks)
 
   return (
     <div className="max-w-3xl">
@@ -46,6 +48,22 @@ export default async function PowerDetailPage({ params }: { params: Promise<{ id
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Effect</dt>
               <dd className="text-sm leading-6 p-3 rounded italic" style={{ color: '#f59e0b', backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>{power.effect}</dd>
+            </div>
+          )}
+          {referenceLinks.length > 0 && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Reference Links</dt>
+              <dd className="space-y-2">
+                {referenceLinks.map((link) => (
+                  <p key={`${link.url}-${link.note}`} className="text-sm" style={{ color: '#e2e8f0' }}>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 break-all" style={{ color: '#a78bfa' }}>
+                      {link.url}
+                    </a>
+                    {' — '}
+                    <span>{link.note}</span>
+                  </p>
+                ))}
+              </dd>
             </div>
           )}
         </dl>

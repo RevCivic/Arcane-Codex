@@ -18,7 +18,7 @@ export default function NewCharacterPage() {
         + New Character
       </h1>
 
-      <form action={createCharacter} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+      <form action={createCharacter} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>First Name</label>
@@ -78,6 +78,18 @@ export default function NewCharacterPage() {
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Stats (BRP)</label>
           <textarea name="stats" rows={3} className="arcane-input" placeholder="STR 12, CON 11, SIZ 10, DEX 14, INT 16, POW 15, CHA 13 | HP: 11 | Sanity: 75" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL (Google Drive or hosted image)</label>
+          <input name="imageUrl" type="url" className="arcane-input" placeholder="https://drive.google.com/..." />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Or Upload Image</label>
+          <input name="imageFile" type="file" accept="image/*" className="arcane-input" />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
+          <textarea name="referenceLinks" rows={4} className="arcane-input" placeholder={'One per line: URL | Note\nhttps://example.com/doc | Character profile'} />
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Status</label>

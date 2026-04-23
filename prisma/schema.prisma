@@ -81,6 +81,8 @@ model Character {
   currentCase     String?
   currentLocation String?
   homeOrigin      String?
+  imageUrl        String?
+  referenceLinks  Json?
   status          String?         @default("Active")
   claimedByEmail  String?         @unique
   createdAt       DateTime        @default(now())
@@ -157,6 +159,10 @@ model Place {
   type        String?
   description String?
   region      String?
+  imageUrl     String?
+  coordinates  String?
+  mapsLink     String?
+  referenceLinks Json?
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -169,6 +175,7 @@ model InventoryItem {
   effect      String?
   location    String?
   category    String?
+  referenceLinks Json?
   carrierId   Int?
   carrier     Character? @relation(fields: [carrierId], references: [id], onDelete: SetNull)
   createdAt   DateTime   @default(now())
@@ -182,6 +189,7 @@ model Event {
   date         String?
   significance String?
   outcome      String?
+  referenceLinks Json?
   people       Character[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -192,6 +200,7 @@ model Power {
   name        String
   description String?
   effect      String?
+  referenceLinks Json?
   personId    Int
   person      Character @relation(fields: [personId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
