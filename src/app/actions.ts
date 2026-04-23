@@ -89,6 +89,7 @@ function getFoundryLuck(system: Record<string, unknown>): number | null {
     return null
   }
 
+  // Some Foundry exports contain this legacy misspelling.
   const legacyTypoWealthValue = system['welath']
   return parseLuckText(system.wealth) ?? parseLuckText(legacyTypoWealthValue) ?? parseLuckText(system.religion)
 }
@@ -1079,12 +1080,12 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
     })
     const skillIdByName = new Map(allImportedSkills.map((s) => [s.name, s.id]))
 
-    const skillValueUpserts: ReturnType<typeof prisma.characterSkillValue.upsert>[] = []
+    const skillValueUpsertPromises: ReturnType<typeof prisma.characterSkillValue.upsert>[] = []
     for (const skill of importedSkills) {
       if (skill.importedValue === null) continue
       const skillId = skillIdByName.get(skill.name)
       if (!skillId) continue
-      skillValueUpserts.push(
+      skillValueUpsertPromises.push(
         prisma.characterSkillValue.upsert({
           where: { sheetId_skillId: { sheetId: sheet.id, skillId } },
           update: { value: skill.importedValue },
@@ -1093,8 +1094,11 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
       )
     }
 
-    if (skillValueUpserts.length > 0) {
-      await prisma.$transaction(skillValueUpserts)
+    if (skillValueUpsertPromises.length > 0) {
+      const batchSize = 100
+      for (let i = 0; i < skillValueUpsertPromises.length; i += batchSize) {
+        await prisma.$transaction(skillValueUpsertPromises.slice(i, i + batchSize))
+      }
     }
   }
 
