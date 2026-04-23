@@ -1140,7 +1140,7 @@ export async function saveRoll(
   const target = data.target ?? null
   const d100ResultType = target !== null ? getD100ResultType(data.roll, target) : null
   const resultType = d100ResultType ?? data.resultType ?? null
-  const luckAwarded = d100ResultType ? getLuckGainForRoll(d100ResultType) : 0
+  const luckAwarded = d100ResultType ? getLuckGainForRoll(data.roll, d100ResultType) : 0
 
   return prisma.$transaction(async (tx) => {
     const createdRoll = await tx.rollHistory.create({
