@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth'
 import { AccessRole, Prisma } from '@/generated/prisma'
-import { getD100ResultType, getLuckGainForCriticalRoll } from '@/lib/diceRules'
+import { getD100ResultType, getLuckGainForRoll } from '@/lib/diceRules'
 import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
@@ -1140,7 +1140,7 @@ export async function saveRoll(
   const target = data.target ?? null
   const d100ResultType = target !== null ? getD100ResultType(data.roll, target) : null
   const resultType = d100ResultType ?? data.resultType ?? null
-  const luckAwarded = d100ResultType ? getLuckGainForCriticalRoll(data.roll, d100ResultType) : 0
+  const luckAwarded = d100ResultType ? getLuckGainForRoll(d100ResultType) : 0
 
   return prisma.$transaction(async (tx) => {
     const createdRoll = await tx.rollHistory.create({
