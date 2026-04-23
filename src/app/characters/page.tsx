@@ -82,6 +82,13 @@ export default async function CharactersPage({
             >
               + New Character
             </Link>
+            <Link
+              href="/characters/bulk"
+              className="w-full px-4 py-2 rounded text-center text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:text-purple-300 sm:w-auto sm:text-left sm:whitespace-nowrap"
+              style={{ border: '1px solid #3b1f6e', color: '#a78bfa', fontFamily: 'Georgia, serif' }}
+            >
+              Bulk Entry
+            </Link>
           </div>
         </div>
       </div>
