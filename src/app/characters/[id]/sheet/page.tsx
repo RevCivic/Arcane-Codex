@@ -228,7 +228,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             rows={7}
             required
             className="arcane-input"
-            placeholder='{"name":"Character Name","system":{...},"items":[...]}'
+            placeholder="Paste your FoundryVTT actor export JSON here"
           />
           <button
             type="submit"

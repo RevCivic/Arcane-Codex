@@ -89,8 +89,8 @@ function getFoundryLuck(system: Record<string, unknown>): number | null {
     return null
   }
 
-  const legacyWealthKey = `we${'lath'}`
-  return parseLuckText(system.wealth) ?? parseLuckText(system[legacyWealthKey]) ?? parseLuckText(system.religion)
+  const legacyTypoWealthValue = system['welath']
+  return parseLuckText(system.wealth) ?? parseLuckText(legacyTypoWealthValue) ?? parseLuckText(system.religion)
 }
 
 function getFoundrySkillValue(system: Record<string, unknown>): number | null {
@@ -1079,12 +1079,12 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
     })
     const skillIdByName = new Map(allImportedSkills.map((s) => [s.name, s.id]))
 
-    const characterSkillValueUpsertPromises: ReturnType<typeof prisma.characterSkillValue.upsert>[] = []
+    const skillValueUpserts: ReturnType<typeof prisma.characterSkillValue.upsert>[] = []
     for (const skill of importedSkills) {
       if (skill.importedValue === null) continue
       const skillId = skillIdByName.get(skill.name)
       if (!skillId) continue
-      characterSkillValueUpsertPromises.push(
+      skillValueUpserts.push(
         prisma.characterSkillValue.upsert({
           where: { sheetId_skillId: { sheetId: sheet.id, skillId } },
           update: { value: skill.importedValue },
@@ -1093,8 +1093,8 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
       )
     }
 
-    if (characterSkillValueUpsertPromises.length > 0) {
-      await prisma.$transaction(characterSkillValueUpsertPromises)
+    if (skillValueUpserts.length > 0) {
+      await prisma.$transaction(skillValueUpserts)
     }
   }
 
