@@ -37,6 +37,79 @@ function getNullableString(value: string) {
   return value || null
 }
 
+function toNullableInt(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value)
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    const parsed = parseInt(trimmed, 10)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+const FOUNDRY_SKILL_CATEGORY_MAP: Record<string, string> = {
+  zcmbtmod: 'Combat',
+  cmmnmod: 'Social',
+  mntlmod: 'Academic',
+  mnplmod: 'Technical',
+  percmod: 'Investigation',
+  physmod: 'Physical',
+  spnlmod: 'Other',
+  soclmod: 'Social',
+  combat: 'Combat',
+  social: 'Social',
+  mental: 'Academic',
+  technical: 'Technical',
+  physical: 'Physical',
+  investigation: 'Investigation',
+  academic: 'Academic',
+  other: 'Other',
+}
+
+function normalizeFoundrySkillCategory(rawCategory: unknown): string {
+  if (typeof rawCategory !== 'string' || !rawCategory.trim()) return 'Other'
+  const key = rawCategory.trim().toLowerCase().split('.').at(-1) ?? rawCategory.trim().toLowerCase()
+  const mapped = FOUNDRY_SKILL_CATEGORY_MAP[key]
+  if (mapped) return mapped
+  return key.charAt(0).toUpperCase() + key.slice(1)
+}
+
+function getFoundryLuck(system: Record<string, unknown>): number | null {
+  const maybeLuck = toNullableInt(system.luck)
+  if (maybeLuck !== null) return maybeLuck
+
+  const parseLuckText = (value: unknown): number | null => {
+    if (typeof value !== 'string') return null
+    const first = value.match(/luck\s*[:\-]?\s*(-?\d+)/i)
+    if (first) return toNullableInt(first[1])
+    const second = value.match(/(-?\d+)\s*luck/i)
+    if (second) return toNullableInt(second[1])
+    return null
+  }
+
+  return parseLuckText(system.welath) ?? parseLuckText(system.wealth) ?? parseLuckText(system.religion)
+}
+
+function getFoundrySkillValue(system: Record<string, unknown>): number | null {
+  const direct = toNullableInt(system.value)
+  if (direct !== null) return direct
+
+  const fields = ['base', 'xp', 'culture', 'profession', 'personality', 'personal', 'effects']
+  let hasAny = false
+  let total = 0
+
+  for (const field of fields) {
+    const n = toNullableInt(system[field])
+    if (n !== null) {
+      hasAny = true
+      total += n
+    }
+  }
+
+  return hasAny ? total : null
+}
+
 const IMAGE_MIME_TO_EXTENSION: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
@@ -834,6 +907,124 @@ export async function updateCharacterSheet(characterId: number, formData: FormDa
         })
       }
     }
+  }
+
+  revalidatePath(`/characters/${characterId}`)
+  revalidatePath(`/characters/${characterId}/sheet`)
+  revalidatePath('/my-character')
+  redirect(`/characters/${characterId}/sheet`)
+}
+
+/** Owner or admin can import FoundryVTT exported stats/skills JSON into the character sheet. */
+export async function importFoundryCharacterSheet(characterId: number, formData: FormData) {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  const rawJson = (formData.get('foundryJson') as string | null)?.trim() ?? ''
+  if (!rawJson) throw new Error('Foundry JSON is required')
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(rawJson)
+  } catch {
+    throw new Error('Foundry JSON is invalid')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Foundry JSON must be an object export')
+  }
+
+  const foundry = parsed as Record<string, unknown>
+  const system = (foundry.system && typeof foundry.system === 'object' ? foundry.system : {}) as Record<string, unknown>
+  const stats = (system.stats && typeof system.stats === 'object' ? system.stats : {}) as Record<string, unknown>
+
+  const getStatBase = (key: string): number | null => {
+    const stat = stats[key]
+    if (!stat || typeof stat !== 'object') return null
+    return toNullableInt((stat as Record<string, unknown>).base)
+  }
+
+  const health = (system.health && typeof system.health === 'object' ? system.health : {}) as Record<string, unknown>
+  const sanity = (system.sanity && typeof system.sanity === 'object' ? system.sanity : {}) as Record<string, unknown>
+  const power = (system.power && typeof system.power === 'object' ? system.power : {}) as Record<string, unknown>
+
+  const importedSheetData: Prisma.CharacterSheetUncheckedUpdateInput = {}
+  const setImportedNumber = (key: keyof Prisma.CharacterSheetUncheckedUpdateInput, value: number | null) => {
+    if (value !== null) importedSheetData[key] = value
+  }
+
+  setImportedNumber('str', getStatBase('str'))
+  setImportedNumber('con', getStatBase('con'))
+  setImportedNumber('siz', getStatBase('siz'))
+  setImportedNumber('dex', getStatBase('dex'))
+  setImportedNumber('intelligence', getStatBase('int'))
+  setImportedNumber('pow', getStatBase('pow'))
+  setImportedNumber('cha', getStatBase('cha'))
+  setImportedNumber('edu', getStatBase('edu'))
+  setImportedNumber('currentHp', toNullableInt(health.value))
+  setImportedNumber('maxHp', toNullableInt(health.max))
+  setImportedNumber('currentSanity', toNullableInt(sanity.value))
+  setImportedNumber('maxSanity', toNullableInt(sanity.max))
+  setImportedNumber('currentMp', toNullableInt(power.value))
+  setImportedNumber('maxMp', toNullableInt(power.max))
+  setImportedNumber('luck', getFoundryLuck(system))
+
+  const existingSheet = await prisma.characterSheet.findUnique({ where: { characterId } })
+  const sheet = existingSheet
+    ? (Object.keys(importedSheetData).length > 0
+      ? await prisma.characterSheet.update({
+        where: { characterId },
+        data: importedSheetData,
+      })
+      : existingSheet)
+    : await prisma.characterSheet.create({
+      data: {
+        characterId,
+        ...importedSheetData,
+      },
+    })
+
+  const items = Array.isArray(foundry.items) ? foundry.items : []
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue
+    const typedItem = item as Record<string, unknown>
+    if (typedItem.type !== 'skill') continue
+
+    const skillName = typeof typedItem.name === 'string' ? typedItem.name.trim() : ''
+    if (!skillName) continue
+
+    const skillSystem = (typedItem.system && typeof typedItem.system === 'object'
+      ? typedItem.system
+      : {}) as Record<string, unknown>
+
+    const skill = await prisma.skill.upsert({
+      where: { name: skillName },
+      update: {},
+      create: {
+        name: skillName,
+        category: normalizeFoundrySkillCategory(skillSystem.category),
+        baseValue: toNullableInt(skillSystem.base) ?? 0,
+        description: typeof skillSystem.description === 'string' && skillSystem.description.trim()
+          ? skillSystem.description.trim()
+          : null,
+        sortOrder: toNullableInt(typedItem.sort) ?? 0,
+      },
+      select: { id: true },
+    })
+
+    const importedValue = getFoundrySkillValue(skillSystem)
+    if (importedValue === null) continue
+
+    await prisma.characterSkillValue.upsert({
+      where: { sheetId_skillId: { sheetId: sheet.id, skillId: skill.id } },
+      update: { value: importedValue },
+      create: { sheetId: sheet.id, skillId: skill.id, value: importedValue },
+    })
   }
 
   revalidatePath(`/characters/${characterId}`)

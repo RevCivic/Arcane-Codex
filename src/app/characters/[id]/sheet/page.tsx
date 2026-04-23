@@ -6,7 +6,7 @@ import { normalizeEmail } from '@/lib/normalizeEmail'
 import { AccessRole } from '@/generated/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { updateCharacterSheet } from '@/app/actions'
+import { importFoundryCharacterSheet, updateCharacterSheet } from '@/app/actions'
 import { DiceConsole } from '@/components/DiceConsole'
 import type { StatEntry, SkillEntry } from '@/components/DiceConsole'
 
@@ -117,6 +117,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
 
   const sheet = character.sheet
   const action = updateCharacterSheet.bind(null, characterId)
+  const importAction = importFoundryCharacterSheet.bind(null, characterId)
 
   // Build a fast lookup: skillId → character's custom value
   const skillValueMap = new Map<number, number>(
@@ -213,6 +214,31 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
           </div>
         </div>
       </div>
+
+      <section className="card-arcane rounded-lg p-6 mb-8" style={{ fontFamily: 'Georgia, serif' }}>
+        <h2 className="text-sm font-semibold uppercase tracking-widest mb-4" style={sectionHead}>
+          ✦ Import FoundryVTT JSON
+        </h2>
+        <p className="text-xs mb-4" style={{ color: '#6b7280' }}>
+          Paste a FoundryVTT actor export JSON to import stats and skills. Missing skills are created automatically.
+        </p>
+        <form action={importAction} className="space-y-3">
+          <textarea
+            name="foundryJson"
+            rows={7}
+            required
+            className="arcane-input"
+            placeholder='{"name":"Character Name","system":{...},"items":[...]}'
+          />
+          <button
+            type="submit"
+            className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
+            style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
+          >
+            ⬇ Import JSON
+          </button>
+        </form>
+      </section>
 
       <form action={action} className="space-y-8">
 
