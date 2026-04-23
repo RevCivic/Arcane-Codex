@@ -88,7 +88,7 @@ function getFoundryLuck(system: Record<string, unknown>): number | null {
     return null
   }
 
-  return parseLuckText(system.welath) ?? parseLuckText(system.wealth) ?? parseLuckText(system.religion)
+  return parseLuckText(system.wealth) ?? parseLuckText(system['welath']) ?? parseLuckText(system.religion)
 }
 
 function getFoundrySkillValue(system: Record<string, unknown>): number | null {
@@ -932,7 +932,7 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
   try {
     parsed = JSON.parse(rawJson)
   } catch (error) {
-    const detail = error instanceof Error ? ` ${error.message}` : ''
+    const detail = error instanceof Error ? ` Details: ${error.message}` : ''
     throw new Error(`Invalid JSON format. Please paste a complete FoundryVTT actor export.${detail}`)
   }
 
