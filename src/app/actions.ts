@@ -1,7 +1,7 @@
 'use server'
 
 import { auth } from '@/auth'
-import { AccessRole } from '@/generated/prisma'
+import { AccessRole, Prisma } from '@/generated/prisma'
 import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
@@ -37,13 +37,19 @@ function getNullableString(value: string) {
   return value || null
 }
 
-const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
+const IMAGE_MIME_TO_EXTENSION: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/avif': '.avif',
+}
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
 
 function getReferenceLinksFromForm(formData: FormData) {
   const raw = (formData.get('referenceLinks') as string | null)?.trim() || ''
   const parsed = parseReferenceLinksText(raw)
-  return parsed.length > 0 ? parsed : null
+  return parsed.length > 0 ? parsed : Prisma.JsonNull
 }
 
 async function resolveImageUrlFromForm(formData: FormData, existingImageUrl?: string | null) {
@@ -54,11 +60,11 @@ async function resolveImageUrlFromForm(formData: FormData, existingImageUrl?: st
     if (maybeFile.size > MAX_IMAGE_UPLOAD_BYTES) {
       throw new Error('Image upload must be 5 MB or less')
     }
-    if (!ALLOWED_IMAGE_MIME_TYPES.has(maybeFile.type)) {
+    const extension = IMAGE_MIME_TO_EXTENSION[maybeFile.type]
+    if (!extension) {
       throw new Error('Unsupported image format')
     }
 
-    const extension = path.extname(maybeFile.name).toLowerCase() || '.jpg'
     const fileName = `${randomUUID()}${extension}`
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
     const destinationPath = path.join(uploadsDir, fileName)
@@ -69,7 +75,18 @@ async function resolveImageUrlFromForm(formData: FormData, existingImageUrl?: st
     return `/uploads/${fileName}`
   }
 
-  if (directImageUrl) return directImageUrl
+  if (directImageUrl) {
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(directImageUrl)
+    } catch {
+      throw new Error('Image URL must be a valid URL')
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      throw new Error('Image URL must use http or https')
+    }
+    return parsedUrl.toString()
+  }
   return existingImageUrl ?? null
 }
 
