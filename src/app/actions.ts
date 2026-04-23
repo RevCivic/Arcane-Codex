@@ -953,8 +953,24 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
   const sanity = (system.sanity && typeof system.sanity === 'object' ? system.sanity : {}) as Record<string, unknown>
   const power = (system.power && typeof system.power === 'object' ? system.power : {}) as Record<string, unknown>
 
-  const importedSheetData: Prisma.CharacterSheetUncheckedUpdateInput = {}
-  const setImportedNumber = (key: keyof Prisma.CharacterSheetUncheckedUpdateInput, value: number | null) => {
+  const importedSheetData: {
+    str?: number
+    con?: number
+    siz?: number
+    dex?: number
+    intelligence?: number
+    pow?: number
+    cha?: number
+    edu?: number
+    currentHp?: number
+    maxHp?: number
+    currentSanity?: number
+    maxSanity?: number
+    currentMp?: number
+    maxMp?: number
+    luck?: number
+  } = {}
+  const setImportedNumber = (key: keyof typeof importedSheetData, value: number | null) => {
     if (value !== null) importedSheetData[key] = value
   }
 
