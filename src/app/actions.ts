@@ -1171,7 +1171,7 @@ export async function saveRoll(
         data: { characterId, luck: luckAwarded },
         select: { luck: true },
       })
-      return { ...createdRoll, luckAwarded, currentLuck: createdSheet.luck ?? luckAwarded }
+      return { ...createdRoll, luckAwarded, currentLuck: createdSheet.luck }
     }
 
     const updatedSheet = await tx.characterSheet.update({
