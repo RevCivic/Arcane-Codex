@@ -271,10 +271,9 @@ export async function createCharactersBulk(formData: FormData) {
 
   const rows = names
     .map((name, i) => {
-      const trimmedName = name.trim()
-      if (!trimmedName) return null
+      if (!name) return null
       return {
-        name: trimmedName,
+        name,
         firstName: getNullableString(firstNames[i] ?? ''),
         lastName: getNullableString(lastNames[i] ?? ''),
         role: getNullableString(roles[i] ?? ''),
@@ -354,10 +353,9 @@ export async function createPlacesBulk(formData: FormData) {
 
   const rows = names
     .map((name, i) => {
-      const trimmedName = name.trim()
-      if (!trimmedName) return null
+      if (!name) return null
       return {
-        name: trimmedName,
+        name,
         type: getNullableString(types[i] ?? ''),
         region: getNullableString(regions[i] ?? ''),
         description: getNullableString(descriptions[i] ?? ''),
@@ -425,15 +423,14 @@ export async function createInventoryItemsBulk(formData: FormData) {
 
   const rows = names
     .map((name, i) => {
-      const trimmedName = name.trim()
-      if (!trimmedName) return null
+      if (!name) return null
 
       const carrierRaw = carrierIds[i] ?? ''
       const parsedCarrier = carrierRaw ? parseInt(carrierRaw, 10) : NaN
       const carrierId = isNaN(parsedCarrier) ? null : parsedCarrier
 
       return {
-        name: trimmedName,
+        name,
         category: getNullableString(categories[i] ?? ''),
         location: getNullableString(locations[i] ?? ''),
         effect: getNullableString(effects[i] ?? ''),
@@ -512,10 +509,9 @@ export async function createEventsBulk(formData: FormData) {
 
   const rows = names
     .map((name, i) => {
-      const trimmedName = name.trim()
-      if (!trimmedName) return null
+      if (!name) return null
       return {
-        name: trimmedName,
+        name,
         date: getNullableString(dates[i] ?? ''),
         significance: getNullableString(significances[i] ?? ''),
         outcome: getNullableString(outcomes[i] ?? ''),
@@ -588,13 +584,12 @@ export async function createPowersBulk(formData: FormData) {
 
   const rows = names
     .map((name, i) => {
-      const trimmedName = name.trim()
       const personRaw = personIds[i] ?? ''
       const parsedPersonId = parseInt(personRaw, 10)
-      if (!trimmedName || isNaN(parsedPersonId)) return null
+      if (!name || isNaN(parsedPersonId)) return null
 
       return {
-        name: trimmedName,
+        name,
         personId: parsedPersonId,
         description: getNullableString(descriptions[i] ?? ''),
         effect: getNullableString(effects[i] ?? ''),

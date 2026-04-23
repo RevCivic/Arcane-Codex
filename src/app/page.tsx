@@ -8,6 +8,7 @@ const sections = [
     href: '/characters',
     label: 'Characters',
     newLabel: 'Character',
+    bulkLabel: 'Characters',
     icon: '👤',
     desc: 'Agents, suspects, and persons of interest',
     color: '#8b5cf6',
@@ -16,6 +17,7 @@ const sections = [
     href: '/places',
     label: 'Places',
     newLabel: 'Place',
+    bulkLabel: 'Places',
     icon: '🗺️',
     desc: 'Locations under investigation',
     color: '#6366f1',
@@ -24,6 +26,7 @@ const sections = [
     href: '/inventory',
     label: 'Inventory',
     newLabel: 'Item',
+    bulkLabel: 'Items',
     icon: '🎒',
     desc: 'Artifacts, equipment, and evidence',
     color: '#d97706',
@@ -32,6 +35,7 @@ const sections = [
     href: '/events',
     label: 'Events',
     newLabel: 'Event',
+    bulkLabel: 'Events',
     icon: '📜',
     desc: 'Incidents and case milestones',
     color: '#7c3aed',
@@ -40,6 +44,7 @@ const sections = [
     href: '/powers',
     label: 'Powers',
     newLabel: 'Power',
+    bulkLabel: 'Powers',
     icon: '⚡',
     desc: 'Supernatural abilities and phenomena',
     color: '#f59e0b',
@@ -144,7 +149,7 @@ export default async function Home() {
                 }}
               >
                 <span>≡</span>
-                <span>Bulk {section.newLabel}s</span>
+                <span>Bulk {section.bulkLabel}</span>
               </Link>
             </div>
           ))}
