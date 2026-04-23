@@ -121,19 +121,32 @@ export default async function Home() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {sections.map((section) => (
-            <Link
-              key={section.href}
-              href={`${section.href}/new`}
-              className="flex items-center gap-2 px-3 py-2 rounded border text-sm transition-all duration-200 hover:border-purple-500 hover:text-purple-300"
-              style={{
-                borderColor: section.href === '/inventory' ? '#7f1d1d' : '#374151',
-                color: section.href === '/inventory' ? '#f87171' : '#9ca3af',
-                fontFamily: 'Georgia, serif',
-              }}
-            >
-              <span>+</span>
-              <span>New {section.newLabel}</span>
-            </Link>
+            <div key={section.href} className="space-y-2">
+              <Link
+                href={`${section.href}/new`}
+                className="flex items-center gap-2 px-3 py-2 rounded border text-sm transition-all duration-200 hover:border-purple-500 hover:text-purple-300"
+                style={{
+                  borderColor: section.href === '/inventory' ? '#7f1d1d' : '#374151',
+                  color: section.href === '/inventory' ? '#f87171' : '#9ca3af',
+                  fontFamily: 'Georgia, serif',
+                }}
+              >
+                <span>+</span>
+                <span>New {section.newLabel}</span>
+              </Link>
+              <Link
+                href={`${section.href}/bulk`}
+                className="flex items-center gap-2 px-3 py-2 rounded border text-sm transition-all duration-200 hover:border-purple-500 hover:text-purple-300"
+                style={{
+                  borderColor: '#3b1f6e',
+                  color: '#a78bfa',
+                  fontFamily: 'Georgia, serif',
+                }}
+              >
+                <span>≡</span>
+                <span>Bulk {section.newLabel}s</span>
+              </Link>
+            </div>
           ))}
         </div>
       </div>
@@ -161,4 +174,3 @@ export default async function Home() {
     </div>
   )
 }
-

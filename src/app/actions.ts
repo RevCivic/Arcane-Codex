@@ -25,6 +25,14 @@ async function requireAdminUser() {
   return user
 }
 
+function getFormStrings(formData: FormData, key: string) {
+  return formData.getAll(key).map((value) => String(value).trim())
+}
+
+function getNullableString(value: string) {
+  return value || null
+}
+
 /** Splits a raw CSV string into a 2-D array of cell values. */
 function parseCSV(text: string): string[][] {
   const rows: string[][] = []
@@ -252,6 +260,37 @@ export async function createCharacter(formData: FormData) {
   redirect('/characters')
 }
 
+export async function createCharactersBulk(formData: FormData) {
+  await requireAuthorizedUser()
+
+  const names = getFormStrings(formData, 'name')
+  const firstNames = getFormStrings(formData, 'firstName')
+  const lastNames = getFormStrings(formData, 'lastName')
+  const roles = getFormStrings(formData, 'role')
+  const statuses = getFormStrings(formData, 'status')
+
+  const rows = names
+    .map((name, i) => {
+      const trimmedName = name.trim()
+      if (!trimmedName) return null
+      return {
+        name: trimmedName,
+        firstName: getNullableString(firstNames[i] ?? ''),
+        lastName: getNullableString(lastNames[i] ?? ''),
+        role: getNullableString(roles[i] ?? ''),
+        status: getNullableString(statuses[i] ?? '') || 'Active',
+      }
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+
+  if (rows.length > 0) {
+    await prisma.character.createMany({ data: rows })
+    revalidatePath('/characters')
+  }
+
+  redirect('/characters')
+}
+
 export async function updateCharacter(id: number, formData: FormData) {
   await requireAuthorizedUser()
 
@@ -305,6 +344,35 @@ export async function createPlace(formData: FormData) {
   redirect('/places')
 }
 
+export async function createPlacesBulk(formData: FormData) {
+  await requireAuthorizedUser()
+
+  const names = getFormStrings(formData, 'name')
+  const types = getFormStrings(formData, 'type')
+  const regions = getFormStrings(formData, 'region')
+  const descriptions = getFormStrings(formData, 'description')
+
+  const rows = names
+    .map((name, i) => {
+      const trimmedName = name.trim()
+      if (!trimmedName) return null
+      return {
+        name: trimmedName,
+        type: getNullableString(types[i] ?? ''),
+        region: getNullableString(regions[i] ?? ''),
+        description: getNullableString(descriptions[i] ?? ''),
+      }
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+
+  if (rows.length > 0) {
+    await prisma.place.createMany({ data: rows })
+    revalidatePath('/places')
+  }
+
+  redirect('/places')
+}
+
 export async function updatePlace(id: number, formData: FormData) {
   await requireAuthorizedUser()
 
@@ -343,6 +411,42 @@ export async function createInventoryItem(formData: FormData) {
 
   await prisma.inventoryItem.create({ data: { name, description, effect, location, category, carrierId } })
   revalidatePath('/inventory')
+  redirect('/inventory')
+}
+
+export async function createInventoryItemsBulk(formData: FormData) {
+  await requireAuthorizedUser()
+
+  const names = getFormStrings(formData, 'name')
+  const categories = getFormStrings(formData, 'category')
+  const locations = getFormStrings(formData, 'location')
+  const effects = getFormStrings(formData, 'effect')
+  const carrierIds = getFormStrings(formData, 'carrierId')
+
+  const rows = names
+    .map((name, i) => {
+      const trimmedName = name.trim()
+      if (!trimmedName) return null
+
+      const carrierRaw = carrierIds[i] ?? ''
+      const parsedCarrier = carrierRaw ? parseInt(carrierRaw, 10) : NaN
+      const carrierId = isNaN(parsedCarrier) ? null : parsedCarrier
+
+      return {
+        name: trimmedName,
+        category: getNullableString(categories[i] ?? ''),
+        location: getNullableString(locations[i] ?? ''),
+        effect: getNullableString(effects[i] ?? ''),
+        carrierId,
+      }
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+
+  if (rows.length > 0) {
+    await prisma.inventoryItem.createMany({ data: rows })
+    revalidatePath('/inventory')
+  }
+
   redirect('/inventory')
 }
 
@@ -398,6 +502,35 @@ export async function createEvent(formData: FormData) {
   redirect('/events')
 }
 
+export async function createEventsBulk(formData: FormData) {
+  await requireAuthorizedUser()
+
+  const names = getFormStrings(formData, 'name')
+  const dates = getFormStrings(formData, 'date')
+  const significances = getFormStrings(formData, 'significance')
+  const outcomes = getFormStrings(formData, 'outcome')
+
+  const rows = names
+    .map((name, i) => {
+      const trimmedName = name.trim()
+      if (!trimmedName) return null
+      return {
+        name: trimmedName,
+        date: getNullableString(dates[i] ?? ''),
+        significance: getNullableString(significances[i] ?? ''),
+        outcome: getNullableString(outcomes[i] ?? ''),
+      }
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+
+  if (rows.length > 0) {
+    await prisma.event.createMany({ data: rows })
+    revalidatePath('/events')
+  }
+
+  redirect('/events')
+}
+
 export async function updateEvent(id: number, formData: FormData) {
   await requireAuthorizedUser()
 
@@ -442,6 +575,38 @@ export async function createPower(formData: FormData) {
 
   await prisma.power.create({ data: { name, description, effect, personId } })
   revalidatePath('/powers')
+  redirect('/powers')
+}
+
+export async function createPowersBulk(formData: FormData) {
+  await requireAuthorizedUser()
+
+  const names = getFormStrings(formData, 'name')
+  const personIds = getFormStrings(formData, 'personId')
+  const descriptions = getFormStrings(formData, 'description')
+  const effects = getFormStrings(formData, 'effect')
+
+  const rows = names
+    .map((name, i) => {
+      const trimmedName = name.trim()
+      const personRaw = personIds[i] ?? ''
+      const parsedPersonId = parseInt(personRaw, 10)
+      if (!trimmedName || isNaN(parsedPersonId)) return null
+
+      return {
+        name: trimmedName,
+        personId: parsedPersonId,
+        description: getNullableString(descriptions[i] ?? ''),
+        effect: getNullableString(effects[i] ?? ''),
+      }
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+
+  if (rows.length > 0) {
+    await prisma.power.createMany({ data: rows })
+    revalidatePath('/powers')
+  }
+
   redirect('/powers')
 }
 

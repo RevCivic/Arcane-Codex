@@ -75,6 +75,9 @@ export default async function PowersPage({
           <Link href="/powers/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90 whitespace-nowrap" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
             + New Power
           </Link>
+          <Link href="/powers/bulk" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:text-purple-300 whitespace-nowrap" style={{ border: '1px solid #3b1f6e', color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
+            Bulk Entry
+          </Link>
         </div>
       </div>
 
