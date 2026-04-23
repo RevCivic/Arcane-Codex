@@ -1073,18 +1073,19 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
     })
     const skillIdByName = new Map(allImportedSkills.map((s) => [s.name, s.id]))
 
-    const characterSkillValueWrites = importedSkills
-      .filter((skill) => skill.importedValue !== null)
-      .map((skill) => {
-        const skillId = skillIdByName.get(skill.name)
-        if (!skillId) return null
-        return prisma.characterSkillValue.upsert({
+    const characterSkillValueWrites: ReturnType<typeof prisma.characterSkillValue.upsert>[] = []
+    for (const skill of importedSkills) {
+      if (skill.importedValue === null) continue
+      const skillId = skillIdByName.get(skill.name)
+      if (!skillId) continue
+      characterSkillValueWrites.push(
+        prisma.characterSkillValue.upsert({
           where: { sheetId_skillId: { sheetId: sheet.id, skillId } },
-          update: { value: skill.importedValue as number },
-          create: { sheetId: sheet.id, skillId, value: skill.importedValue as number },
+          update: { value: skill.importedValue },
+          create: { sheetId: sheet.id, skillId, value: skill.importedValue },
         })
-      })
-      .filter((write): write is ReturnType<typeof prisma.characterSkillValue.upsert> => write !== null)
+      )
+    }
 
     if (characterSkillValueWrites.length > 0) {
       await prisma.$transaction(characterSkillValueWrites)
