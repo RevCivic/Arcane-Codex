@@ -1293,7 +1293,7 @@ export async function rollSkillImprovement(
 
   const currentValue = existing?.value ?? skillDef.baseValue
 
-  // Roll 1d4-1 (range 0–3) + modifier; minimum gain is 0
+  // Roll 1d4 (range 1–4), subtract 1 to get effective range 0–3, then add modifier; minimum gain is 0
   const die = Math.floor(Math.random() * 4) + 1
   const gain = Math.max(0, die - 1 + modifier)
   const newValue = currentValue + gain
