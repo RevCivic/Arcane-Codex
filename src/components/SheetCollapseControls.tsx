@@ -12,7 +12,7 @@ export function SheetCollapseControls() {
         className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
         style={{ color: '#9ca3af', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}
       >
-        ↕ Expand All
+        ▾ Expand All
       </button>
       <button
         type="button"
@@ -20,7 +20,7 @@ export function SheetCollapseControls() {
         className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
         style={{ color: '#9ca3af', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}
       >
-        ↕ Collapse All
+        ▸ Collapse All
       </button>
     </div>
   )
