@@ -22,6 +22,7 @@ export interface SkillEntry {
   name: string
   category: string | null
   effectiveValue: number
+  markedForImprovement: boolean
 }
 
 export interface HistoryEntry {
@@ -36,6 +37,8 @@ export interface HistoryEntry {
   dice: string | null
   modifier: number | null
   luckSpent: number | null
+  /** Skill ID for skill rolls, null otherwise */
+  skillId: number | null
   createdAt: string
 }
 
@@ -238,6 +241,11 @@ export function DiceConsole({
   const [clientLuck, setClientLuck]   = useState<number | null>(initialLuck)
   const [pendingLuck, setPendingLuck] = useState<{ rollHistoryId: number; cost: number } | null>(null)
 
+  // Improvement marks (optimistic): set of skillIds marked during this session
+  const [markedSkillIds, setMarkedSkillIds] = useState<Set<number>>(
+    () => new Set(skills.filter((s) => s.markedForImprovement).map((s) => s.id))
+  )
+
   // History: initialised from server, new rolls prepended
   const [history, setHistory] = useState<HistoryEntry[]>(initialHistory)
   const tempIdRef = useRef(-1)
@@ -268,6 +276,7 @@ export function DiceConsole({
           resultType: entry.resultType,
           dice:       parseDice(entry.dice),
           modifier:   entry.modifier,
+          skillId:    entry.skillId,
         })
         setHistory((prev) =>
           prev.map((r) =>
@@ -280,6 +289,15 @@ export function DiceConsole({
         }
 
         const resolvedResultType = (saved.resultType ?? entry.resultType) as ResultType | null
+
+        // Optimistically mark skill for improvement on FAILURE or FUMBLE
+        if (
+          (resolvedResultType === 'FAILURE' || resolvedResultType === 'FUMBLE') &&
+          entry.skillId != null
+        ) {
+          setMarkedSkillIds((prev) => new Set([...prev, entry.skillId!]))
+        }
+
         if (resolvedResultType === 'FAILURE' && effectiveTarget !== null) {
           const cost = rawRoll - effectiveTarget
           if (canAffordLuck(clientLuck, cost)) {
@@ -302,7 +320,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'ability', label: `${stat.label} Check`, roll, target, difficulty: abilityTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null },
       roll, target
     )
   }
@@ -314,7 +332,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'skill', label: skill.name, roll, target, difficulty: skillTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: skill.id },
       roll, target
     )
   }
@@ -327,7 +345,7 @@ export function DiceConsole({
     }`
     dispatchRoll(
       { rollType: 'free', label, roll: total, target: null, difficulty: null,
-        resultType: null, dice: JSON.stringify(dice), modifier, luckSpent: null },
+        resultType: null, dice: JSON.stringify(dice), modifier, luckSpent: null, skillId: null },
       total, null
     )
   }
@@ -485,12 +503,25 @@ export function DiceConsole({
                         onChange={(e) => setSelectedSkillId(Number(e.target.value))}
                         className="arcane-input"
                       >
-                        {skills.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({s.effectiveValue}%){s.category ? ` — ${s.category}` : ''}
-                          </option>
-                        ))}
+                        {skills.map((s) => {
+                          const isMarked = markedSkillIds.has(s.id)
+                          return (
+                            <option key={s.id} value={s.id}>
+                              {isMarked ? '📌 ' : ''}{s.name} ({s.effectiveValue}%){s.category ? ` — ${s.category}` : ''}
+                            </option>
+                          )
+                        })}
                       </select>
+                    )}
+                    {/* Improvement mark badge for the selected skill */}
+                    {markedSkillIds.has(selectedSkillId) && (
+                      <div
+                        className="mt-2 text-xs px-2 py-1 rounded flex items-center gap-1"
+                        style={{ backgroundColor: '#1c1407', border: '1px solid #d9770666', color: '#d97706' }}
+                      >
+                        <span>📌</span>
+                        <span>Marked for improvement — roll after the mission ends</span>
+                      </div>
                     )}
                   </div>
 

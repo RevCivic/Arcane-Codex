@@ -137,18 +137,22 @@ model Skill {
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   characterValues CharacterSkillValue[]
+  rollHistory     RollHistory[]
 }
 
 /// A character's specific value for a skill.
 model CharacterSkillValue {
-  id        Int            @id @default(autoincrement())
-  sheetId   Int
-  sheet     CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  skillId   Int
-  skill     Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  value     Int
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id                   Int            @id @default(autoincrement())
+  sheetId              Int
+  sheet                CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  skillId              Int
+  skill                Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  value                Int
+  /// Flagged true when a FAILURE or FUMBLE is rolled on this skill during a session.
+  /// Cleared after the post-mission improvement roll is executed.
+  markedForImprovement Boolean        @default(false)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   @@unique([sheetId, skillId])
 }
@@ -230,5 +234,8 @@ model RollHistory {
   modifier    Int?
   /// Luck points spent to convert this roll to a SUCCESS (null if none)
   luckSpent   Int?
+  /// Skill linked to this roll (skill rolls only); used for improvement tracking
+  skillId     Int?
+  skill       Skill?    @relation(fields: [skillId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
 }

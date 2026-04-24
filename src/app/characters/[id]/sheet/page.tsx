@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { importFoundryCharacterSheet, updateCharacterSheet } from '@/app/actions'
 import { DiceConsole } from '@/components/DiceConsole'
 import type { StatEntry, SkillEntry } from '@/components/DiceConsole'
+import { SkillImprovementPanel } from '@/components/SkillImprovementPanel'
+import type { MarkedSkill } from '@/components/SkillImprovementPanel'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { SheetCollapseControls } from '@/components/SheetCollapseControls'
 
@@ -153,7 +155,22 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     name: skill.name,
     category: skill.category,
     effectiveValue: skillValueMap.get(skill.id) ?? skill.baseValue,
+    markedForImprovement:
+      sheet?.skillValues.find((sv) => sv.skillId === skill.id)?.markedForImprovement ?? false,
   }))
+
+  // Skills currently marked for post-mission improvement
+  const markedSkills: MarkedSkill[] = allSkills
+    .filter((skill) => {
+      const sv = sheet?.skillValues.find((sv) => sv.skillId === skill.id)
+      return sv?.markedForImprovement === true
+    })
+    .map((skill) => ({
+      id: skill.id,
+      name: skill.name,
+      category: skill.category,
+      currentValue: skillValueMap.get(skill.id) ?? skill.baseValue,
+    }))
 
   // Serialise DB roll history for client component (Date → ISO string).
   // This mapping must stay in sync with the HistoryEntry interface in DiceConsole.tsx.
@@ -168,6 +185,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     dice:       r.dice,
     modifier:   r.modifier,
     luckSpent:  r.luckSpent,
+    skillId:    r.skillId,
     createdAt:  r.createdAt.toISOString(),
   }))
 
@@ -405,6 +423,38 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
           </Link>
         </div>
       </form>
+
+      {/* ── Skill Improvement ────────────────────────────────────────────── */}
+      <CollapsibleSection
+        storageKey="skill-improvement"
+        defaultOpen={markedSkills.length > 0}
+        className="mt-10"
+        title={
+          <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+            📌 Skill Improvement
+            {markedSkills.length > 0 && (
+              <span
+                className="ml-2 text-xs px-2 py-0.5 rounded-full font-semibold align-middle"
+                style={{ backgroundColor: '#1c1407', color: '#fbbf24', border: '1px solid #d9770666' }}
+              >
+                {markedSkills.length} pending
+              </span>
+            )}
+          </h2>
+        }
+      >
+        {markedSkills.length === 0 ? (
+          <p className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
+            No skills are marked for improvement. Skills are marked automatically when you roll a
+            Failure or Fumble on a skill check.
+          </p>
+        ) : (
+          <SkillImprovementPanel
+            characterId={characterId}
+            initialMarkedSkills={markedSkills}
+          />
+        )}
+      </CollapsibleSection>
 
       {/* ── Dice Console ─────────────────────────────────────────────────── */}
       <CollapsibleSection
