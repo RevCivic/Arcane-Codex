@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { importFoundryCharacterSheet, updateCharacterSheet } from '@/app/actions'
 import { DiceConsole } from '@/components/DiceConsole'
 import type { StatEntry, SkillEntry } from '@/components/DiceConsole'
+import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { SheetCollapseControls } from '@/components/SheetCollapseControls'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -213,12 +215,20 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             </span>
           </div>
         </div>
+        <SheetCollapseControls />
       </div>
 
-      <section className="card-arcane rounded-lg p-6 mb-8" style={{ fontFamily: 'Georgia, serif' }}>
-        <h2 className="text-sm font-semibold uppercase tracking-widest mb-4" style={sectionHead}>
-          ✦ Import FoundryVTT JSON
-        </h2>
+      <CollapsibleSection
+        storageKey="import-foundry"
+        defaultOpen={false}
+        className="card-arcane rounded-lg p-6 mb-8"
+        style={{ fontFamily: 'Georgia, serif' }}
+        title={
+          <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+            ✦ Import FoundryVTT JSON
+          </h2>
+        }
+      >
         <p className="text-xs mb-4" style={{ color: '#6b7280' }}>
           Paste a FoundryVTT actor export JSON to import stats and skills. Missing skills are created automatically.
         </p>
@@ -238,15 +248,21 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             ⬇ Import JSON
           </button>
         </form>
-      </section>
+      </CollapsibleSection>
 
       <form action={action} className="space-y-8">
 
         {/* ── BRP Primary Characteristics ─────────────────────────────────── */}
-        <section className="card-arcane rounded-lg p-6" style={{ fontFamily: 'Georgia, serif' }}>
-          <h2 className="text-sm font-semibold uppercase tracking-widest mb-5" style={sectionHead}>
-            ✦ Primary Characteristics
-          </h2>
+        <CollapsibleSection
+          storageKey="primary-characteristics"
+          className="card-arcane rounded-lg p-6"
+          style={{ fontFamily: 'Georgia, serif' }}
+          title={
+            <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+              ✦ Primary Characteristics
+            </h2>
+          }
+        >
           <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
             <StatBox label="STR" name="str"          value={sheet?.str} />
             <StatBox label="CON" name="con"          value={sheet?.con} />
@@ -258,13 +274,19 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             <StatBox label="APP" name="app"          value={sheet?.app} />
             <StatBox label="EDU" name="edu"          value={sheet?.edu} />
           </div>
-        </section>
+        </CollapsibleSection>
 
         {/* ── Derived / Current Values ─────────────────────────────────────── */}
-        <section className="card-arcane rounded-lg p-6" style={{ fontFamily: 'Georgia, serif' }}>
-          <h2 className="text-sm font-semibold uppercase tracking-widest mb-5" style={sectionHead}>
-            ✦ Derived Statistics
-          </h2>
+        <CollapsibleSection
+          storageKey="derived-statistics"
+          className="card-arcane rounded-lg p-6"
+          style={{ fontFamily: 'Georgia, serif' }}
+          title={
+            <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+              ✦ Derived Statistics
+            </h2>
+          }
+        >
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <DerivedBox label="Hit Points" currentName="currentHp" maxName="maxHp"
               current={sheet?.currentHp} max={sheet?.maxHp} accent="#4ade80" />
@@ -283,14 +305,20 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                 className="arcane-input text-center w-full text-base font-bold" style={{ color: '#e2e8f0' }} placeholder="—" />
             </div>
           </div>
-        </section>
+        </CollapsibleSection>
 
         {/* ── Skills ───────────────────────────────────────────────────────── */}
         {allSkills.length > 0 && (
-          <section className="card-arcane rounded-lg p-6" style={{ fontFamily: 'Georgia, serif' }}>
-            <h2 className="text-sm font-semibold uppercase tracking-widest mb-5" style={sectionHead}>
-              ✦ Skills
-            </h2>
+          <CollapsibleSection
+            storageKey="skills"
+            className="card-arcane rounded-lg p-6"
+            style={{ fontFamily: 'Georgia, serif' }}
+            title={
+              <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                ✦ Skills
+              </h2>
+            }
+          >
             <p className="text-xs mb-5" style={{ color: '#6b7280' }}>
               Leave blank to use the skill&apos;s default base value. Enter a value to override.
             </p>
@@ -331,14 +359,20 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                 </div>
               ))}
             </div>
-          </section>
+          </CollapsibleSection>
         )}
 
         {/* ── Wounds & Notes ────────────────────────────────────────────────── */}
-        <section className="card-arcane rounded-lg p-6" style={{ fontFamily: 'Georgia, serif' }}>
-          <h2 className="text-sm font-semibold uppercase tracking-widest mb-5" style={sectionHead}>
-            ✦ Wounds & Notes
-          </h2>
+        <CollapsibleSection
+          storageKey="wounds-notes"
+          className="card-arcane rounded-lg p-6"
+          style={{ fontFamily: 'Georgia, serif' }}
+          title={
+            <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+              ✦ Wounds & Notes
+            </h2>
+          }
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Wounds / Injuries</label>
@@ -351,7 +385,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                 placeholder="Clues, reminders, or session notes..." />
             </div>
           </div>
-        </section>
+        </CollapsibleSection>
 
         {/* Save button */}
         <div className="flex gap-3 pt-2">
@@ -373,7 +407,15 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
       </form>
 
       {/* ── Dice Console ─────────────────────────────────────────────────── */}
-      <div className="mt-10">
+      <CollapsibleSection
+        storageKey="dice-console"
+        className="mt-10"
+        title={
+          <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+            🎲 Dice Console
+          </h2>
+        }
+      >
         <DiceConsole
           characterId={characterId}
           stats={consoleStats}
@@ -381,14 +423,19 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
           initialLuck={sheet?.luck ?? null}
           initialHistory={initialHistory}
         />
-      </div>
+      </CollapsibleSection>
 
       {/* ── Read-only: Inventory ──────────────────────────────────────────── */}
       {character.inventoryItems.length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-lg font-semibold uppercase tracking-widest mb-4" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-            🎒 Carried Items
-          </h2>
+        <CollapsibleSection
+          storageKey="carried-items"
+          className="mt-10"
+          title={
+            <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+              🎒 Carried Items
+            </h2>
+          }
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {character.inventoryItems.map((item) => (
               <div key={item.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
@@ -403,15 +450,20 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* ── Read-only: Powers ─────────────────────────────────────────────── */}
       {character.powers.length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-lg font-semibold uppercase tracking-widest mb-4" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-            ⚡ Powers
-          </h2>
+        <CollapsibleSection
+          storageKey="powers"
+          className="mt-10"
+          title={
+            <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+              ⚡ Powers
+            </h2>
+          }
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {character.powers.map((power) => (
               <div key={power.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
@@ -421,7 +473,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
     </div>
   )
