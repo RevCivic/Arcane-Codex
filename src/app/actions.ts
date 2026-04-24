@@ -1114,6 +1114,8 @@ export async function importFoundryCharacterSheet(characterId: number, formData:
 /**
  * Persists a single roll to the database.
  * Returns the created record (including its auto-assigned id).
+ * When a skill roll results in FAILURE or FUMBLE, the associated skill is
+ * automatically marked for post-mission improvement.
  * Accessible to the character owner or any admin.
  */
 export async function saveRoll(
@@ -1127,6 +1129,7 @@ export async function saveRoll(
     resultType?: string | null
     dice?: number[] | null
     modifier?: number | null
+    skillId?: number | null
   }
 ) {
   const user = await requireAuthorizedUser()
@@ -1142,6 +1145,11 @@ export async function saveRoll(
   const resultType = d100ResultType ?? data.resultType ?? null
   const luckAwarded = d100ResultType ? getLuckGainForRoll(data.roll, d100ResultType) : 0
 
+  const shouldMarkImprovement =
+    data.rollType === 'skill' &&
+    data.skillId != null &&
+    (resultType === 'FAILURE' || resultType === 'FUMBLE')
+
   return prisma.$transaction(async (tx) => {
     const createdRoll = await tx.rollHistory.create({
       data: {
@@ -1154,8 +1162,34 @@ export async function saveRoll(
         resultType,
         dice: data.dice ? JSON.stringify(data.dice) : null,
         modifier: data.modifier ?? null,
+        skillId: data.skillId ?? null,
       },
     })
+
+    // Mark the skill for improvement when a failure/fumble is rolled
+    if (shouldMarkImprovement) {
+      const sheet = await tx.characterSheet.findUnique({
+        where: { characterId },
+        select: { id: true },
+      })
+      if (sheet) {
+        // Upsert the CharacterSkillValue row so the mark is always set
+        const skill = await tx.skill.findUnique({
+          where: { id: data.skillId! },
+          select: { baseValue: true },
+        })
+        await tx.characterSkillValue.upsert({
+          where: { sheetId_skillId: { sheetId: sheet.id, skillId: data.skillId! } },
+          update: { markedForImprovement: true },
+          create: {
+            sheetId: sheet.id,
+            skillId: data.skillId!,
+            value: skill?.baseValue ?? 0,
+            markedForImprovement: true,
+          },
+        })
+      }
+    }
 
     if (luckAwarded <= 0) {
       return { ...createdRoll, luckAwarded: 0, currentLuck: null }
@@ -1220,6 +1254,80 @@ export async function spendLuckOnRoll(
       data: { luck: currentLuck - luckToSpend },
     }),
   ])
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
+
+// ─── Skill Improvement ────────────────────────────────────────────────────────
+
+/**
+ * Rolls 1d4-1 + modifier for post-mission skill improvement and applies the
+ * result to the character's skill value. Clears the improvement mark regardless
+ * of the roll outcome (even a 0 counts as having attempted improvement).
+ * Accessible to the character owner or any admin.
+ *
+ * Returns the die value, the modifier, the total gain, and the new skill value.
+ */
+export async function rollSkillImprovement(
+  characterId: number,
+  skillId: number,
+  modifier: number
+): Promise<{ die: number; modifier: number; gain: number; newValue: number }> {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
+  if (!sheet) throw new Error('Character sheet not found')
+
+  const skillDef = await prisma.skill.findUnique({ where: { id: skillId } })
+  if (!skillDef) throw new Error('Skill not found')
+
+  const existing = await prisma.characterSkillValue.findUnique({
+    where: { sheetId_skillId: { sheetId: sheet.id, skillId } },
+  })
+
+  const currentValue = existing?.value ?? skillDef.baseValue
+
+  // Roll 1d4-1 (range 0–3) + modifier; minimum gain is 0
+  const die = Math.floor(Math.random() * 4) + 1
+  const gain = Math.max(0, die - 1 + modifier)
+  const newValue = currentValue + gain
+
+  await prisma.characterSkillValue.upsert({
+    where: { sheetId_skillId: { sheetId: sheet.id, skillId } },
+    update: { value: newValue, markedForImprovement: false },
+    create: { sheetId: sheet.id, skillId, value: newValue, markedForImprovement: false },
+  })
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+  return { die, modifier, gain, newValue }
+}
+
+/**
+ * Clears all skill improvement marks for a character (e.g. at end of mission).
+ * Accessible to the character owner or any admin.
+ */
+export async function clearSkillImprovementMarks(characterId: number): Promise<void> {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
+  if (!sheet) return
+
+  await prisma.characterSkillValue.updateMany({
+    where: { sheetId: sheet.id, markedForImprovement: true },
+    data: { markedForImprovement: false },
+  })
 
   revalidatePath(`/characters/${characterId}/sheet`)
 }
