@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
 import { createPower } from '@/app/actions'
+import { AbilitySelector } from '@/components/AbilitySelector'
 import Link from 'next/link'
 
 export default async function NewPowerPage({
@@ -10,7 +11,10 @@ export default async function NewPowerPage({
   searchParams: Promise<{ personId?: string }>
 }) {
   const { personId } = await searchParams
-  const characters = await prisma.character.findMany({ orderBy: { name: 'asc' } })
+  const [characters, skills] = await Promise.all([
+    prisma.character.findMany({ orderBy: { name: 'asc' } }),
+    prisma.skill.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], select: { name: true, category: true } }),
+  ])
 
   return (
     <div className="max-w-2xl">
@@ -43,6 +47,18 @@ export default async function NewPowerPage({
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Effect</label>
           <textarea name="effect" rows={2} className="arcane-input" placeholder="Mechanical or narrative effect in play..." />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Ability</label>
+            <AbilitySelector skills={skills} />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Skill linked to this power, or none if passive</p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Skill %</label>
+            <input name="skillPercentage" type="number" min={0} max={100} className="arcane-input" placeholder="0–100 (blank = passive)" />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Leave blank or 0 if passive / auto-success</p>
+          </div>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>

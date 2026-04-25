@@ -714,6 +714,69 @@ export async function deleteEvent(id: number) {
 
 // ─── Powers ───────────────────────────────────────────────────────────────────
 
+/**
+ * If `ability` is a non-empty string and `skillPercentage` is > 0, find-or-create a
+ * Skill with that name (category "Powers") and upsert a CharacterSkillValue on the
+ * character's sheet (creating a blank sheet if one doesn't exist yet).
+ *
+ * If `ability` is empty or `skillPercentage` is 0 / null, remove the CharacterSkillValue
+ * that was previously keyed to `previousAbility` — but only if the stored value still
+ * matches `previousSkillPercentage` (i.e. the player hasn't manually edited it).
+ */
+async function syncPowerSkill(
+  personId: number,
+  ability: string | null,
+  skillPercentage: number | null,
+  previousAbility?: string | null,
+  previousSkillPercentage?: number | null,
+): Promise<void> {
+  const cleanAbility = ability?.trim() || null
+  const cleanPrev = previousAbility?.trim() || null
+
+  // Remove the old skill entry when the ability name changed or the percentage was cleared,
+  // but only if the character hasn't independently modified the value on their sheet.
+  if (cleanPrev && cleanPrev !== cleanAbility) {
+    const prevSkill = await prisma.skill.findFirst({ where: { name: cleanPrev } })
+    if (prevSkill) {
+      const sheet = await prisma.characterSheet.findUnique({ where: { characterId: personId } })
+      if (sheet) {
+        await prisma.characterSkillValue.deleteMany({
+          where: {
+            sheetId: sheet.id,
+            skillId: prevSkill.id,
+            // Only delete if the value is still the power-derived one.
+            ...(previousSkillPercentage != null ? { value: previousSkillPercentage } : {}),
+          },
+        })
+      }
+    }
+  }
+
+  // Nothing to add if ability is blank or percentage is 0 / null.
+  if (!cleanAbility || !skillPercentage || skillPercentage <= 0) return
+
+  // Find or create the Skill definition.
+  const skill = await prisma.skill.upsert({
+    where: { name: cleanAbility },
+    update: {},
+    create: { name: cleanAbility, category: 'Powers', baseValue: skillPercentage },
+  })
+
+  // Ensure the character has a sheet.
+  const sheet = await prisma.characterSheet.upsert({
+    where: { characterId: personId },
+    update: {},
+    create: { characterId: personId },
+  })
+
+  // Upsert the character's skill value.
+  await prisma.characterSkillValue.upsert({
+    where: { sheetId_skillId: { sheetId: sheet.id, skillId: skill.id } },
+    update: { value: skillPercentage },
+    create: { sheetId: sheet.id, skillId: skill.id, value: skillPercentage },
+  })
+}
+
 export async function createPower(formData: FormData) {
   await requireAuthorizedUser()
 
@@ -721,10 +784,24 @@ export async function createPower(formData: FormData) {
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
   const personId = parseInt(formData.get('personId') as string, 10)
+  const ability = getNullableString((formData.get('ability') as string | null)?.trim() ?? '')
+  const skillPercentage = toNullableInt(formData.get('skillPercentage') as string | null)
   const referenceLinks = getReferenceLinksFromForm(formData)
 
-  await prisma.power.create({ data: { name, description, effect, personId, referenceLinks } })
+  if (ability) {
+    const duplicate = await prisma.power.findFirst({
+      where: { personId, ability: { equals: ability, mode: 'insensitive' } },
+    })
+    if (duplicate) {
+      throw new Error(`This character already has a power with ability "${ability}". Each ability must be unique per character.`)
+    }
+  }
+
+  await prisma.power.create({ data: { name, description, effect, ability, skillPercentage, personId, referenceLinks } })
+  await syncPowerSkill(personId, ability, skillPercentage)
   revalidatePath('/powers')
+  revalidatePath(`/characters/${personId}`)
+  revalidatePath(`/characters/${personId}/sheet`)
   redirect('/powers')
 }
 
@@ -735,6 +812,8 @@ export async function createPowersBulk(formData: FormData) {
   const personIds = getFormStrings(formData, 'personId')
   const descriptions = getFormStrings(formData, 'description')
   const effects = getFormStrings(formData, 'effect')
+  const abilities = getFormStrings(formData, 'ability')
+  const skillPercentages = getFormStrings(formData, 'skillPercentage')
 
   const rows = names
     .map((name, i) => {
@@ -747,13 +826,44 @@ export async function createPowersBulk(formData: FormData) {
         personId: parsedPersonId,
         description: getNullableString(descriptions[i] ?? ''),
         effect: getNullableString(effects[i] ?? ''),
+        ability: getNullableString(abilities[i] ?? ''),
+        skillPercentage: toNullableInt(skillPercentages[i] ?? ''),
       }
     })
     .filter((row): row is NonNullable<typeof row> => row !== null)
 
-  if (rows.length > 0) {
-    await prisma.power.createMany({ data: rows })
-    revalidatePath('/powers')
+  // Validate: no two rows in this batch share the same (personId, ability).
+  const seen = new Set<string>()
+  for (const row of rows) {
+    if (!row.ability) continue
+    const key = `${row.personId}:${row.ability.toLowerCase()}`
+    if (seen.has(key)) {
+      throw new Error(`Duplicate ability "${row.ability}" for the same character in this batch.`)
+    }
+    seen.add(key)
+  }
+
+  // Validate against existing powers.
+  for (const row of rows) {
+    if (!row.ability) continue
+    const duplicate = await prisma.power.findFirst({
+      where: { personId: row.personId, ability: { equals: row.ability, mode: 'insensitive' } },
+    })
+    if (duplicate) {
+      throw new Error(`Character (id ${row.personId}) already has a power with ability "${row.ability}".`)
+    }
+  }
+
+  for (const row of rows) {
+    await prisma.power.create({ data: row })
+    await syncPowerSkill(row.personId, row.ability, row.skillPercentage)
+  }
+
+  revalidatePath('/powers')
+  const uniquePersonIds = [...new Set(rows.map((r) => r.personId))]
+  for (const pid of uniquePersonIds) {
+    revalidatePath(`/characters/${pid}`)
+    revalidatePath(`/characters/${pid}/sheet`)
   }
 
   redirect('/powers')
@@ -766,22 +876,59 @@ export async function updatePower(id: number, formData: FormData) {
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
   const personId = parseInt(formData.get('personId') as string, 10)
+  const ability = getNullableString((formData.get('ability') as string | null)?.trim() ?? '')
+  const skillPercentage = toNullableInt(formData.get('skillPercentage') as string | null)
   const referenceLinks = getReferenceLinksFromForm(formData)
+
+  // Fetch old ability and skill% before overwriting so we can clean up the stale skill entry.
+  const existing = await prisma.power.findUnique({
+    where: { id },
+    select: { ability: true, skillPercentage: true, personId: true },
+  })
+
+  if (ability) {
+    const duplicate = await prisma.power.findFirst({
+      where: {
+        personId,
+        ability: { equals: ability, mode: 'insensitive' },
+        NOT: { id },
+      },
+    })
+    if (duplicate) {
+      throw new Error(`This character already has a power with ability "${ability}". Each ability must be unique per character.`)
+    }
+  }
 
   await prisma.power.update({
     where: { id },
-    data: { name, description, effect, personId, referenceLinks },
+    data: { name, description, effect, ability, skillPercentage, personId, referenceLinks },
   })
+  await syncPowerSkill(personId, ability, skillPercentage, existing?.ability, existing?.skillPercentage)
   revalidatePath('/powers')
   revalidatePath(`/powers/${id}`)
+  revalidatePath(`/characters/${personId}`)
+  revalidatePath(`/characters/${personId}/sheet`)
   redirect(`/powers/${id}`)
 }
 
 export async function deletePower(id: number) {
   await requireAuthorizedUser()
 
+  const power = await prisma.power.findUnique({
+    where: { id },
+    select: { ability: true, skillPercentage: true, personId: true },
+  })
+
   await prisma.power.delete({ where: { id } })
+
+  // Clean up the associated CharacterSkillValue if the power had an ability.
+  if (power?.ability) {
+    await syncPowerSkill(power.personId, null, null, power.ability, power.skillPercentage)
+  }
+
   revalidatePath('/powers')
+  revalidatePath(`/characters/${power?.personId}`)
+  revalidatePath(`/characters/${power?.personId}/sheet`)
   redirect('/powers')
 }
 

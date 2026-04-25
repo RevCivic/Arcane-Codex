@@ -4,13 +4,15 @@ import { prisma } from '@/lib/prisma'
 import { referenceLinksToText } from '@/lib/referenceLinks'
 import { notFound } from 'next/navigation'
 import { updatePower } from '@/app/actions'
+import { AbilitySelector } from '@/components/AbilitySelector'
 import Link from 'next/link'
 
 export default async function EditPowerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [power, characters] = await Promise.all([
+  const [power, characters, skills] = await Promise.all([
     prisma.power.findUnique({ where: { id: parseInt(id) } }),
     prisma.character.findMany({ orderBy: { name: 'asc' } }),
+    prisma.skill.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], select: { name: true, category: true } }),
   ])
   if (!power) notFound()
 
@@ -46,6 +48,18 @@ export default async function EditPowerPage({ params }: { params: Promise<{ id: 
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Effect</label>
           <textarea name="effect" rows={2} defaultValue={power.effect ?? ''} className="arcane-input" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Ability</label>
+            <AbilitySelector skills={skills} defaultValue={power.ability} />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Skill linked to this power, or none if passive</p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Skill %</label>
+            <input name="skillPercentage" type="number" min={0} max={100} defaultValue={power.skillPercentage ?? ''} className="arcane-input" placeholder="0–100 (blank = passive)" />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Leave blank or 0 if passive / auto-success</p>
+          </div>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>

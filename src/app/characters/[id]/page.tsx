@@ -304,7 +304,17 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
                   <Link href={`/powers/${power.id}`} className="text-xs" style={{ color: '#8b5cf6' }}>View →</Link>
                 </div>
                 {power.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{power.description}</p>}
-                {power.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>Effect: {power.effect}</p>}
+                {power.effect && <p className="text-xs italic mb-1" style={{ color: '#a78bfa' }}>Effect: {power.effect}</p>}
+                {power.ability && (
+                  <p className="text-xs" style={{ color: '#8b5cf6' }}>
+                    🎲 {power.ability}
+                    {power.skillPercentage ? (
+                      <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{power.skillPercentage}%</span>
+                    ) : (
+                      <span className="ml-1" style={{ color: '#6b7280' }}>(passive)</span>
+                    )}
+                  </p>
+                )}
               </div>
             ))}
           </div>
