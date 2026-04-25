@@ -50,6 +50,21 @@ export default async function PowerDetailPage({ params }: { params: Promise<{ id
               <dd className="text-sm leading-6 p-3 rounded italic" style={{ color: '#f59e0b', backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>{power.effect}</dd>
             </div>
           )}
+          {power.ability && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Ability</dt>
+              <dd className="flex items-center gap-3">
+                <span className="text-sm" style={{ color: '#e2e8f0' }}>{power.ability}</span>
+                {power.skillPercentage ? (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-mono" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
+                    {power.skillPercentage}%
+                  </span>
+                ) : (
+                  <span className="text-xs" style={{ color: '#6b7280' }}>passive / auto-success</span>
+                )}
+              </dd>
+            </div>
+          )}
           {referenceLinks.length > 0 && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Reference Links</dt>

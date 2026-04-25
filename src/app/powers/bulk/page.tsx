@@ -27,6 +27,8 @@ export default async function BulkPowersPage() {
           },
           { name: 'description', label: 'Description', type: 'textarea', placeholder: 'How the power manifests...' },
           { name: 'effect', label: 'Effect', placeholder: 'See hidden energy traces' },
+          { name: 'ability', label: 'Ability', placeholder: 'e.g. Telepathy' },
+          { name: 'skillPercentage', label: 'Skill %', placeholder: '0–100 or blank' },
         ]}
       />
     </div>

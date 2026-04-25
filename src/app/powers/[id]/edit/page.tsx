@@ -47,6 +47,17 @@ export default async function EditPowerPage({ params }: { params: Promise<{ id: 
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Effect</label>
           <textarea name="effect" rows={2} defaultValue={power.effect ?? ''} className="arcane-input" />
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Ability</label>
+            <input name="ability" defaultValue={power.ability ?? ''} className="arcane-input" placeholder="e.g. Telepathy" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Skill %</label>
+            <input name="skillPercentage" type="number" min={0} max={100} defaultValue={power.skillPercentage ?? ''} className="arcane-input" placeholder="0–100 (blank = passive)" />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Leave blank or 0 if passive / auto-success</p>
+          </div>
+        </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
           <textarea name="referenceLinks" rows={4} defaultValue={referenceLinksToText(power.referenceLinks)} className="arcane-input" />

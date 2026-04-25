@@ -105,6 +105,9 @@ export default async function PowersPage({
                     Effect<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="effect" />
                   </Link>
                 </th>
+                <th style={{ ...thStyle, color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Ability
+                </th>
                 <th style={{ ...thStyle, textAlign: 'right', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Actions
                 </th>
@@ -121,6 +124,16 @@ export default async function PowersPage({
                   </td>
                   <td style={{ padding: '10px 12px', color: '#f59e0b', fontSize: '13px', fontStyle: 'italic' }}>
                     {power.effect ?? <span style={{ color: '#374151', fontStyle: 'normal' }}>—</span>}
+                  </td>
+                  <td style={{ padding: '10px 12px', fontSize: '13px' }}>
+                    {power.ability ? (
+                      <span style={{ color: '#a78bfa' }}>
+                        {power.ability}
+                        {power.skillPercentage ? <span className="ml-1 text-xs font-mono" style={{ color: '#7c3aed' }}>{power.skillPercentage}%</span> : null}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#374151' }}>—</span>
+                    )}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                     <div className="flex flex-wrap items-center justify-end gap-2">
@@ -146,7 +159,13 @@ export default async function PowersPage({
                 👤 {power.person.name}
               </Link>
               {power.description && <p className="text-sm mb-2 line-clamp-2" style={{ color: '#9ca3af' }}>{power.description}</p>}
-              {power.effect && <p className="text-xs italic" style={{ color: '#f59e0b' }}>⚡ {power.effect}</p>}
+              {power.effect && <p className="text-xs italic mb-1" style={{ color: '#f59e0b' }}>⚡ {power.effect}</p>}
+              {power.ability && (
+                <p className="text-xs" style={{ color: '#a78bfa' }}>
+                  🎲 {power.ability}
+                  {power.skillPercentage ? <span className="ml-1 font-mono">{power.skillPercentage}%</span> : <span className="ml-1" style={{ color: '#6b7280' }}>(passive)</span>}
+                </p>
+              )}
               <div className="flex flex-wrap items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link href={`/powers/${power.id}`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                 <Link href={`/powers/${power.id}/edit`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
