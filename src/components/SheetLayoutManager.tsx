@@ -14,30 +14,8 @@ interface Props {
   characterId: number
 }
 
-const BTN_BASE: React.CSSProperties = {
-  fontSize: '12px',
-  padding: '6px 12px',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontFamily: 'Georgia, serif',
-  transition: 'opacity 0.15s',
-  background: 'none',
-  border: '1px solid #1f2937',
-  color: '#9ca3af',
-}
-
-const BTN_PRIMARY: React.CSSProperties = {
-  ...BTN_BASE,
-  backgroundColor: '#7c3aed',
-  color: '#fff',
-  border: 'none',
-}
-
-const BTN_CANCEL: React.CSSProperties = {
-  ...BTN_BASE,
-  color: '#9ca3af',
-  border: '1px solid #374151',
-}
+const BTN_BASE = 'text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300'
+const BTN_PRIMARY = 'text-xs px-3 py-1.5 rounded transition-colors hover:opacity-80 font-semibold uppercase tracking-wider'
 
 // ── Custom hook: reads/writes layout order from localStorage ──────────────────
 
@@ -54,8 +32,10 @@ function useStoredOrder(
   // defaultOrder is derived from server props (module keys) which don't change at runtime.
   const defaultRef = useRef<string[]>(defaultOrder)
 
-  // Cache last parsed result to ensure reference stability (useSyncExternalStore requires it)
-  const cacheRef = useRef<OrderCache>({ raw: undefined as unknown as null, result: defaultOrder })
+  // Cache last parsed result to ensure reference stability (useSyncExternalStore requires it).
+  // Initialize raw as null: if no layout is stored, the first snapshot will also see null
+  // and correctly return defaultOrder from the cache.
+  const cacheRef = useRef<OrderCache>({ raw: null, result: defaultOrder })
 
   const subscribe = useCallback(
     (callback: () => void) => {
@@ -202,28 +182,24 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
         {isEditing ? (
           <>
             <span
-              className="text-xs"
-              style={{ color: '#a78bfa', fontFamily: 'Georgia, serif', flexGrow: 1 }}
+              className="text-xs flex-1"
+              style={{ color: '#a78bfa', fontFamily: 'Georgia, serif' }}
             >
               ✦ Drag modules to reorder — unsaved until you click Save Layout
             </span>
             <button
               type="button"
               onClick={saveLayout}
-              style={BTN_PRIMARY}
-              onMouseOver={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '0.85')}
-              onMouseOut={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '1')}
+              className={BTN_PRIMARY}
+              style={{ backgroundColor: '#7c3aed', color: '#fff' }}
             >
               💾 Save Layout
             </button>
             <button
               type="button"
               onClick={cancelEdit}
-              style={BTN_CANCEL}
-              onMouseOver={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.color = '#e2e8f0')
-              }
-              onMouseOut={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#9ca3af')}
+              className={BTN_BASE}
+              style={{ color: '#9ca3af', border: '1px solid #374151' }}
             >
               ✕ Cancel
             </button>
@@ -233,33 +209,24 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
             <button
               type="button"
               onClick={expandAll}
-              style={BTN_BASE}
-              onMouseOver={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd')
-              }
-              onMouseOut={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#9ca3af')}
+              className={BTN_BASE}
+              style={{ color: '#9ca3af', border: '1px solid #1f2937' }}
             >
               ▾ Expand All
             </button>
             <button
               type="button"
               onClick={collapseAll}
-              style={BTN_BASE}
-              onMouseOver={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd')
-              }
-              onMouseOut={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#9ca3af')}
+              className={BTN_BASE}
+              style={{ color: '#9ca3af', border: '1px solid #1f2937' }}
             >
               ▸ Collapse All
             </button>
             <button
               type="button"
               onClick={enterEditMode}
-              style={{ ...BTN_BASE, color: '#a78bfa', border: '1px solid #3b1f6e' }}
-              onMouseOver={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd')
-              }
-              onMouseOut={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#a78bfa')}
+              className={BTN_BASE}
+              style={{ color: '#a78bfa', border: '1px solid #3b1f6e' }}
             >
               ✦ Edit Layout
             </button>
