@@ -14,14 +14,18 @@ interface AbilitySelectorProps {
 
 const OTHER_VALUE = '__other__'
 
+const ABILITY_SCORES = ['STR', 'CON', 'SIZ', 'DEX', 'INT', 'POW', 'CHA', 'APP', 'EDU', 'Luck', 'Sanity']
+
 export function AbilitySelector({ skills, defaultValue }: AbilitySelectorProps) {
-  const isKnownSkill = defaultValue ? skills.some((s) => s.name === defaultValue) : false
+  const isKnownValue = defaultValue
+    ? skills.some((s) => s.name === defaultValue) || ABILITY_SCORES.includes(defaultValue)
+    : false
 
   const [selected, setSelected] = useState<string>(
-    defaultValue ? (isKnownSkill ? defaultValue : OTHER_VALUE) : '',
+    defaultValue ? (isKnownValue ? defaultValue : OTHER_VALUE) : '',
   )
   const [customValue, setCustomValue] = useState<string>(
-    defaultValue && !isKnownSkill ? defaultValue : '',
+    defaultValue && !isKnownValue ? defaultValue : '',
   )
 
   // The value that will actually be submitted.
@@ -48,6 +52,11 @@ export function AbilitySelector({ skills, defaultValue }: AbilitySelectorProps) 
         aria-label="Ability"
       >
         <option value="">— None (passive / auto-success) —</option>
+        <optgroup label="Ability Scores">
+          {ABILITY_SCORES.map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </optgroup>
         {categories.map(([cat, names]) => (
           <optgroup key={cat} label={cat}>
             {names.map((n) => (

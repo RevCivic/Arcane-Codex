@@ -60,7 +60,7 @@ export default async function PowerDetailPage({ params }: { params: Promise<{ id
                     {power.skillPercentage}%
                   </span>
                 ) : (
-                  <span className="text-xs" style={{ color: '#6b7280' }}>passive / auto-success</span>
+                  <span className="text-xs" style={{ color: '#6b7280' }}>from skill</span>
                 )}
               </dd>
             </div>

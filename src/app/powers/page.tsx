@@ -129,7 +129,11 @@ export default async function PowersPage({
                     {power.ability ? (
                       <span style={{ color: '#a78bfa' }}>
                         {power.ability}
-                        {power.skillPercentage ? <span className="ml-1 text-xs font-mono" style={{ color: '#7c3aed' }}>{power.skillPercentage}%</span> : null}
+                        {power.skillPercentage ? (
+                          <span className="ml-1 text-xs font-mono" style={{ color: '#7c3aed' }}>{power.skillPercentage}%</span>
+                        ) : (
+                          <span className="ml-1 text-xs" style={{ color: '#4b5563' }}>(from skill)</span>
+                        )}
                       </span>
                     ) : (
                       <span style={{ color: '#374151' }}>—</span>
@@ -163,7 +167,11 @@ export default async function PowersPage({
               {power.ability && (
                 <p className="text-xs" style={{ color: '#a78bfa' }}>
                   🎲 {power.ability}
-                  {power.skillPercentage ? <span className="ml-1 font-mono">{power.skillPercentage}%</span> : <span className="ml-1" style={{ color: '#6b7280' }}>(passive)</span>}
+                  {power.skillPercentage ? (
+                    <span className="ml-1 font-mono">{power.skillPercentage}%</span>
+                  ) : (
+                    <span className="ml-1" style={{ color: '#6b7280' }}>(from skill)</span>
+                  )}
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>

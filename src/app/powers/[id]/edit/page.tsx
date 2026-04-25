@@ -57,8 +57,8 @@ export default async function EditPowerPage({ params }: { params: Promise<{ id: 
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Skill %</label>
-            <input name="skillPercentage" type="number" min={0} max={100} defaultValue={power.skillPercentage ?? ''} className="arcane-input" placeholder="0–100 (blank = passive)" />
-            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Leave blank or 0 if passive / auto-success</p>
+            <input name="skillPercentage" type="number" min={0} max={100} defaultValue={power.skillPercentage ?? ''} className="arcane-input" placeholder="0–100 (blank = use skill value)" />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Leave blank to use the character&apos;s skill value; fill to override</p>
           </div>
         </div>
         <div>

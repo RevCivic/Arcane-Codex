@@ -19,12 +19,16 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
   const email = normalizeEmail(session?.user?.email)
   if (!email) redirect('/login')
 
-  const [character, allowed] = await Promise.all([
+  const [character, allowed, allSkills] = await Promise.all([
     prisma.character.findUnique({
       where: { id: characterId },
-      include: { powers: true },
+      include: {
+        powers: true,
+        sheet: { include: { skillValues: true } },
+      },
     }),
     prisma.allowedEmail.findUnique({ where: { email } }),
+    prisma.skill.findMany({ select: { id: true, name: true, baseValue: true } }),
   ])
 
   if (!character) notFound()
@@ -47,6 +51,15 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
   const unclaimAction = unclaimCharacter.bind(null, characterId)
   const assignAction  = adminAssignCharacter.bind(null, characterId)
   const referenceLinks = normalizeReferenceLinks(character.referenceLinks)
+
+  // Build a fast lookup: skill name → effective value (custom or base), used for power ability derivation
+  const skillValueById = new Map<number, number>(
+    character.sheet?.skillValues.map((sv) => [sv.skillId, sv.value]) ?? []
+  )
+  const skillNameMap = new Map<string, number>()
+  for (const skill of allSkills) {
+    skillNameMap.set(skill.name, skillValueById.get(skill.id) ?? skill.baseValue)
+  }
 
   return (
     <div className="max-w-3xl">
@@ -297,26 +310,27 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
           <p className="text-sm" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>No powers recorded for this character.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {character.powers.map((power) => (
-              <div key={power.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold" style={{ color: '#e2e8f0' }}>{power.name}</h3>
-                  <Link href={`/powers/${power.id}`} className="text-xs" style={{ color: '#8b5cf6' }}>View →</Link>
+            {character.powers.map((power) => {
+              const effectivePct = power.skillPercentage ?? (power.ability ? skillNameMap.get(power.ability) : undefined)
+              return (
+                <div key={power.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold" style={{ color: '#e2e8f0' }}>{power.name}</h3>
+                    <Link href={`/powers/${power.id}`} className="text-xs" style={{ color: '#8b5cf6' }}>View →</Link>
+                  </div>
+                  {power.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{power.description}</p>}
+                  {power.effect && <p className="text-xs italic mb-1" style={{ color: '#a78bfa' }}>Effect: {power.effect}</p>}
+                  {power.ability && (
+                    <p className="text-xs" style={{ color: '#8b5cf6' }}>
+                      🎲 {power.ability}
+                      {effectivePct != null ? (
+                        <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{effectivePct}%</span>
+                      ) : null}
+                    </p>
+                  )}
                 </div>
-                {power.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{power.description}</p>}
-                {power.effect && <p className="text-xs italic mb-1" style={{ color: '#a78bfa' }}>Effect: {power.effect}</p>}
-                {power.ability && (
-                  <p className="text-xs" style={{ color: '#8b5cf6' }}>
-                    🎲 {power.ability}
-                    {power.skillPercentage ? (
-                      <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{power.skillPercentage}%</span>
-                    ) : (
-                      <span className="ml-1" style={{ color: '#6b7280' }}>(passive)</span>
-                    )}
-                  </p>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
