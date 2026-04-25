@@ -19,15 +19,16 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
   const email = normalizeEmail(session?.user?.email)
   if (!email) redirect('/login')
 
-  const [character, allowed] = await Promise.all([
+  const [character, allowed, allSkills] = await Promise.all([
     prisma.character.findUnique({
       where: { id: characterId },
       include: {
         powers: true,
-        sheet: { include: { skillValues: { include: { skill: true } } } },
+        sheet: { include: { skillValues: true } },
       },
     }),
     prisma.allowedEmail.findUnique({ where: { email } }),
+    prisma.skill.findMany({ select: { id: true, name: true, baseValue: true } }),
   ])
 
   if (!character) notFound()
@@ -52,9 +53,12 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
   const referenceLinks = normalizeReferenceLinks(character.referenceLinks)
 
   // Build a fast lookup: skill name → effective value (custom or base), used for power ability derivation
+  const skillValueById = new Map<number, number>(
+    character.sheet?.skillValues.map((sv) => [sv.skillId, sv.value]) ?? []
+  )
   const skillNameMap = new Map<string, number>()
-  for (const sv of character.sheet?.skillValues ?? []) {
-    skillNameMap.set(sv.skill.name, sv.value)
+  for (const skill of allSkills) {
+    skillNameMap.set(skill.name, skillValueById.get(skill.id) ?? skill.baseValue)
   }
 
   return (
