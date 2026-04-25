@@ -200,15 +200,19 @@ model Event {
 }
 
 model Power {
-  id          Int       @id @default(autoincrement())
-  name        String
-  description String?
-  effect      String?
-  referenceLinks Json?
-  personId    Int
-  person      Character @relation(fields: [personId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              Int       @id @default(autoincrement())
+  name            String
+  description     String?
+  effect          String?
+  /// Free-text name of the ability roll associated with this power (e.g. "Telepathy").
+  ability         String?
+  /// Percentile skill value (1–100) for the ability roll. Null or 0 = passive / auto-success.
+  skillPercentage Int?
+  referenceLinks  Json?
+  personId        Int
+  person          Character @relation(fields: [personId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 /// Persisted roll records visible to the character owner and admins.
