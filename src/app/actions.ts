@@ -859,13 +859,11 @@ export async function createPowersBulk(formData: FormData) {
     await syncPowerSkill(row.personId, row.ability, row.skillPercentage)
   }
 
-  if (rows.length > 0) {
-    revalidatePath('/powers')
-    const uniquePersonIds = [...new Set(rows.map((r) => r.personId))]
-    for (const pid of uniquePersonIds) {
-      revalidatePath(`/characters/${pid}`)
-      revalidatePath(`/characters/${pid}/sheet`)
-    }
+  revalidatePath('/powers')
+  const uniquePersonIds = [...new Set(rows.map((r) => r.personId))]
+  for (const pid of uniquePersonIds) {
+    revalidatePath(`/characters/${pid}`)
+    revalidatePath(`/characters/${pid}/sheet`)
   }
 
   redirect('/powers')
