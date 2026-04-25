@@ -4,13 +4,15 @@ import { prisma } from '@/lib/prisma'
 import { referenceLinksToText } from '@/lib/referenceLinks'
 import { notFound } from 'next/navigation'
 import { updatePower } from '@/app/actions'
+import { AbilitySelector } from '@/components/AbilitySelector'
 import Link from 'next/link'
 
 export default async function EditPowerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [power, characters] = await Promise.all([
+  const [power, characters, skills] = await Promise.all([
     prisma.power.findUnique({ where: { id: parseInt(id) } }),
     prisma.character.findMany({ orderBy: { name: 'asc' } }),
+    prisma.skill.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], select: { name: true, category: true } }),
   ])
   if (!power) notFound()
 
@@ -50,7 +52,8 @@ export default async function EditPowerPage({ params }: { params: Promise<{ id: 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Ability</label>
-            <input name="ability" defaultValue={power.ability ?? ''} className="arcane-input" placeholder="e.g. Telepathy" />
+            <AbilitySelector skills={skills} defaultValue={power.ability} />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Skill linked to this power, or none if passive</p>
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Skill %</label>
