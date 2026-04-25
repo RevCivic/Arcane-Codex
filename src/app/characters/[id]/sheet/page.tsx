@@ -12,7 +12,8 @@ import type { StatEntry, SkillEntry } from '@/components/DiceConsole'
 import { SkillImprovementPanel } from '@/components/SkillImprovementPanel'
 import type { MarkedSkill } from '@/components/SkillImprovementPanel'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
-import { SheetCollapseControls } from '@/components/SheetCollapseControls'
+import { SheetLayoutManager } from '@/components/SheetLayoutManager'
+import type { SheetModule } from '@/components/SheetLayoutManager'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -239,309 +240,352 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             </span>
           </div>
         </div>
-        <SheetCollapseControls />
       </div>
 
-      <CollapsibleSection
-        storageKey="import-foundry"
-        defaultOpen={false}
-        className="card-arcane rounded-lg p-6 mb-8"
-        style={{ fontFamily: 'Georgia, serif' }}
-        title={
-          <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
-            ✦ Import FoundryVTT JSON
-          </h2>
-        }
-      >
-        <p className="text-xs mb-4" style={{ color: '#6b7280' }}>
-          Paste a FoundryVTT actor export JSON to import stats and skills. Missing skills are created automatically.
-        </p>
-        <form action={importAction} className="space-y-3">
-          <textarea
-            name="foundryJson"
-            rows={7}
-            required
-            className="arcane-input"
-            placeholder="Paste your FoundryVTT actor export JSON here"
-          />
-          <button
-            type="submit"
-            className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
-            style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
-          >
-            ⬇ Import JSON
-          </button>
-        </form>
-      </CollapsibleSection>
+      {/* ── Sheet Layout Manager (controls + reorderable modules) ─────────── */}
+      <SheetLayoutManager
+        isAdmin={isAdmin}
+        characterId={characterId}
+        modules={[
+          // ── Import FoundryVTT JSON ──────────────────────────────────────
+          {
+            key: 'import',
+            label: '✦ Import FoundryVTT JSON',
+            content: (
+              <CollapsibleSection
+                storageKey="import-foundry"
+                defaultOpen={false}
+                className="card-arcane rounded-lg p-6"
+                style={{ fontFamily: 'Georgia, serif' }}
+                title={
+                  <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                    ✦ Import FoundryVTT JSON
+                  </h2>
+                }
+              >
+                <p className="text-xs mb-4" style={{ color: '#6b7280' }}>
+                  Paste a FoundryVTT actor export JSON to import stats and skills. Missing skills are created automatically.
+                </p>
+                <form action={importAction} className="space-y-3">
+                  <textarea
+                    name="foundryJson"
+                    rows={7}
+                    required
+                    className="arcane-input"
+                    placeholder="Paste your FoundryVTT actor export JSON here"
+                  />
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
+                    style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
+                  >
+                    ⬇ Import JSON
+                  </button>
+                </form>
+              </CollapsibleSection>
+            ),
+          } satisfies SheetModule,
 
-      <form action={action} className="space-y-8">
+          // ── Character Stats (form) ──────────────────────────────────────
+          {
+            key: 'stats',
+            label: '📊 Character Stats',
+            content: (
+              <form action={action} className="space-y-8">
+                {/* BRP Primary Characteristics */}
+                <CollapsibleSection
+                  storageKey="primary-characteristics"
+                  className="card-arcane rounded-lg p-6"
+                  style={{ fontFamily: 'Georgia, serif' }}
+                  title={
+                    <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                      ✦ Primary Characteristics
+                    </h2>
+                  }
+                >
+                  <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
+                    <StatBox label="STR" name="str"          value={sheet?.str} />
+                    <StatBox label="CON" name="con"          value={sheet?.con} />
+                    <StatBox label="SIZ" name="siz"          value={sheet?.siz} />
+                    <StatBox label="DEX" name="dex"          value={sheet?.dex} />
+                    <StatBox label="INT" name="intelligence" value={sheet?.intelligence} />
+                    <StatBox label="POW" name="pow"          value={sheet?.pow} />
+                    <StatBox label="CHA" name="cha"          value={sheet?.cha} />
+                    <StatBox label="APP" name="app"          value={sheet?.app} />
+                    <StatBox label="EDU" name="edu"          value={sheet?.edu} />
+                  </div>
+                </CollapsibleSection>
 
-        {/* ── BRP Primary Characteristics ─────────────────────────────────── */}
-        <CollapsibleSection
-          storageKey="primary-characteristics"
-          className="card-arcane rounded-lg p-6"
-          style={{ fontFamily: 'Georgia, serif' }}
-          title={
-            <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
-              ✦ Primary Characteristics
-            </h2>
-          }
-        >
-          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
-            <StatBox label="STR" name="str"          value={sheet?.str} />
-            <StatBox label="CON" name="con"          value={sheet?.con} />
-            <StatBox label="SIZ" name="siz"          value={sheet?.siz} />
-            <StatBox label="DEX" name="dex"          value={sheet?.dex} />
-            <StatBox label="INT" name="intelligence" value={sheet?.intelligence} />
-            <StatBox label="POW" name="pow"          value={sheet?.pow} />
-            <StatBox label="CHA" name="cha"          value={sheet?.cha} />
-            <StatBox label="APP" name="app"          value={sheet?.app} />
-            <StatBox label="EDU" name="edu"          value={sheet?.edu} />
-          </div>
-        </CollapsibleSection>
+                {/* Derived / Current Values */}
+                <CollapsibleSection
+                  storageKey="derived-statistics"
+                  className="card-arcane rounded-lg p-6"
+                  style={{ fontFamily: 'Georgia, serif' }}
+                  title={
+                    <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                      ✦ Derived Statistics
+                    </h2>
+                  }
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <DerivedBox label="Hit Points" currentName="currentHp" maxName="maxHp"
+                      current={sheet?.currentHp} max={sheet?.maxHp} accent="#4ade80" />
+                    <DerivedBox label="Sanity"     currentName="currentSanity" maxName="maxSanity"
+                      current={sheet?.currentSanity} max={sheet?.maxSanity} accent="#a78bfa" />
+                    <DerivedBox label="Magic Pts"  currentName="currentMp" maxName="maxMp"
+                      current={sheet?.currentMp} max={sheet?.maxMp} accent="#60a5fa" />
+                    <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #92400e33' }}>
+                      <div className="text-xs uppercase tracking-wider mb-2 text-center" style={{ color: '#f59e0b', fontFamily: 'Georgia, serif' }}>Luck</div>
+                      <input name="luck" type="number" defaultValue={sheet?.luck ?? ''} min={0} max={99}
+                        className="arcane-input text-center w-full text-base font-bold" style={{ color: '#e2e8f0' }} placeholder="—" />
+                    </div>
+                    <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #374151' }}>
+                      <div className="text-xs uppercase tracking-wider mb-2 text-center" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>Build</div>
+                      <input name="build" type="number" defaultValue={sheet?.build ?? ''} min={-2} max={4}
+                        className="arcane-input text-center w-full text-base font-bold" style={{ color: '#e2e8f0' }} placeholder="—" />
+                    </div>
+                  </div>
+                </CollapsibleSection>
 
-        {/* ── Derived / Current Values ─────────────────────────────────────── */}
-        <CollapsibleSection
-          storageKey="derived-statistics"
-          className="card-arcane rounded-lg p-6"
-          style={{ fontFamily: 'Georgia, serif' }}
-          title={
-            <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
-              ✦ Derived Statistics
-            </h2>
-          }
-        >
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            <DerivedBox label="Hit Points" currentName="currentHp" maxName="maxHp"
-              current={sheet?.currentHp} max={sheet?.maxHp} accent="#4ade80" />
-            <DerivedBox label="Sanity"     currentName="currentSanity" maxName="maxSanity"
-              current={sheet?.currentSanity} max={sheet?.maxSanity} accent="#a78bfa" />
-            <DerivedBox label="Magic Pts"  currentName="currentMp" maxName="maxMp"
-              current={sheet?.currentMp} max={sheet?.maxMp} accent="#60a5fa" />
-            <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #92400e33' }}>
-              <div className="text-xs uppercase tracking-wider mb-2 text-center" style={{ color: '#f59e0b', fontFamily: 'Georgia, serif' }}>Luck</div>
-              <input name="luck" type="number" defaultValue={sheet?.luck ?? ''} min={0} max={99}
-                className="arcane-input text-center w-full text-base font-bold" style={{ color: '#e2e8f0' }} placeholder="—" />
-            </div>
-            <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #374151' }}>
-              <div className="text-xs uppercase tracking-wider mb-2 text-center" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>Build</div>
-              <input name="build" type="number" defaultValue={sheet?.build ?? ''} min={-2} max={4}
-                className="arcane-input text-center w-full text-base font-bold" style={{ color: '#e2e8f0' }} placeholder="—" />
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* ── Skills ───────────────────────────────────────────────────────── */}
-        {allSkills.length > 0 && (
-          <CollapsibleSection
-            storageKey="skills"
-            className="card-arcane rounded-lg p-6"
-            style={{ fontFamily: 'Georgia, serif' }}
-            title={
-              <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
-                ✦ Skills
-              </h2>
-            }
-          >
-            <p className="text-xs mb-5" style={{ color: '#6b7280' }}>
-              Leave blank to use the skill&apos;s default base value. Enter a value to override.
-            </p>
-            <div className="space-y-6">
-              {Array.from(skillsByCategory.entries()).map(([category, skills]) => (
-                <div key={category}>
-                  <h3 className="text-xs uppercase tracking-widest mb-3 pb-1" style={{ color: '#6b7280', borderBottom: '1px solid #1f2937' }}>
-                    {category}
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {skills.map((skill) => {
-                      const customValue = skillValueMap.get(skill.id)
-                      return (
-                        <div key={skill.id} className="flex items-center gap-2 rounded px-3 py-2" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium truncate" style={{ color: '#e2e8f0' }} title={skill.name}>
-                              {skill.name}
-                            </div>
-                            <div className="text-xs" style={{ color: '#4b5563' }}>base {skill.baseValue}%</div>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <input
-                              name={`skill_${skill.id}`}
-                              type="number"
-                              defaultValue={customValue ?? ''}
-                              min={0}
-                              max={100}
-                              placeholder={String(skill.baseValue)}
-                              className="arcane-input text-center font-bold"
-                              style={{ width: '60px', color: customValue !== undefined ? '#a78bfa' : '#6b7280' }}
-                            />
-                            <span className="text-xs" style={{ color: '#4b5563' }}>%</span>
+                {/* Skills */}
+                {allSkills.length > 0 && (
+                  <CollapsibleSection
+                    storageKey="skills"
+                    className="card-arcane rounded-lg p-6"
+                    style={{ fontFamily: 'Georgia, serif' }}
+                    title={
+                      <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                        ✦ Skills
+                      </h2>
+                    }
+                  >
+                    <p className="text-xs mb-5" style={{ color: '#6b7280' }}>
+                      Leave blank to use the skill&apos;s default base value. Enter a value to override.
+                    </p>
+                    <div className="space-y-6">
+                      {Array.from(skillsByCategory.entries()).map(([category, skills]) => (
+                        <div key={category}>
+                          <h3 className="text-xs uppercase tracking-widest mb-3 pb-1" style={{ color: '#6b7280', borderBottom: '1px solid #1f2937' }}>
+                            {category}
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {skills.map((skill) => {
+                              const customValue = skillValueMap.get(skill.id)
+                              return (
+                                <div key={skill.id} className="flex items-center gap-2 rounded px-3 py-2" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-medium truncate" style={{ color: '#e2e8f0' }} title={skill.name}>
+                                      {skill.name}
+                                    </div>
+                                    <div className="text-xs" style={{ color: '#4b5563' }}>base {skill.baseValue}%</div>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <input
+                                      name={`skill_${skill.id}`}
+                                      type="number"
+                                      defaultValue={customValue ?? ''}
+                                      min={0}
+                                      max={100}
+                                      placeholder={String(skill.baseValue)}
+                                      className="arcane-input text-center font-bold"
+                                      style={{ width: '60px', color: customValue !== undefined ? '#a78bfa' : '#6b7280' }}
+                                    />
+                                    <span className="text-xs" style={{ color: '#4b5563' }}>%</span>
+                                  </div>
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
-                      )
-                    })}
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                )}
+
+                {/* Wounds & Notes */}
+                <CollapsibleSection
+                  storageKey="wounds-notes"
+                  className="card-arcane rounded-lg p-6"
+                  style={{ fontFamily: 'Georgia, serif' }}
+                  title={
+                    <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                      ✦ Wounds & Notes
+                    </h2>
+                  }
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Wounds / Injuries</label>
+                      <textarea name="wounds" rows={3} defaultValue={sheet?.wounds ?? ''} className="arcane-input"
+                        placeholder="Describe current injuries or conditions..." />
+                    </div>
+                    <div>
+                      <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Session Notes</label>
+                      <textarea name="notes" rows={3} defaultValue={sheet?.notes ?? ''} className="arcane-input"
+                        placeholder="Clues, reminders, or session notes..." />
+                    </div>
                   </div>
+                </CollapsibleSection>
+
+                {/* Save button */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="px-8 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
+                    style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
+                  >
+                    💾 Save Sheet
+                  </button>
+                  <Link
+                    href={`/characters/${characterId}`}
+                    className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider"
+                    style={{ border: '1px solid #374151', color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                  >
+                    Cancel
+                  </Link>
                 </div>
-              ))}
-            </div>
-          </CollapsibleSection>
-        )}
+              </form>
+            ),
+          } satisfies SheetModule,
 
-        {/* ── Wounds & Notes ────────────────────────────────────────────────── */}
-        <CollapsibleSection
-          storageKey="wounds-notes"
-          className="card-arcane rounded-lg p-6"
-          style={{ fontFamily: 'Georgia, serif' }}
-          title={
-            <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
-              ✦ Wounds & Notes
-            </h2>
-          }
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Wounds / Injuries</label>
-              <textarea name="wounds" rows={3} defaultValue={sheet?.wounds ?? ''} className="arcane-input"
-                placeholder="Describe current injuries or conditions..." />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Session Notes</label>
-              <textarea name="notes" rows={3} defaultValue={sheet?.notes ?? ''} className="arcane-input"
-                placeholder="Clues, reminders, or session notes..." />
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* Save button */}
-        <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            className="px-8 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
-            style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
-          >
-            💾 Save Sheet
-          </button>
-          <Link
-            href={`/characters/${characterId}`}
-            className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider"
-            style={{ border: '1px solid #374151', color: '#9ca3af', fontFamily: 'Georgia, serif' }}
-          >
-            Cancel
-          </Link>
-        </div>
-      </form>
-
-      {/* ── Skill Improvement ────────────────────────────────────────────── */}
-      <CollapsibleSection
-        storageKey="skill-improvement"
-        defaultOpen={markedSkills.length > 0}
-        className="mt-10"
-        title={
-          <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-            📌 Skill Improvement
-            {markedSkills.length > 0 && (
-              <span
-                className="ml-2 text-xs px-2 py-0.5 rounded-full font-semibold align-middle"
-                style={{ backgroundColor: '#1c1407', color: '#fbbf24', border: '1px solid #d9770666' }}
+          // ── Skill Improvement ───────────────────────────────────────────
+          {
+            key: 'improvement',
+            label: '📌 Skill Improvement',
+            content: (
+              <CollapsibleSection
+                storageKey="skill-improvement"
+                defaultOpen={markedSkills.length > 0}
+                title={
+                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+                    📌 Skill Improvement
+                    {markedSkills.length > 0 && (
+                      <span
+                        className="ml-2 text-xs px-2 py-0.5 rounded-full font-semibold align-middle"
+                        style={{ backgroundColor: '#1c1407', color: '#fbbf24', border: '1px solid #d9770666' }}
+                      >
+                        {markedSkills.length} pending
+                      </span>
+                    )}
+                  </h2>
+                }
               >
-                {markedSkills.length} pending
-              </span>
-            )}
-          </h2>
-        }
-      >
-        {markedSkills.length === 0 ? (
-          <p className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
-            No skills are marked for improvement. Skills are marked automatically when you roll a
-            Failure or Fumble on a skill check.
-          </p>
-        ) : (
-          <SkillImprovementPanel
-            characterId={characterId}
-            initialMarkedSkills={markedSkills}
-          />
-        )}
-      </CollapsibleSection>
+                {markedSkills.length === 0 ? (
+                  <p className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
+                    No skills are marked for improvement. Skills are marked automatically when you roll a
+                    Failure or Fumble on a skill check.
+                  </p>
+                ) : (
+                  <SkillImprovementPanel
+                    characterId={characterId}
+                    initialMarkedSkills={markedSkills}
+                  />
+                )}
+              </CollapsibleSection>
+            ),
+          } satisfies SheetModule,
 
-      {/* ── Dice Console ─────────────────────────────────────────────────── */}
-      <CollapsibleSection
-        storageKey="dice-console"
-        className="mt-10"
-        title={
-          <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-            🎲 Dice Console
-          </h2>
-        }
-      >
-        <DiceConsole
-          characterId={characterId}
-          stats={consoleStats}
-          skills={consoleSkills}
-          initialLuck={sheet?.luck ?? null}
-          initialHistory={initialHistory}
-        />
-      </CollapsibleSection>
+          // ── Dice Console ────────────────────────────────────────────────
+          {
+            key: 'dice',
+            label: '🎲 Dice Console',
+            content: (
+              <CollapsibleSection
+                storageKey="dice-console"
+                title={
+                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+                    🎲 Dice Console
+                  </h2>
+                }
+              >
+                <DiceConsole
+                  characterId={characterId}
+                  stats={consoleStats}
+                  skills={consoleSkills}
+                  initialLuck={sheet?.luck ?? null}
+                  initialHistory={initialHistory}
+                />
+              </CollapsibleSection>
+            ),
+          } satisfies SheetModule,
 
-      {/* ── Read-only: Inventory ──────────────────────────────────────────── */}
-      {character.inventoryItems.length > 0 && (
-        <CollapsibleSection
-          storageKey="carried-items"
-          className="mt-10"
-          title={
-            <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-              🎒 Carried Items
-            </h2>
-          }
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {character.inventoryItems.map((item) => (
-              <div key={item.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>{item.name}</span>
-                  {item.category && (
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1c1407', color: '#f59e0b' }}>{item.category}</span>
-                  )}
-                </div>
-                {item.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{item.description}</p>}
-                {item.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>⚡ {item.effect}</p>}
-              </div>
-            ))}
-          </div>
-        </CollapsibleSection>
-      )}
+          // ── Carried Items (conditional) ─────────────────────────────────
+          ...(character.inventoryItems.length > 0
+            ? [
+                {
+                  key: 'inventory',
+                  label: '🎒 Carried Items',
+                  content: (
+                    <CollapsibleSection
+                      storageKey="carried-items"
+                      title={
+                        <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+                          🎒 Carried Items
+                        </h2>
+                      }
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {character.inventoryItems.map((item) => (
+                          <div key={item.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>{item.name}</span>
+                              {item.category && (
+                                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1c1407', color: '#f59e0b' }}>{item.category}</span>
+                              )}
+                            </div>
+                            {item.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{item.description}</p>}
+                            {item.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>⚡ {item.effect}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleSection>
+                  ),
+                } satisfies SheetModule,
+              ]
+            : []),
 
-      {/* ── Read-only: Powers ─────────────────────────────────────────────── */}
-      {character.powers.length > 0 && (
-        <CollapsibleSection
-          storageKey="powers"
-          className="mt-10"
-          title={
-            <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-              ⚡ Powers
-            </h2>
-          }
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {character.powers.map((power) => {
-              const effectivePct = power.skillPercentage ?? (power.ability ? skillNameMap.get(power.ability) : undefined)
-              return (
-                <div key={power.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
-                  <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{power.name}</h3>
-                  {power.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{power.description}</p>}
-                  {power.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>⚡ {power.effect}</p>}
-                  {power.ability && (
-                    <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
-                      🎲 {power.ability}
-                      {effectivePct != null ? (
-                        <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{effectivePct}%</span>
-                      ) : null}
-                    </p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </CollapsibleSection>
-      )}
+          // ── Powers (conditional) ────────────────────────────────────────
+          ...(character.powers.length > 0
+            ? [
+                {
+                  key: 'powers',
+                  label: '⚡ Powers',
+                  content: (
+                    <CollapsibleSection
+                      storageKey="powers"
+                      title={
+                        <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+                          ⚡ Powers
+                        </h2>
+                      }
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {character.powers.map((power) => {
+                          const effectivePct = power.skillPercentage ?? (power.ability ? skillNameMap.get(power.ability) : undefined)
+                          return (
+                            <div key={power.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                              <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{power.name}</h3>
+                              {power.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{power.description}</p>}
+                              {power.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>⚡ {power.effect}</p>}
+                              {power.ability && (
+                                <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
+                                  🎲 {power.ability}
+                                  {effectivePct != null ? (
+                                    <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{effectivePct}%</span>
+                                  ) : null}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </CollapsibleSection>
+                  ),
+                } satisfies SheetModule,
+              ]
+            : []),
+        ]}
+      />
     </div>
   )
 }
