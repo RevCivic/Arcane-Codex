@@ -128,6 +128,12 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     sheet?.skillValues.map((sv) => [sv.skillId, sv.value]) ?? []
   )
 
+  // Build a fast lookup: skill name → effective value (custom or base), used for power ability derivation
+  const skillNameMap = new Map<string, number>()
+  for (const skill of allSkills) {
+    skillNameMap.set(skill.name, skillValueMap.get(skill.id) ?? skill.baseValue)
+  }
+
   // Group skills by category, preserving sortOrder within each group
   const skillsByCategory = new Map<string, typeof allSkills>()
   for (const skill of allSkills) {
@@ -515,13 +521,24 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
           }
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {character.powers.map((power) => (
-              <div key={power.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
-                <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{power.name}</h3>
-                {power.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{power.description}</p>}
-                {power.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>⚡ {power.effect}</p>}
-              </div>
-            ))}
+            {character.powers.map((power) => {
+              const effectivePct = power.skillPercentage ?? (power.ability ? skillNameMap.get(power.ability) : undefined)
+              return (
+                <div key={power.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                  <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{power.name}</h3>
+                  {power.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{power.description}</p>}
+                  {power.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>⚡ {power.effect}</p>}
+                  {power.ability && (
+                    <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
+                      🎲 {power.ability}
+                      {effectivePct != null ? (
+                        <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{effectivePct}%</span>
+                      ) : null}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </CollapsibleSection>
       )}
