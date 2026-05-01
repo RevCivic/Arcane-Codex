@@ -323,7 +323,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Modifier (%)</label>
-                <input name="modifier" type="number" defaultValue={0} className="arcane-input" placeholder="e.g. −20 or +10" />
+                <input name="modifier" type="number" defaultValue={0} className="arcane-input" placeholder="e.g. -20 or +10" />
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Notes</label>
