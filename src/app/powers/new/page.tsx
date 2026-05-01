@@ -5,16 +5,11 @@ import { createPower } from '@/app/actions'
 import { AbilitySelector } from '@/components/AbilitySelector'
 import Link from 'next/link'
 
-export default async function NewPowerPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ personId?: string }>
-}) {
-  const { personId } = await searchParams
-  const [characters, skills] = await Promise.all([
-    prisma.character.findMany({ orderBy: { name: 'asc' } }),
-    prisma.skill.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], select: { name: true, category: true } }),
-  ])
+export default async function NewPowerPage() {
+  const skills = await prisma.skill.findMany({
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    select: { name: true, category: true },
+  })
 
   return (
     <div className="max-w-2xl">
@@ -32,15 +27,6 @@ export default async function NewPowerPage({
           <input name="name" required className="arcane-input" placeholder="e.g. Arcane Sight" />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Character *</label>
-          <select name="personId" required defaultValue={personId ?? ''} className="arcane-input">
-            <option value="" disabled>Select a character...</option>
-            {characters.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Description</label>
           <textarea name="description" rows={3} className="arcane-input" placeholder="How the power manifests..." />
         </div>
@@ -50,14 +36,14 @@ export default async function NewPowerPage({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Ability</label>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Base Ability</label>
             <AbilitySelector skills={skills} />
             <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Skill linked to this power, or none if passive</p>
           </div>
           <div>
-            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Skill %</label>
-            <input name="skillPercentage" type="number" min={0} max={100} className="arcane-input" placeholder="0–100 (blank = use skill value)" />
-            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Leave blank to use the character&apos;s skill value; fill to override</p>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Base %</label>
+            <input name="basePercentage" type="number" min={0} max={100} className="arcane-input" placeholder="0–100" />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Standard skill percentage for this power</p>
           </div>
         </div>
         <div>

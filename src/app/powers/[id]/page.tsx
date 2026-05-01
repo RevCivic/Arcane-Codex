@@ -11,7 +11,12 @@ export default async function PowerDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const power = await prisma.power.findUnique({
     where: { id: parseInt(id) },
-    include: { person: { select: { id: true, name: true } } },
+    include: {
+      characterPowers: {
+        include: { character: { select: { id: true, name: true } } },
+        orderBy: { character: { name: 'asc' } },
+      },
+    },
   })
   if (!power) notFound()
   const referenceLinks = normalizeReferenceLinks(power.referenceLinks)
@@ -27,9 +32,6 @@ export default async function PowerDetailPage({ params }: { params: Promise<{ id
         <div className="flex items-start justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold mb-2" style={{ color: '#e2e8f0' }}>{power.name}</h1>
-            <Link href={`/characters/${power.person.id}`} className="text-sm hover:text-purple-300" style={{ color: '#a78bfa' }}>
-              👤 {power.person.name}
-            </Link>
           </div>
           <div className="flex gap-2">
             <Link href={`/powers/${power.id}/edit`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
@@ -50,18 +52,16 @@ export default async function PowerDetailPage({ params }: { params: Promise<{ id
               <dd className="text-sm leading-6 p-3 rounded italic" style={{ color: '#f59e0b', backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>{power.effect}</dd>
             </div>
           )}
-          {power.ability && (
+          {power.baseAbility && (
             <div>
-              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Ability</dt>
+              <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Base Ability</dt>
               <dd className="flex items-center gap-3">
-                <span className="text-sm" style={{ color: '#e2e8f0' }}>{power.ability}</span>
-                {power.skillPercentage ? (
+                <span className="text-sm" style={{ color: '#e2e8f0' }}>{power.baseAbility}</span>
+                {power.basePercentage ? (
                   <span className="text-xs px-2 py-0.5 rounded-full font-mono" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
-                    {power.skillPercentage}%
+                    {power.basePercentage}%
                   </span>
-                ) : (
-                  <span className="text-xs" style={{ color: '#6b7280' }}>from skill</span>
-                )}
+                ) : null}
               </dd>
             </div>
           )}
@@ -81,6 +81,41 @@ export default async function PowerDetailPage({ params }: { params: Promise<{ id
               </dd>
             </div>
           )}
+
+          {/* Characters who have this power */}
+          <div>
+            <dt className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>Assigned Characters</dt>
+            {power.characterPowers.length === 0 ? (
+              <dd className="text-sm" style={{ color: '#6b7280' }}>No characters have this power yet.</dd>
+            ) : (
+              <dd>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {power.characterPowers.map((cp) => {
+                    const effective = power.basePercentage != null ? power.basePercentage + cp.modifier : null
+                    return (
+                      <div key={cp.id} className="rounded px-3 py-2 flex items-center justify-between gap-2" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
+                        <Link href={`/characters/${cp.character.id}`} className="text-sm hover:text-purple-300" style={{ color: '#a78bfa' }}>
+                          👤 {cp.character.name}
+                        </Link>
+                        <div className="text-right shrink-0">
+                          {cp.modifier !== 0 && (
+                            <span className="text-xs font-mono mr-1" style={{ color: cp.modifier > 0 ? '#4ade80' : '#f87171' }}>
+                              {cp.modifier > 0 ? '+' : ''}{cp.modifier}
+                            </span>
+                          )}
+                          {effective != null && (
+                            <span className="text-xs font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
+                              {effective}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </dd>
+            )}
+          </div>
         </dl>
       </div>
     </div>

@@ -9,7 +9,7 @@ import { ViewToggle } from '@/components/ViewToggle'
 import { SearchBar } from '@/components/SearchBar'
 
 type SortOrder = 'asc' | 'desc'
-const VALID_SORT_FIELDS = ['name', 'effect', 'person'] as const
+const VALID_SORT_FIELDS = ['name', 'effect'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
 
 function sortLink(view: string, currentSortBy: string, currentSortOrder: string, col: string, search: string) {
@@ -32,10 +32,7 @@ export default async function PowersPage({
   const sortBy: SortField = VALID_SORT_FIELDS.includes(rawSortBy as SortField) ? (rawSortBy as SortField) : 'name'
   const sortOrder: SortOrder = rawSortOrder === 'desc' ? 'desc' : 'asc'
 
-  const orderBy =
-    sortBy === 'person'
-      ? { person: { name: sortOrder } }
-      : { [sortBy]: sortOrder }
+  const orderBy = { [sortBy]: sortOrder }
 
   const where = search
     ? {
@@ -43,7 +40,6 @@ export default async function PowersPage({
           { name: { contains: search } },
           { description: { contains: search } },
           { effect: { contains: search } },
-          { person: { name: { contains: search } } },
         ],
       }
     : {}
@@ -51,7 +47,9 @@ export default async function PowersPage({
   const powers = await prisma.power.findMany({
     where,
     orderBy,
-    include: { person: { select: { id: true, name: true } } },
+    include: {
+      characterPowers: { select: { character: { select: { id: true, name: true } } } },
+    },
   })
 
   const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
@@ -95,10 +93,8 @@ export default async function PowersPage({
                     Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
                   </Link>
                 </th>
-                <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'person', search)} style={{ color: sortBy === 'person' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Character<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="person" />
-                  </Link>
+                <th style={{ ...thStyle, color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Characters
                 </th>
                 <th style={thStyle}>
                   <Link href={sortLink(view, sortBy, sortOrder, 'effect', search)} style={{ color: sortBy === 'effect' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -106,7 +102,7 @@ export default async function PowersPage({
                   </Link>
                 </th>
                 <th style={{ ...thStyle, color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Ability
+                  Base Ability
                 </th>
                 <th style={{ ...thStyle, textAlign: 'right', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Actions
@@ -118,22 +114,28 @@ export default async function PowersPage({
                 <tr key={power.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
                   <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '14px' }}>{power.name}</td>
                   <td style={{ padding: '10px 12px', fontSize: '13px' }}>
-                    <Link href={`/characters/${power.person.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa', textDecoration: 'none' }}>
-                      {power.person.name}
-                    </Link>
+                    {power.characterPowers.length === 0 ? (
+                      <span style={{ color: '#374151' }}>—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {power.characterPowers.map(({ character }) => (
+                          <Link key={character.id} href={`/characters/${character.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa', textDecoration: 'none', fontSize: '12px' }}>
+                            {character.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '10px 12px', color: '#f59e0b', fontSize: '13px', fontStyle: 'italic' }}>
                     {power.effect ?? <span style={{ color: '#374151', fontStyle: 'normal' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', fontSize: '13px' }}>
-                    {power.ability ? (
+                    {power.baseAbility ? (
                       <span style={{ color: '#a78bfa' }}>
-                        {power.ability}
-                        {power.skillPercentage ? (
-                          <span className="ml-1 text-xs font-mono" style={{ color: '#7c3aed' }}>{power.skillPercentage}%</span>
-                        ) : (
-                          <span className="ml-1 text-xs" style={{ color: '#4b5563' }}>(from skill)</span>
-                        )}
+                        {power.baseAbility}
+                        {power.basePercentage ? (
+                          <span className="ml-1 text-xs font-mono" style={{ color: '#7c3aed' }}>{power.basePercentage}%</span>
+                        ) : null}
                       </span>
                     ) : (
                       <span style={{ color: '#374151' }}>—</span>
@@ -159,19 +161,23 @@ export default async function PowersPage({
                 <h2 className="text-lg font-semibold" style={{ color: '#e2e8f0' }}>{power.name}</h2>
                 <span className="text-2xl">⚡</span>
               </div>
-              <Link href={`/characters/${power.person.id}`} className="text-xs mb-2 inline-block hover:text-purple-300" style={{ color: '#a78bfa' }}>
-                👤 {power.person.name}
-              </Link>
+              {power.characterPowers.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {power.characterPowers.map(({ character }) => (
+                    <Link key={character.id} href={`/characters/${character.id}`} className="text-xs hover:text-purple-300" style={{ color: '#a78bfa' }}>
+                      👤 {character.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
               {power.description && <p className="text-sm mb-2 line-clamp-2" style={{ color: '#9ca3af' }}>{power.description}</p>}
               {power.effect && <p className="text-xs italic mb-1" style={{ color: '#f59e0b' }}>⚡ {power.effect}</p>}
-              {power.ability && (
+              {power.baseAbility && (
                 <p className="text-xs" style={{ color: '#a78bfa' }}>
-                  🎲 {power.ability}
-                  {power.skillPercentage ? (
-                    <span className="ml-1 font-mono">{power.skillPercentage}%</span>
-                  ) : (
-                    <span className="ml-1" style={{ color: '#6b7280' }}>(from skill)</span>
-                  )}
+                  🎲 {power.baseAbility}
+                  {power.basePercentage ? (
+                    <span className="ml-1 font-mono">{power.basePercentage}%</span>
+                  ) : null}
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>

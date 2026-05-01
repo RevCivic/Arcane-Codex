@@ -65,6 +65,7 @@ async function main() {
   // Clean up existing data
   await prisma.characterSkillValue.deleteMany()
   await prisma.characterSheet.deleteMany()
+  await prisma.characterPower.deleteMany()
   await prisma.skill.deleteMany()
   await prisma.power.deleteMany()
   await prisma.character.deleteMany()
@@ -343,44 +344,58 @@ async function main() {
   console.log('✅ Events created')
 
   // ─── Powers ───────────────────────────────────────────────────────────────────
-  await prisma.power.createMany({
+  const intuitionSurge = await prisma.power.create({
+    data: {
+      name: 'Intuition Surge',
+      description: "Sarah's most reliable ability — a sudden overwhelming certainty about the supernatural nature of a person, object, or location. It manifests as a visceral gut feeling that has never been wrong.",
+      effect: 'Once per session, may declare supernatural truth about a target without a roll. GM confirms if accurate. Also provides +20% to Spot Hidden when supernatural entities are nearby.',
+    },
+  })
+  const arcaneSight = await prisma.power.create({
+    data: {
+      name: 'Arcane Sight',
+      description: 'Webb can perceive magical energies, auras, and the residue of past supernatural events as visible light in the ultraviolet spectrum. Extended use causes severe migraines.',
+      effect: 'Can see magical auras, wards, and active rituals. Identifies supernatural entities by their energy signature. Costs 1 Magic Point per minute of sustained use.',
+    },
+  })
+  const bindingRitual = await prisma.power.create({
+    data: {
+      name: 'Binding Ritual',
+      description: "A complex ritual that Webb developed by combining elements from three different magical traditions. It creates a temporary containment field that suppresses a supernatural entity's ability to act.",
+      effect: 'Temporarily neutralizes a supernatural entity for 1d6 hours. Requires 10 minutes of preparation and a POW vs POW roll. Costs 5 Magic Points and 1 Sanity.',
+    },
+  })
+  const temporalMemory = await prisma.power.create({
+    data: {
+      name: 'Temporal Memory',
+      description: 'By touching a location or object, The Archivist can access the memories embedded in the physical world — witnessing events that occurred there as clearly as if present.',
+      effect: 'May view any past event that occurred at a touched location. Limited to significant events. No time limit but costs 2 Magic Points per vision. Cannot interact with the past.',
+    },
+  })
+  const shadowStep = await prisma.power.create({
+    data: {
+      name: 'Shadow Step',
+      description: 'Victor Saros can dissolve his physical form into shadow and re-emerge from any other shadow within range. He uses this ability both for surveillance and escape.',
+      effect: 'Teleport between shadows within 100 meters as a free action. May carry one willing or restrained person. Does not work in total darkness or total light.',
+    },
+  })
+  const mindFracture = await prisma.power.create({
+    data: {
+      name: 'Mind Fracture',
+      description: "A psychic assault that Saros delivers with surgical precision, targeting the rational mind's attempt to process supernatural truth. Victims experience temporary psychotic breaks.",
+      effect: 'POW vs POW attack. On success: target loses 1d10 Sanity and is incapacitated for 1d4 rounds. On extreme success: target gains a permanent phobia related to their deepest fear.',
+    },
+  })
+
+  // Assign powers to characters (modifier = 0 for all seed data)
+  await prisma.characterPower.createMany({
     data: [
-      {
-        name: 'Intuition Surge',
-        description: "Sarah's most reliable ability — a sudden overwhelming certainty about the supernatural nature of a person, object, or location. It manifests as a visceral gut feeling that has never been wrong.",
-        effect: 'Once per session, may declare supernatural truth about a target without a roll. GM confirms if accurate. Also provides +20% to Spot Hidden when supernatural entities are nearby.',
-        personId: sarah.id,
-      },
-      {
-        name: 'Arcane Sight',
-        description: 'Webb can perceive magical energies, auras, and the residue of past supernatural events as visible light in the ultraviolet spectrum. Extended use causes severe migraines.',
-        effect: 'Can see magical auras, wards, and active rituals. Identifies supernatural entities by their energy signature. Costs 1 Magic Point per minute of sustained use.',
-        personId: marcus.id,
-      },
-      {
-        name: 'Binding Ritual',
-        description: "A complex ritual that Webb developed by combining elements from three different magical traditions. It creates a temporary containment field that suppresses a supernatural entity's ability to act.",
-        effect: 'Temporarily neutralizes a supernatural entity for 1d6 hours. Requires 10 minutes of preparation and a POW vs POW roll. Costs 5 Magic Points and 1 Sanity.',
-        personId: marcus.id,
-      },
-      {
-        name: 'Temporal Memory',
-        description: 'By touching a location or object, The Archivist can access the memories embedded in the physical world — witnessing events that occurred there as clearly as if present.',
-        effect: 'May view any past event that occurred at a touched location. Limited to significant events. No time limit but costs 2 Magic Points per vision. Cannot interact with the past.',
-        personId: archivist.id,
-      },
-      {
-        name: 'Shadow Step',
-        description: 'Victor Saros can dissolve his physical form into shadow and re-emerge from any other shadow within range. He uses this ability both for surveillance and escape.',
-        effect: 'Teleport between shadows within 100 meters as a free action. May carry one willing or restrained person. Does not work in total darkness or total light.',
-        personId: victor.id,
-      },
-      {
-        name: 'Mind Fracture',
-        description: 'A psychic assault that Saros delivers with surgical precision, targeting the rational mind\'s attempt to process supernatural truth. Victims experience temporary psychotic breaks.',
-        effect: 'POW vs POW attack. On success: target loses 1d10 Sanity and is incapacitated for 1d4 rounds. On extreme success: target gains a permanent phobia related to their deepest fear.',
-        personId: victor.id,
-      },
+      { characterId: sarah.id,     powerId: intuitionSurge.id, modifier: 0 },
+      { characterId: marcus.id,    powerId: arcaneSight.id,    modifier: 0 },
+      { characterId: marcus.id,    powerId: bindingRitual.id,  modifier: 0 },
+      { characterId: archivist.id, powerId: temporalMemory.id, modifier: 0 },
+      { characterId: victor.id,    powerId: shadowStep.id,     modifier: 0 },
+      { characterId: victor.id,    powerId: mindFracture.id,   modifier: 0 },
     ],
   })
   console.log('✅ Powers created')
