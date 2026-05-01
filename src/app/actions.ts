@@ -715,221 +715,297 @@ export async function deleteEvent(id: number) {
 // ─── Powers ───────────────────────────────────────────────────────────────────
 
 /**
- * If `ability` is a non-empty string and `skillPercentage` is > 0, find-or-create a
- * Skill with that name (category "Powers") and upsert a CharacterSkillValue on the
- * character's sheet (creating a blank sheet if one doesn't exist yet).
+ * Sync a single character's CharacterSkillValue for a power's baseAbility.
  *
- * If `ability` is empty or `skillPercentage` is 0 / null, remove the CharacterSkillValue
- * that was previously keyed to `previousAbility` — but only if the stored value still
- * matches `previousSkillPercentage` (i.e. the player hasn't manually edited it).
+ * effectiveValue = power.basePercentage + characterPower.modifier
+ *
+ * - If baseAbility is set and effectiveValue > 0, find-or-create the Skill (category
+ *   "Powers") and upsert a CharacterSkillValue on the character's sheet.
+ * - If baseAbility is cleared or effectiveValue ≤ 0 and previousAbility is set,
+ *   remove the CharacterSkillValue — but only if the stored value still matches
+ *   previousEffectiveValue (i.e. the player hasn't manually changed it).
  */
-async function syncPowerSkill(
-  personId: number,
-  ability: string | null,
-  skillPercentage: number | null,
+async function syncCharacterPowerSkill(
+  characterId: number,
+  baseAbility: string | null,
+  effectiveValue: number | null,
   previousAbility?: string | null,
-  previousSkillPercentage?: number | null,
+  previousEffectiveValue?: number | null,
 ): Promise<void> {
-  const cleanAbility = ability?.trim() || null
+  const cleanAbility = baseAbility?.trim() || null
   const cleanPrev = previousAbility?.trim() || null
 
-  // Remove the old skill entry when the ability name changed or the percentage was cleared,
+  // Remove the old skill entry when the ability name changed or value was cleared,
   // but only if the character hasn't independently modified the value on their sheet.
   if (cleanPrev && cleanPrev !== cleanAbility) {
     const prevSkill = await prisma.skill.findFirst({ where: { name: cleanPrev } })
     if (prevSkill) {
-      const sheet = await prisma.characterSheet.findUnique({ where: { characterId: personId } })
+      const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
       if (sheet) {
         await prisma.characterSkillValue.deleteMany({
           where: {
             sheetId: sheet.id,
             skillId: prevSkill.id,
-            // Only delete if the value is still the power-derived one.
-            ...(previousSkillPercentage != null ? { value: previousSkillPercentage } : {}),
+            ...(previousEffectiveValue != null ? { value: previousEffectiveValue } : {}),
           },
         })
       }
     }
   }
 
-  // Nothing to add if ability is blank or percentage is 0 / null.
-  if (!cleanAbility || !skillPercentage || skillPercentage <= 0) return
+  // Nothing to add if ability is blank or effective value is 0 / null.
+  if (!cleanAbility || !effectiveValue || effectiveValue <= 0) return
 
   // Find or create the Skill definition.
   const skill = await prisma.skill.upsert({
     where: { name: cleanAbility },
     update: {},
-    create: { name: cleanAbility, category: 'Powers', baseValue: skillPercentage },
+    create: { name: cleanAbility, category: 'Powers', baseValue: effectiveValue },
   })
 
   // Ensure the character has a sheet.
   const sheet = await prisma.characterSheet.upsert({
-    where: { characterId: personId },
+    where: { characterId },
     update: {},
-    create: { characterId: personId },
+    create: { characterId },
   })
 
   // Upsert the character's skill value.
   await prisma.characterSkillValue.upsert({
     where: { sheetId_skillId: { sheetId: sheet.id, skillId: skill.id } },
-    update: { value: skillPercentage },
-    create: { sheetId: sheet.id, skillId: skill.id, value: skillPercentage },
+    update: { value: effectiveValue },
+    create: { sheetId: sheet.id, skillId: skill.id, value: effectiveValue },
   })
 }
 
 export async function createPower(formData: FormData) {
-  await requireAuthorizedUser()
+  await requireAdminUser()
 
-  const name = formData.get('name') as string
+  const name = (formData.get('name') as string).trim()
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
-  const personId = parseInt(formData.get('personId') as string, 10)
-  const ability = getNullableString((formData.get('ability') as string | null)?.trim() ?? '')
-  const skillPercentage = toNullableInt(formData.get('skillPercentage') as string | null)
+  const baseAbility = getNullableString((formData.get('baseAbility') as string | null)?.trim() ?? '')
+  const basePercentage = toNullableInt(formData.get('basePercentage') as string | null)
   const referenceLinks = getReferenceLinksFromForm(formData)
 
-  if (ability) {
-    const duplicate = await prisma.power.findFirst({
-      where: { personId, ability: { equals: ability, mode: 'insensitive' } },
-    })
-    if (duplicate) {
-      throw new Error(`This character already has a power with ability "${ability}". Each ability must be unique per character.`)
-    }
-  }
-
-  await prisma.power.create({ data: { name, description, effect, ability, skillPercentage, personId, referenceLinks } })
-  await syncPowerSkill(personId, ability, skillPercentage)
+  await prisma.power.create({ data: { name, description, effect, baseAbility, basePercentage, referenceLinks } })
   revalidatePath('/powers')
-  revalidatePath(`/characters/${personId}`)
-  revalidatePath(`/characters/${personId}/sheet`)
   redirect('/powers')
 }
 
 export async function createPowersBulk(formData: FormData) {
-  await requireAuthorizedUser()
+  await requireAdminUser()
 
   const names = getFormStrings(formData, 'name')
-  const personIds = getFormStrings(formData, 'personId')
   const descriptions = getFormStrings(formData, 'description')
   const effects = getFormStrings(formData, 'effect')
-  const abilities = getFormStrings(formData, 'ability')
-  const skillPercentages = getFormStrings(formData, 'skillPercentage')
+  const baseAbilities = getFormStrings(formData, 'baseAbility')
+  const basePercentages = getFormStrings(formData, 'basePercentage')
 
   const rows = names
     .map((name, i) => {
-      const personRaw = personIds[i] ?? ''
-      const parsedPersonId = parseInt(personRaw, 10)
-      if (!name || isNaN(parsedPersonId)) return null
-
+      if (!name) return null
       return {
         name,
-        personId: parsedPersonId,
         description: getNullableString(descriptions[i] ?? ''),
         effect: getNullableString(effects[i] ?? ''),
-        ability: getNullableString(abilities[i] ?? ''),
-        skillPercentage: toNullableInt(skillPercentages[i] ?? ''),
+        baseAbility: getNullableString(baseAbilities[i] ?? ''),
+        basePercentage: toNullableInt(basePercentages[i] ?? ''),
       }
     })
     .filter((row): row is NonNullable<typeof row> => row !== null)
 
-  // Validate: no two rows in this batch share the same (personId, ability).
+  // Validate: no duplicate names in this batch.
   const seen = new Set<string>()
   for (const row of rows) {
-    if (!row.ability) continue
-    const key = `${row.personId}:${row.ability.toLowerCase()}`
-    if (seen.has(key)) {
-      throw new Error(`Duplicate ability "${row.ability}" for the same character in this batch.`)
-    }
+    const key = row.name.toLowerCase()
+    if (seen.has(key)) throw new Error(`Duplicate power name "${row.name}" in this batch.`)
     seen.add(key)
   }
 
   // Validate against existing powers.
   for (const row of rows) {
-    if (!row.ability) continue
     const duplicate = await prisma.power.findFirst({
-      where: { personId: row.personId, ability: { equals: row.ability, mode: 'insensitive' } },
+      where: { name: { equals: row.name, mode: 'insensitive' } },
     })
-    if (duplicate) {
-      throw new Error(`Character (id ${row.personId}) already has a power with ability "${row.ability}".`)
-    }
+    if (duplicate) throw new Error(`A power named "${row.name}" already exists.`)
   }
 
   for (const row of rows) {
     await prisma.power.create({ data: row })
-    await syncPowerSkill(row.personId, row.ability, row.skillPercentage)
   }
 
   revalidatePath('/powers')
-  const uniquePersonIds = [...new Set(rows.map((r) => r.personId))]
-  for (const pid of uniquePersonIds) {
-    revalidatePath(`/characters/${pid}`)
-    revalidatePath(`/characters/${pid}/sheet`)
-  }
-
   redirect('/powers')
 }
 
 export async function updatePower(id: number, formData: FormData) {
-  await requireAuthorizedUser()
+  await requireAdminUser()
 
-  const name = formData.get('name') as string
+  const name = (formData.get('name') as string).trim()
   const description = formData.get('description') as string
   const effect = formData.get('effect') as string
-  const personId = parseInt(formData.get('personId') as string, 10)
-  const ability = getNullableString((formData.get('ability') as string | null)?.trim() ?? '')
-  const skillPercentage = toNullableInt(formData.get('skillPercentage') as string | null)
+  const baseAbility = getNullableString((formData.get('baseAbility') as string | null)?.trim() ?? '')
+  const basePercentage = toNullableInt(formData.get('basePercentage') as string | null)
   const referenceLinks = getReferenceLinksFromForm(formData)
 
-  // Fetch old ability and skill% before overwriting so we can clean up the stale skill entry.
+  // Fetch old values so we can re-sync all character skill values.
   const existing = await prisma.power.findUnique({
     where: { id },
-    select: { ability: true, skillPercentage: true, personId: true },
+    select: {
+      baseAbility: true,
+      basePercentage: true,
+      characterPowers: { select: { characterId: true, modifier: true } },
+    },
   })
-
-  if (ability) {
-    const duplicate = await prisma.power.findFirst({
-      where: {
-        personId,
-        ability: { equals: ability, mode: 'insensitive' },
-        NOT: { id },
-      },
-    })
-    if (duplicate) {
-      throw new Error(`This character already has a power with ability "${ability}". Each ability must be unique per character.`)
-    }
-  }
 
   await prisma.power.update({
     where: { id },
-    data: { name, description, effect, ability, skillPercentage, personId, referenceLinks },
+    data: { name, description, effect, baseAbility, basePercentage, referenceLinks },
   })
-  await syncPowerSkill(personId, ability, skillPercentage, existing?.ability, existing?.skillPercentage)
+
+  // Re-sync every character's skill value for this power.
+  if (existing) {
+    for (const cp of existing.characterPowers) {
+      const prevEffective = existing.basePercentage != null
+        ? existing.basePercentage + cp.modifier
+        : null
+      const newEffective = basePercentage != null ? basePercentage + cp.modifier : null
+      await syncCharacterPowerSkill(
+        cp.characterId,
+        baseAbility,
+        newEffective,
+        existing.baseAbility,
+        prevEffective,
+      )
+      revalidatePath(`/characters/${cp.characterId}`)
+      revalidatePath(`/characters/${cp.characterId}/sheet`)
+    }
+  }
+
   revalidatePath('/powers')
   revalidatePath(`/powers/${id}`)
-  revalidatePath(`/characters/${personId}`)
-  revalidatePath(`/characters/${personId}/sheet`)
   redirect(`/powers/${id}`)
 }
 
 export async function deletePower(id: number) {
-  await requireAuthorizedUser()
+  await requireAdminUser()
 
   const power = await prisma.power.findUnique({
     where: { id },
-    select: { ability: true, skillPercentage: true, personId: true },
+    select: {
+      baseAbility: true,
+      basePercentage: true,
+      characterPowers: { select: { characterId: true, modifier: true } },
+    },
   })
 
   await prisma.power.delete({ where: { id } })
 
-  // Clean up the associated CharacterSkillValue if the power had an ability.
-  if (power?.ability) {
-    await syncPowerSkill(power.personId, null, null, power.ability, power.skillPercentage)
+  // Clean up CharacterSkillValues for all assigned characters.
+  if (power?.baseAbility) {
+    for (const cp of power.characterPowers) {
+      const effectiveValue = power.basePercentage != null ? power.basePercentage + cp.modifier : null
+      await syncCharacterPowerSkill(cp.characterId, null, null, power.baseAbility, effectiveValue)
+      revalidatePath(`/characters/${cp.characterId}`)
+      revalidatePath(`/characters/${cp.characterId}/sheet`)
+    }
   }
 
   revalidatePath('/powers')
-  revalidatePath(`/characters/${power?.personId}`)
-  revalidatePath(`/characters/${power?.personId}/sheet`)
   redirect('/powers')
+}
+
+// ─── CharacterPower Assignment ────────────────────────────────────────────────
+
+export async function assignPower(formData: FormData) {
+  await requireAdminUser()
+
+  const characterId = parseInt(formData.get('characterId') as string, 10)
+  const powerId = parseInt(formData.get('powerId') as string, 10)
+  const modifier = toNullableInt(formData.get('modifier') as string | null) ?? 0
+  const notes = getNullableString((formData.get('notes') as string | null)?.trim() ?? '')
+
+  // Prevent duplicate assignments.
+  const existing = await prisma.characterPower.findUnique({
+    where: { characterId_powerId: { characterId, powerId } },
+  })
+  if (existing) throw new Error('This character already has that power assigned.')
+
+  const power = await prisma.power.findUnique({
+    where: { id: powerId },
+    select: { baseAbility: true, basePercentage: true },
+  })
+  if (!power) throw new Error('Power not found.')
+
+  await prisma.characterPower.create({ data: { characterId, powerId, modifier, notes } })
+
+  const effectiveValue = power.basePercentage != null ? power.basePercentage + modifier : null
+  await syncCharacterPowerSkill(characterId, power.baseAbility, effectiveValue)
+
+  revalidatePath(`/characters/${characterId}`)
+  revalidatePath(`/characters/${characterId}/sheet`)
+  revalidatePath(`/powers/${powerId}`)
+  redirect(`/characters/${characterId}`)
+}
+
+export async function updateCharacterPower(id: number, formData: FormData) {
+  await requireAdminUser()
+
+  const modifier = toNullableInt(formData.get('modifier') as string | null) ?? 0
+  const notes = getNullableString((formData.get('notes') as string | null)?.trim() ?? '')
+
+  const cp = await prisma.characterPower.findUnique({
+    where: { id },
+    select: {
+      characterId: true,
+      modifier: true,
+      power: { select: { id: true, baseAbility: true, basePercentage: true } },
+    },
+  })
+  if (!cp) throw new Error('Assignment not found.')
+
+  const prevEffective = cp.power.basePercentage != null ? cp.power.basePercentage + cp.modifier : null
+  const newEffective = cp.power.basePercentage != null ? cp.power.basePercentage + modifier : null
+
+  await prisma.characterPower.update({ where: { id }, data: { modifier, notes } })
+
+  await syncCharacterPowerSkill(
+    cp.characterId,
+    cp.power.baseAbility,
+    newEffective,
+    cp.power.baseAbility,
+    prevEffective,
+  )
+
+  revalidatePath(`/characters/${cp.characterId}`)
+  revalidatePath(`/characters/${cp.characterId}/sheet`)
+  revalidatePath(`/powers/${cp.power.id}`)
+  redirect(`/characters/${cp.characterId}`)
+}
+
+export async function removeCharacterPower(id: number) {
+  await requireAdminUser()
+
+  const cp = await prisma.characterPower.findUnique({
+    where: { id },
+    select: {
+      characterId: true,
+      modifier: true,
+      power: { select: { id: true, baseAbility: true, basePercentage: true } },
+    },
+  })
+  if (!cp) throw new Error('Assignment not found.')
+
+  await prisma.characterPower.delete({ where: { id } })
+
+  const effectiveValue = cp.power.basePercentage != null ? cp.power.basePercentage + cp.modifier : null
+  await syncCharacterPowerSkill(cp.characterId, null, null, cp.power.baseAbility, effectiveValue)
+
+  revalidatePath(`/characters/${cp.characterId}`)
+  revalidatePath(`/characters/${cp.characterId}/sheet`)
+  revalidatePath(`/powers/${cp.power.id}`)
+  redirect(`/characters/${cp.characterId}`)
 }
 
 // ─── Character Claim / Ownership ─────────────────────────────────────────────

@@ -99,7 +99,10 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
       where: { id: characterId },
       include: {
         sheet: { include: { skillValues: { include: { skill: true } } } },
-        powers: true,
+        characterPowers: {
+          include: { power: { select: { id: true, name: true, baseAbility: true, basePercentage: true } } },
+          orderBy: { power: { name: 'asc' } },
+        },
         inventoryItems: true,
       },
     }),
@@ -545,7 +548,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             : []),
 
           // ── Powers (conditional) ────────────────────────────────────────
-          ...(character.powers.length > 0
+          ...(character.characterPowers.length > 0
             ? [
                 {
                   key: 'powers',
@@ -560,21 +563,27 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                       }
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {character.powers.map((power) => {
-                          const effectivePct = power.skillPercentage ?? (power.ability ? skillNameMap.get(power.ability) : undefined)
+                        {character.characterPowers.map((cp) => {
+                          const effectivePct = cp.power.basePercentage != null
+                            ? cp.power.basePercentage + cp.modifier
+                            : (cp.power.baseAbility ? skillNameMap.get(cp.power.baseAbility) : undefined)
                           return (
-                            <div key={power.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
-                              <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{power.name}</h3>
-                              {power.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{power.description}</p>}
-                              {power.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>⚡ {power.effect}</p>}
-                              {power.ability && (
+                            <div key={cp.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                              <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{cp.power.name}</h3>
+                              {cp.power.baseAbility && (
                                 <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
-                                  🎲 {power.ability}
+                                  🎲 {cp.power.baseAbility}
                                   {effectivePct != null ? (
                                     <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{effectivePct}%</span>
                                   ) : null}
+                                  {cp.modifier !== 0 && (
+                                    <span className="ml-1 font-mono" style={{ color: cp.modifier > 0 ? '#4ade80' : '#f87171' }}>
+                                      ({cp.modifier > 0 ? '+' : ''}{cp.modifier})
+                                    </span>
+                                  )}
                                 </p>
                               )}
+                              {cp.notes && <p className="text-xs italic mt-1" style={{ color: '#6b7280' }}>{cp.notes}</p>}
                             </div>
                           )
                         })}

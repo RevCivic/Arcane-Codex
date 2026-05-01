@@ -43,7 +43,7 @@ export function AbilitySelector({ skills, defaultValue }: AbilitySelectorProps) 
   return (
     <div className="space-y-2">
       {/* Hidden input carries the resolved value into the form submission. */}
-      <input type="hidden" name="ability" value={abilityValue} />
+      <input type="hidden" name="baseAbility" value={abilityValue} />
 
       <select
         value={selected}

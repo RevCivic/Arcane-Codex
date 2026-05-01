@@ -67,7 +67,7 @@ model AllowedEmail {
 }
 
 model Character {
-  id              Int             @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   name            String
   firstName       String?
   lastName        String?
@@ -83,13 +83,13 @@ model Character {
   homeOrigin      String?
   imageUrl        String?
   referenceLinks  Json?
-  status          String?         @default("Active")
-  claimedByEmail  String?         @unique
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  claimedBy       AllowedEmail?   @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
+  status          String?          @default("Active")
+  claimedByEmail  String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  claimedBy       AllowedEmail?    @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
   sheet           CharacterSheet?
-  powers          Power[]
+  characterPowers CharacterPower[]
   inventoryItems  InventoryItem[]
   events          Event[]
   rollHistory     RollHistory[]
@@ -200,19 +200,35 @@ model Event {
 }
 
 model Power {
-  id              Int       @id @default(autoincrement())
-  name            String
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
   description     String?
   effect          String?
   /// Free-text name of the ability roll associated with this power (e.g. "Telepathy").
-  ability         String?
-  /// Percentile skill value (1–100) for the ability roll. Null or 0 = passive / auto-success.
-  skillPercentage Int?
+  baseAbility     String?
+  /// Base percentile skill value (1–100) for the ability roll. Null or 0 = passive / auto-success.
+  basePercentage  Int?
   referenceLinks  Json?
-  personId        Int
-  person          Character @relation(fields: [personId], references: [id], onDelete: Cascade)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  characterPowers CharacterPower[]
+}
+
+/// A character's assignment of a specific power, with an individual modifier.
+model CharacterPower {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  powerId     Int
+  power       Power     @relation(fields: [powerId], references: [id], onDelete: Cascade)
+  /// Flat ±% modifier on top of power.basePercentage (positive = more proficient, negative = detriment).
+  modifier    Int       @default(0)
+  /// Optional free-text reason for the modifier, e.g. "split tongue −20 to verbal".
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([characterId, powerId])
 }
 
 /// Persisted roll records visible to the character owner and admins.
