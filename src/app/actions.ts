@@ -49,6 +49,22 @@ function toNullableInt(value: unknown): number | null {
   return null
 }
 
+function toNullableBigInt(value: unknown): bigint | null {
+  if (typeof value === 'bigint') return value
+  if (typeof value === 'number' && Number.isFinite(value)) return BigInt(Math.trunc(value))
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    if (!/^-?\d+$/.test(trimmed)) return null
+    try {
+      return BigInt(trimmed)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 const FOUNDRY_SKILL_CATEGORY_MAP: Record<string, string> = {
   zcmbtmod: 'Combat',
   cmbtmod: 'Combat',
@@ -331,8 +347,7 @@ export async function syncCharactersFromSheet(): Promise<{
     if (!name) continue
 
     const ageRaw = get(col.age)
-    const parsedAge = ageRaw !== null && ageRaw !== undefined ? parseInt(ageRaw, 10) : NaN
-    const age = isNaN(parsedAge) ? null : parsedAge
+    const age = toNullableBigInt(ageRaw)
 
     const data = {
       firstName,
@@ -375,9 +390,7 @@ export async function createCharacter(formData: FormData) {
   const lastName = formData.get('lastName') as string
   const race = formData.get('race') as string
   const gender = formData.get('gender') as string
-  const ageRaw = formData.get('age') as string
-  const parsedAge = ageRaw ? parseInt(ageRaw, 10) : NaN
-  const age = isNaN(parsedAge) ? null : parsedAge
+  const age = toNullableBigInt(formData.get('age'))
   const role = formData.get('role') as string
   const description = formData.get('description') as string
   const stats = formData.get('stats') as string
@@ -434,9 +447,7 @@ export async function updateCharacter(id: number, formData: FormData) {
   const lastName = formData.get('lastName') as string
   const race = formData.get('race') as string
   const gender = formData.get('gender') as string
-  const ageRaw = formData.get('age') as string
-  const parsedAge = ageRaw ? parseInt(ageRaw, 10) : NaN
-  const age = isNaN(parsedAge) ? null : parsedAge
+  const age = toNullableBigInt(formData.get('age'))
   const role = formData.get('role') as string
   const description = formData.get('description') as string
   const stats = formData.get('stats') as string

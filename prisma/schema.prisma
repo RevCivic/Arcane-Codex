@@ -73,7 +73,7 @@ model Character {
   lastName        String?
   race            String?
   gender          String?
-  age             Int?
+  age             BigInt?
   role            String?
   description     String?
   stats           String?

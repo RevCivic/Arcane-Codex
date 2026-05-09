@@ -55,7 +55,7 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Age</label>
-            <input name="age" type="number" defaultValue={character.age ?? ''} className="arcane-input" />
+            <input name="age" type="number" defaultValue={character.age?.toString() ?? ''} className="arcane-input" />
           </div>
         </div>
         <div>
