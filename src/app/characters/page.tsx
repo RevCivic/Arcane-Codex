@@ -162,7 +162,7 @@ export default async function CharactersPage({
                     {character.race ?? <span style={{ color: '#374151' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: '13px' }}>
-                    {character.age ?? <span style={{ color: '#374151' }}>—</span>}
+                    {character.age !== null && character.age !== undefined ? character.age.toString() : <span style={{ color: '#374151' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: '13px' }}>
                     {character.affiliation ?? <span style={{ color: '#374151' }}>—</span>}
@@ -215,7 +215,7 @@ export default async function CharactersPage({
               )}
               {character.race && (
                 <p className="text-xs mb-1" style={{ color: '#6b7280' }}>
-                  🧬 {character.race}{character.gender ? ` · ${character.gender}` : ''}{character.age ? ` · Age ${character.age}` : ''}
+                  🧬 {character.race}{character.gender ? ` · ${character.gender}` : ''}{character.age !== null && character.age !== undefined ? ` · Age ${character.age.toString()}` : ''}
                 </p>
               )}
               {character.affiliation && (

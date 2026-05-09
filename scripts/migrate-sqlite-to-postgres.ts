@@ -187,7 +187,7 @@ async function main() {
             lastName: row.lastName == null ? null : String(row.lastName),
             race: row.race == null ? null : String(row.race),
             gender: row.gender == null ? null : String(row.gender),
-            age: row.age == null ? null : Number(row.age),
+            age: row.age == null ? null : BigInt(Math.trunc(Number(row.age))),
             role: row.role == null ? null : String(row.role),
             description: row.description == null ? null : String(row.description),
             stats: row.stats == null ? null : String(row.stats),

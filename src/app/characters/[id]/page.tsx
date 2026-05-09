@@ -244,7 +244,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
           {character.age !== null && character.age !== undefined && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Age</dt>
-              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.age}</dd>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.age.toString()}</dd>
             </div>
           )}
           {character.affiliation && (

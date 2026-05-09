@@ -1,0 +1,2 @@
+ALTER TABLE "Character"
+    ALTER COLUMN "age" TYPE BIGINT;
