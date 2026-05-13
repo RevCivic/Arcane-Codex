@@ -158,6 +158,8 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     { key: 'cha',          label: 'CHA', value: sheet?.cha          ?? null },
     { key: 'app',          label: 'APP', value: sheet?.app          ?? null },
     { key: 'edu',          label: 'EDU', value: sheet?.edu          ?? null },
+    { key: 'luck',         label: 'Luck', value: sheet?.luck        ?? null },
+    { key: 'sanity',       label: 'Sanity', value: sheet?.currentSanity ?? null },
   ]
 
   const consoleSkills: SkillEntry[] = allSkills.map((skill) => ({
