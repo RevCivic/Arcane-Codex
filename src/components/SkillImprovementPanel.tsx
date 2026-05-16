@@ -64,10 +64,6 @@ export function SkillImprovementPanel({
           )
         } else {
           const failedSkill = pendingSkills[index]
-          if (!failedSkill) {
-            console.error('Improvement roll failed for unknown skill index:', index, attempt.reason)
-            continue
-          }
           const err = attempt.reason
           console.error(`Improvement roll failed for ${failedSkill.name}:`, err)
         }
