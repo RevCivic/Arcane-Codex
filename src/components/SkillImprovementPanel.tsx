@@ -48,16 +48,25 @@ export function SkillImprovementPanel({
     if (pendingSkills.length === 0) return
 
     startRollTransition(async () => {
-      for (const skill of pendingSkills) {
+      const rollAttempts = pendingSkills.map(async (skill) => {
         const modifier = modifiers[skill.id] ?? 0
-        try {
-          const result = await rollSkillImprovement(characterId, skill.id, modifier)
+        const result = await rollSkillImprovement(characterId, skill.id, modifier)
+        return { skill, result }
+      })
+
+      const settled = await Promise.allSettled(rollAttempts)
+      for (const [index, attempt] of settled.entries()) {
+        if (attempt.status === 'fulfilled') {
+          const { skill, result } = attempt.value
           setResults((prev) => ({ ...prev, [skill.id]: result }))
           setMarkedSkills((prev) =>
             prev.map((s) => (s.id === skill.id ? { ...s, currentValue: result.newValue } : s))
           )
-        } catch (err) {
-          console.error(`Improvement roll failed for ${skill.name}:`, err)
+        } else {
+          const failedSkill = pendingSkills[index]
+          const skillName = failedSkill?.name ?? 'unknown skill'
+          const err = attempt.reason
+          console.error(`Improvement roll failed for ${skillName}:`, err)
         }
       }
     })
