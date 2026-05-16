@@ -24,6 +24,7 @@ export function SkillImprovementPanel({
   >({})
   const [isRolling, startRollTransition] = useTransition()
   const [isClearing, startClearTransition] = useTransition()
+  const [rollAllFailures, setRollAllFailures] = useState<string[]>([])
 
   if (markedSkills.length === 0) return null
 
@@ -48,26 +49,33 @@ export function SkillImprovementPanel({
     if (pendingSkills.length === 0) return
 
     startRollTransition(async () => {
+      setRollAllFailures([])
+
       const rollAttempts = pendingSkills.map(async (skill) => {
         const modifier = modifiers[skill.id] ?? 0
-        const result = await rollSkillImprovement(characterId, skill.id, modifier)
-        return { skill, result }
+        try {
+          const result = await rollSkillImprovement(characterId, skill.id, modifier)
+          return { skill, result, error: null as unknown }
+        } catch (error) {
+          return { skill, result: null as null, error }
+        }
       })
 
-      const settled = await Promise.allSettled(rollAttempts)
-      for (const [index, attempt] of settled.entries()) {
-        if (attempt.status === 'fulfilled') {
-          const { skill, result } = attempt.value
+      const completed = await Promise.all(rollAttempts)
+      const failedSkillNames: string[] = []
+      for (const attempt of completed) {
+        if (attempt.result) {
+          const { skill, result } = attempt
           setResults((prev) => ({ ...prev, [skill.id]: result }))
           setMarkedSkills((prev) =>
             prev.map((s) => (s.id === skill.id ? { ...s, currentValue: result.newValue } : s))
           )
         } else {
-          const failedSkill = pendingSkills[index]
-          const err = attempt.reason
-          console.error(`Improvement roll failed for ${failedSkill.name}:`, err)
+          failedSkillNames.push(attempt.skill.name)
+          console.error(`Improvement roll failed for ${attempt.skill.name}:`, attempt.error)
         }
       }
+      setRollAllFailures(failedSkillNames)
     })
   }
 
@@ -219,6 +227,11 @@ export function SkillImprovementPanel({
           {isClearing ? 'Clearing…' : '✗ Clear All Marks'}
         </button>
       </div>
+      {rollAllFailures.length > 0 && (
+        <p className="text-xs mt-2" style={{ color: '#fca5a5' }}>
+          Some rolls failed. Retry individually for: {rollAllFailures.join(', ')}.
+        </p>
+      )}
     </div>
   )
 }
