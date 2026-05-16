@@ -507,7 +507,7 @@ export function DiceConsole({
                           const isMarked = markedSkillIds.has(s.id)
                           return (
                             <option key={s.id} value={s.id}>
-                              {isMarked ? '📌 ' : ''}{s.name} ({s.effectiveValue}%){s.category ? ` — ${s.category}` : ''}
+                              {s.name} ({s.effectiveValue}%){s.category ? ` — ${s.category}` : ''}{isMarked ? ' 📌' : ''}
                             </option>
                           )
                         })}
