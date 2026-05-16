@@ -43,6 +43,26 @@ export function SkillImprovementPanel({
     })
   }
 
+  const handleRollAllPending = () => {
+    const pendingSkills = markedSkills.filter((skill) => results[skill.id] === undefined)
+    if (pendingSkills.length === 0) return
+
+    startRollTransition(async () => {
+      for (const skill of pendingSkills) {
+        const modifier = modifiers[skill.id] ?? 0
+        try {
+          const result = await rollSkillImprovement(characterId, skill.id, modifier)
+          setResults((prev) => ({ ...prev, [skill.id]: result }))
+          setMarkedSkills((prev) =>
+            prev.map((s) => (s.id === skill.id ? { ...s, currentValue: result.newValue } : s))
+          )
+        } catch (err) {
+          console.error(`Improvement roll failed for ${skill.name}:`, err)
+        }
+      }
+    })
+  }
+
   const handleClearAll = () => {
     startClearTransition(async () => {
       try {
@@ -170,15 +190,27 @@ export function SkillImprovementPanel({
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={handleClearAll}
-        disabled={isClearing}
-        className="px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{ border: '1px solid #374151', color: '#9ca3af', backgroundColor: '#0d0d15' }}
-      >
-        {isClearing ? 'Clearing…' : '✗ Clear All Marks'}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleRollAllPending}
+          disabled={isRolling || markedSkills.every((skill) => results[skill.id] !== undefined)}
+          className="px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: '#7c3aed', color: '#fff' }}
+        >
+          {isRolling ? 'Rolling…' : '🎲 Roll All Pending'}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleClearAll}
+          disabled={isClearing}
+          className="px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ border: '1px solid #374151', color: '#9ca3af', backgroundColor: '#0d0d15' }}
+        >
+          {isClearing ? 'Clearing…' : '✗ Clear All Marks'}
+        </button>
+      </div>
     </div>
   )
 }
