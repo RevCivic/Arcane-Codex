@@ -38,6 +38,36 @@ function getNullableString(value: string) {
   return value || null
 }
 
+function parseTagsFromForm(formData: FormData): string[] {
+  const raw = (formData.get('tags') as string | null)?.trim()
+  if (!raw) return []
+
+  const deduped = new Map<string, string>()
+  const addTag = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    const normalized = trimmed.toLowerCase()
+    if (!deduped.has(normalized)) deduped.set(normalized, trimmed)
+  }
+
+  if (raw.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        for (const value of parsed) {
+          if (typeof value === 'string') addTag(value)
+        }
+        return [...deduped.values()]
+      }
+    } catch {
+      // Fallback to delimiter parsing below.
+    }
+  }
+
+  for (const value of raw.split(/[,\n;]/)) addTag(value)
+  return [...deduped.values()]
+}
+
 function toNullableInt(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value)
   if (typeof value === 'string') {
@@ -382,6 +412,15 @@ export async function syncCharactersFromSheet(): Promise<{
 
 // ─── Characters ───────────────────────────────────────────────────────────────
 
+export async function getAllTags() {
+  await requireAuthorizedUser()
+  const tags = await prisma.tag.findMany({
+    orderBy: { name: 'asc' },
+    select: { name: true },
+  })
+  return tags.map((tag) => tag.name)
+}
+
 export async function createCharacter(formData: FormData) {
   await requireAuthorizedUser()
 
@@ -401,9 +440,35 @@ export async function createCharacter(formData: FormData) {
   const status = formData.get('status') as string
   const imageUrl = await resolveImageUrlFromForm(formData)
   const referenceLinks = getReferenceLinksFromForm(formData)
+  const tags = parseTagsFromForm(formData)
 
   await prisma.character.create({
-    data: { name, firstName, lastName, race, gender, age, role, description, stats, affiliation, currentCase, currentLocation, homeOrigin, imageUrl, referenceLinks, status: status || 'Active' },
+    data: {
+      name,
+      firstName,
+      lastName,
+      race,
+      gender,
+      age,
+      role,
+      description,
+      stats,
+      affiliation,
+      currentCase,
+      currentLocation,
+      homeOrigin,
+      imageUrl,
+      referenceLinks,
+      status: status || 'Active',
+      tags: tags.length
+        ? {
+            connectOrCreate: tags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
+          }
+        : undefined,
+    },
   })
   revalidatePath('/characters')
   redirect('/characters')
@@ -459,10 +524,37 @@ export async function updateCharacter(id: number, formData: FormData) {
   const existingCharacter = await prisma.character.findUnique({ where: { id }, select: { imageUrl: true } })
   const imageUrl = await resolveImageUrlFromForm(formData, existingCharacter?.imageUrl)
   const referenceLinks = getReferenceLinksFromForm(formData)
+  const tags = parseTagsFromForm(formData)
 
   await prisma.character.update({
     where: { id },
-    data: { name, firstName, lastName, race, gender, age, role, description, stats, affiliation, currentCase, currentLocation, homeOrigin, imageUrl, referenceLinks, status },
+    data: {
+      name,
+      firstName,
+      lastName,
+      race,
+      gender,
+      age,
+      role,
+      description,
+      stats,
+      affiliation,
+      currentCase,
+      currentLocation,
+      homeOrigin,
+      imageUrl,
+      referenceLinks,
+      status,
+      tags: tags.length
+        ? {
+            set: [],
+            connectOrCreate: tags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
+          }
+        : { set: [] },
+    },
   })
   revalidatePath('/characters')
   revalidatePath(`/characters/${id}`)
