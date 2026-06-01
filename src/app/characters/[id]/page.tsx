@@ -23,6 +23,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
     prisma.character.findUnique({
       where: { id: characterId },
       include: {
+        tags: { orderBy: { name: 'asc' } },
         characterPowers: {
           include: { power: { select: { id: true, name: true, baseAbility: true, basePercentage: true } } },
           orderBy: { power: { name: 'asc' } },
@@ -96,6 +97,11 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
               >
                 {character.status ?? 'Unknown'}
               </span>
+              {character.tags.map((tag) => (
+                <span key={tag.id} className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
+                  #{tag.name}
+                </span>
+              ))}
               {/* Claim badge */}
               {character.claimedByEmail ? (
                 <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#0c1a2e', color: '#60a5fa' }}>

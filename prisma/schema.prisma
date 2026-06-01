@@ -88,11 +88,18 @@ model Character {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   claimedBy       AllowedEmail?    @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
+  tags            Tag[]
   sheet           CharacterSheet?
   characterPowers CharacterPower[]
   inventoryItems  InventoryItem[]
   events          Event[]
   rollHistory     RollHistory[]
+}
+
+model Tag {
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  characters Character[]
 }
 
 model CharacterSheet {

@@ -3,14 +3,21 @@ export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/prisma'
 import { referenceLinksToText } from '@/lib/referenceLinks'
 import { notFound } from 'next/navigation'
-import { updateCharacter } from '@/app/actions'
+import { getAllTags, updateCharacter } from '@/app/actions'
+import { TagInput } from '@/components/TagInput'
 import Link from 'next/link'
 
 const statusOptions = ['Active', 'Inactive', 'Deceased', 'Unknown', 'Missing']
 
 export default async function EditCharacterPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const character = await prisma.character.findUnique({ where: { id: parseInt(id) } })
+  const [character, allTags] = await Promise.all([
+    prisma.character.findUnique({
+      where: { id: parseInt(id) },
+      include: { tags: { orderBy: { name: 'asc' } } },
+    }),
+    getAllTags(),
+  ])
   if (!character) notFound()
 
   const action = updateCharacter.bind(null, character.id)
@@ -108,6 +115,7 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
             ))}
           </select>
         </div>
+        <TagInput allTags={allTags} initialTags={character.tags.map((tag) => tag.name)} />
         <div className="flex gap-3 pt-2">
           <button
             type="submit"

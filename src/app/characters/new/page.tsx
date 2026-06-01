@@ -1,11 +1,12 @@
-'use client'
-
-import { createCharacter } from '@/app/actions'
+import { createCharacter, getAllTags } from '@/app/actions'
+import { TagInput } from '@/components/TagInput'
 import Link from 'next/link'
 
 const statusOptions = ['Active', 'Inactive', 'Deceased', 'Unknown', 'Missing']
 
-export default function NewCharacterPage() {
+export default async function NewCharacterPage() {
+  const allTags = await getAllTags()
+
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
@@ -99,6 +100,7 @@ export default function NewCharacterPage() {
             ))}
           </select>
         </div>
+        <TagInput allTags={allTags} />
         <div className="flex gap-3 pt-2">
           <button
             type="submit"

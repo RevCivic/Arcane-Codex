@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import { Prisma } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Suspense } from 'react'
@@ -8,15 +9,17 @@ import { DeleteButton } from '@/components/DeleteButton'
 import { SyncFromSheetButton } from '@/components/SyncFromSheetButton'
 import { ViewToggle } from '@/components/ViewToggle'
 import { SearchBar } from '@/components/SearchBar'
+import { TagFilter } from '@/components/TagFilter'
 
 type SortOrder = 'asc' | 'desc'
 const VALID_SORT_FIELDS = ['name', 'role', 'status', 'race', 'age', 'affiliation'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
 
-function sortLink(view: string, currentSortBy: string, currentSortOrder: string, col: string, search: string) {
+function sortLink(view: string, currentSortBy: string, currentSortOrder: string, col: string, search: string, tags: string) {
   const order = currentSortBy === col ? (currentSortOrder === 'asc' ? 'desc' : 'asc') : 'asc'
   const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
-  return `?view=${view}&sortBy=${col}&sortOrder=${order}${searchParam}`
+  const tagsParam = tags ? `&tags=${encodeURIComponent(tags)}` : ''
+  return `?view=${view}&sortBy=${col}&sortOrder=${order}${searchParam}${tagsParam}`
 }
 
 function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: string; column: string }) {
@@ -27,28 +30,53 @@ function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: st
 export default async function CharactersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string; search?: string }>
+  searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string; search?: string; tags?: string }>
 }) {
-  const { view = 'card', sortBy: rawSortBy = 'name', sortOrder: rawSortOrder = 'asc', search = '' } = await searchParams
+  const { view = 'card', sortBy: rawSortBy = 'name', sortOrder: rawSortOrder = 'asc', search = '', tags = '' } = await searchParams
   const sortBy: SortField = VALID_SORT_FIELDS.includes(rawSortBy as SortField) ? (rawSortBy as SortField) : 'name'
   const sortOrder: SortOrder = rawSortOrder === 'desc' ? 'desc' : 'asc'
+  const selectedTags = tags
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
 
-  const where = search
-    ? {
-        OR: [
-          { name: { contains: search } },
-          { role: { contains: search } },
-          { status: { contains: search } },
-          { race: { contains: search } },
-          { affiliation: { contains: search } },
-          { description: { contains: search } },
-          { currentCase: { contains: search } },
-          { gender: { contains: search } },
-        ],
-      }
-    : {}
+  const whereClauses: Prisma.CharacterWhereInput[] = []
 
-  const characters = await prisma.character.findMany({ where, orderBy: { [sortBy]: sortOrder } })
+  if (search) {
+    whereClauses.push({
+      OR: [
+        { name: { contains: search } },
+        { role: { contains: search } },
+        { status: { contains: search } },
+        { race: { contains: search } },
+        { affiliation: { contains: search } },
+        { description: { contains: search } },
+        { currentCase: { contains: search } },
+        { gender: { contains: search } },
+      ],
+    })
+  }
+
+  if (selectedTags.length > 0) {
+    whereClauses.push({
+      AND: selectedTags.map((tag) => ({
+        tags: {
+          some: { name: tag },
+        },
+      })),
+    })
+  }
+
+  const where = whereClauses.length > 0 ? ({ AND: whereClauses } satisfies Prisma.CharacterWhereInput) : undefined
+
+  const [characters, allTags] = await Promise.all([
+    prisma.character.findMany({
+      where,
+      orderBy: { [sortBy]: sortOrder },
+      include: { tags: { orderBy: { name: 'asc' } } },
+    }),
+    prisma.tag.findMany({ orderBy: { name: 'asc' }, select: { name: true } }),
+  ])
 
   const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
@@ -92,6 +120,9 @@ export default async function CharactersPage({
           </div>
         </div>
       </div>
+      <Suspense fallback={null}>
+        <TagFilter tags={allTags.map((tag) => tag.name)} />
+      </Suspense>
 
       {characters.length === 0 ? (
         <div
@@ -106,32 +137,32 @@ export default async function CharactersPage({
             <thead>
               <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search, tags)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'role', search)} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'role', search, tags)} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Role<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="role" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'status', search)} style={{ color: sortBy === 'status' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'status', search, tags)} style={{ color: sortBy === 'status' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Status<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="status" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'race', search)} style={{ color: sortBy === 'race' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'race', search, tags)} style={{ color: sortBy === 'race' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Race<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="race" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'age', search)} style={{ color: sortBy === 'age' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'age', search, tags)} style={{ color: sortBy === 'age' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Age<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="age" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'affiliation', search)} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'affiliation', search, tags)} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Affiliation<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="affiliation" />
                   </Link>
                 </th>
@@ -144,7 +175,16 @@ export default async function CharactersPage({
               {characters.map((character) => (
                 <tr key={character.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
                   <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '14px' }}>
-                    {character.name}
+                    <div>{character.name}</div>
+                    {character.tags.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {character.tags.map((tag) => (
+                          <span key={tag.id} className="px-1.5 py-0.5 rounded-full text-[10px]" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
+                            #{tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '10px 12px', fontSize: '12px' }}>
                     {character.role ? (
@@ -227,6 +267,15 @@ export default async function CharactersPage({
                 <p className="text-xs mb-3" style={{ color: '#6b7280' }}>
                   🗂 {character.currentCase}
                 </p>
+              )}
+              {character.tags.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-1">
+                  {character.tags.map((tag) => (
+                    <span key={tag.id} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
+                      #{tag.name}
+                    </span>
+                  ))}
+                </div>
               )}
               <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link
