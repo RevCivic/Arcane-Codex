@@ -47,7 +47,7 @@ function parseTagsFromForm(formData: FormData): string[] {
     const trimmed = value.trim()
     if (!trimmed) return
     const normalized = trimmed.toLowerCase()
-    if (!deduped.has(normalized)) deduped.set(normalized, trimmed)
+    if (!deduped.has(normalized)) deduped.set(normalized, normalized)
   }
 
   if (raw.startsWith('[')) {
@@ -1711,6 +1711,88 @@ export async function deleteSkill(id: number) {
   await requireAdminUser()
   await prisma.skill.delete({ where: { id } })
   revalidatePath('/admin/skills')
+}
+
+function chooseCanonicalTag<T extends { name: string; characters: { id: number }[] }>(tags: T[]) {
+  return [...tags].sort((left, right) => {
+    const leftIsLowercase = left.name === left.name.toLowerCase()
+    const rightIsLowercase = right.name === right.name.toLowerCase()
+
+    if (leftIsLowercase !== rightIsLowercase) return leftIsLowercase ? -1 : 1
+    if (left.characters.length !== right.characters.length) return right.characters.length - left.characters.length
+    return left.name.localeCompare(right.name)
+  })[0]
+}
+
+export async function deduplicateTags() {
+  await requireAdminUser()
+
+  const summary = await prisma.$transaction(async (tx) => {
+    const tags = await tx.tag.findMany({
+      orderBy: { name: 'asc' },
+      include: { characters: { select: { id: true } } },
+    })
+
+    const groups = new Map<string, typeof tags>()
+    for (const tag of tags) {
+      const key = tag.name.toLowerCase()
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(tag)
+    }
+
+    let mergedGroups = 0
+    let deletedTags = 0
+    let connectedCharacters = 0
+
+    for (const group of groups.values()) {
+      if (group.length < 2) continue
+
+      mergedGroups++
+      const canonical = chooseCanonicalTag(group)
+      const canonicalCharacterIds = new Set(canonical.characters.map((character) => character.id))
+      const duplicateTags = group.filter((tag) => tag.id !== canonical.id)
+      const missingCharacterIds = [...new Set(
+        duplicateTags.flatMap((tag) => tag.characters.map((character) => character.id)),
+      )].filter((characterId) => !canonicalCharacterIds.has(characterId))
+
+      if (missingCharacterIds.length > 0) {
+        await tx.tag.update({
+          where: { id: canonical.id },
+          data: {
+            characters: {
+              connect: missingCharacterIds.map((id) => ({ id })),
+            },
+          },
+        })
+        connectedCharacters += missingCharacterIds.length
+      }
+
+      await tx.tag.deleteMany({
+        where: { id: { in: duplicateTags.map((tag) => tag.id) } },
+      })
+      deletedTags += duplicateTags.length
+    }
+
+    return { mergedGroups, deletedTags, connectedCharacters }
+  })
+
+  revalidatePath('/admin/tags')
+  revalidatePath('/characters')
+  redirect(
+    `/admin/tags?deduplicated=${summary.mergedGroups}&deleted=${summary.deletedTags}&connected=${summary.connectedCharacters}`,
+  )
+}
+
+export async function pruneUnusedTags() {
+  await requireAdminUser()
+
+  const deleted = await prisma.tag.deleteMany({
+    where: { characters: { none: {} } },
+  })
+
+  revalidatePath('/admin/tags')
+  revalidatePath('/characters')
+  redirect(`/admin/tags?pruned=${deleted.count}`)
 }
 
 // ─── Access Control ───────────────────────────────────────────────────────────
