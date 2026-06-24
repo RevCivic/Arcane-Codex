@@ -8,7 +8,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { importFoundryCharacterSheet, updateCharacterSheet } from '@/app/actions'
 import { DiceConsole } from '@/components/DiceConsole'
-import type { StatEntry, SkillEntry } from '@/components/DiceConsole'
+import type { StatEntry, SkillEntry, PowerEntry } from '@/components/DiceConsole'
 import { SkillImprovementPanel } from '@/components/SkillImprovementPanel'
 import type { MarkedSkill } from '@/components/SkillImprovementPanel'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
@@ -170,6 +170,16 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     markedForImprovement:
       sheet?.skillValues.find((sv) => sv.skillId === skill.id)?.markedForImprovement ?? false,
   }))
+
+  // Powers with a resolvable percentage — same derivation logic as the Powers panel below.
+  const consolePowers: PowerEntry[] = character.characterPowers
+    .flatMap((cp) => {
+      const effectivePct = cp.power.basePercentage != null
+        ? cp.power.basePercentage + cp.modifier
+        : (cp.power.baseAbility ? skillNameMap.get(cp.power.baseAbility) : undefined)
+      if (effectivePct == null) return []
+      return [{ id: cp.power.id, name: cp.power.name, effectiveValue: effectivePct }]
+    })
 
   // Skills currently marked for post-mission improvement
   const markedSkills: MarkedSkill[] = allSkills
@@ -507,6 +517,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                   characterId={characterId}
                   stats={consoleStats}
                   skills={consoleSkills}
+                  powers={consolePowers}
                   initialLuck={sheet?.luck ?? null}
                   initialHistory={initialHistory}
                 />
