@@ -53,7 +53,7 @@ export default async function AdminTagsPage({ searchParams }: AdminTagsPageProps
     <div className="max-w-5xl">
       <div className="mb-6">
         <Link href="/admin/access" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
-          ← Access Control
+          ← Access
         </Link>
       </div>
 

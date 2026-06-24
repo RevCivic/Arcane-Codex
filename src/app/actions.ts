@@ -1715,7 +1715,7 @@ export async function deleteSkill(id: number) {
 
 function chooseCanonicalTag<T extends { name: string; characters: { id: number }[] }>(tags: T[]) {
   if (tags.length === 0) {
-    throw new Error('Cannot choose a canonical tag from an empty group')
+    throw new Error('Cannot choose a canonical tag from an empty group during deduplication')
   }
 
   return [...tags].sort((left, right) => {

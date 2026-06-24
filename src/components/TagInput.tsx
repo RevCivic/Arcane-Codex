@@ -8,7 +8,7 @@ type TagInputProps = {
   name?: string
 }
 
-function normalizeTags(values: string[]) {
+function normalizeAndDeduplicateTags(values: string[]) {
   const deduped = new Map<string, string>()
 
   for (const value of values) {
@@ -21,10 +21,10 @@ function normalizeTags(values: string[]) {
 }
 
 export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputProps) {
-  const [tags, setTags] = useState<string[]>(() => normalizeTags(initialTags))
+  const [tags, setTags] = useState<string[]>(() => normalizeAndDeduplicateTags(initialTags))
   const [draft, setDraft] = useState('')
   const datalistId = useId()
-  const normalizedAllTags = useMemo(() => normalizeTags(allTags), [allTags])
+  const normalizedAllTags = useMemo(() => normalizeAndDeduplicateTags(allTags), [allTags])
 
   const addTag = (raw: string) => {
     const normalized = raw.trim().toLowerCase()
