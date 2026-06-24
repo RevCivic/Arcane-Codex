@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 
 type TagInputProps = {
   allTags: string[]
@@ -8,16 +8,28 @@ type TagInputProps = {
   name?: string
 }
 
+function normalizeAndDeduplicateTags(values: string[]) {
+  const deduped = new Map<string, string>()
+
+  for (const value of values) {
+    const normalized = value.trim().toLowerCase()
+    if (!normalized || deduped.has(normalized)) continue
+    deduped.set(normalized, normalized)
+  }
+
+  return [...deduped.values()]
+}
+
 export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputProps) {
-  const [tags, setTags] = useState<string[]>(initialTags)
+  const [tags, setTags] = useState<string[]>(() => normalizeAndDeduplicateTags(initialTags))
   const [draft, setDraft] = useState('')
   const datalistId = useId()
+  const normalizedAllTags = useMemo(() => normalizeAndDeduplicateTags(allTags), [allTags])
 
   const addTag = (raw: string) => {
-    const normalized = raw.trim()
+    const normalized = raw.trim().toLowerCase()
     if (!normalized) return
-    const key = normalized.toLowerCase()
-    if (tags.some((tag) => tag.toLowerCase() === key)) return
+    if (tags.includes(normalized)) return
     setTags((prev) => [...prev, normalized])
   }
 
@@ -72,7 +84,7 @@ export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputP
           }}
         />
         <datalist id={datalistId}>
-          {allTags.map((tag) => (
+          {normalizedAllTags.map((tag) => (
             <option key={tag} value={tag} />
           ))}
         </datalist>
