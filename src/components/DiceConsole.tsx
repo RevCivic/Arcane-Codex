@@ -8,7 +8,7 @@ import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
 
 type DifficultyTier = 'Easy' | 'Average' | 'Difficult' | 'Hard' | 'Extreme' | 'Impossible'
 type DiceType = 2 | 4 | 6 | 8 | 10 | 12 | 20 | 100
-type ActiveTab = 'ability' | 'skill' | 'free'
+type ActiveTab = 'ability' | 'skill' | 'power' | 'free'
 type ResultType = D100ResultType
 
 export interface StatEntry {
@@ -23,6 +23,12 @@ export interface SkillEntry {
   category: string | null
   effectiveValue: number
   markedForImprovement: boolean
+}
+
+export interface PowerEntry {
+  id: number
+  name: string
+  effectiveValue: number
 }
 
 export interface HistoryEntry {
@@ -211,12 +217,14 @@ export function DiceConsole({
   characterId,
   stats,
   skills,
+  powers,
   initialLuck,
   initialHistory,
 }: {
   characterId: number
   stats: StatEntry[]
   skills: SkillEntry[]
+  powers: PowerEntry[]
   initialLuck: number | null
   initialHistory: HistoryEntry[]
 }) {
@@ -231,6 +239,10 @@ export function DiceConsole({
   // Skill check
   const [selectedSkillId, setSelectedSkillId] = useState(skills[0]?.id ?? 0)
   const [skillTier, setSkillTier]             = useState<DifficultyTier>('Average')
+
+  // Power check
+  const [selectedPowerId, setSelectedPowerId] = useState(powers[0]?.id ?? 0)
+  const [powerTier, setPowerTier]             = useState<DifficultyTier>('Average')
 
   // Free roll
   const [selectedDie, setSelectedDie] = useState<DiceType>(20)
@@ -337,6 +349,18 @@ export function DiceConsole({
     )
   }
 
+  const handlePowerRoll = () => {
+    const power = powers.find((p) => p.id === selectedPowerId)
+    if (!power) return
+    const target = applyDifficulty(power.effectiveValue, powerTier)
+    const roll   = rollD100()
+    dispatchRoll(
+      { rollType: 'power', label: power.name, roll, target, difficulty: powerTier,
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null },
+      roll, target
+    )
+  }
+
   const handleFreeRoll = () => {
     const dice  = Array.from({ length: quantity }, () => rollDie(selectedDie))
     const total = dice.reduce((a, b) => a + b, 0) + modifier
@@ -411,6 +435,7 @@ export function DiceConsole({
               [
                 ['ability', '⚡ Ability'],
                 ['skill',   '📖 Skill'],
+                ...(powers.length > 0 ? [['power', '✨ Power']] : []),
                 ['free',    '🎲 Free Roll'],
               ] as [ActiveTab, string][]
             ).map(([t, lbl], i, arr) => (
@@ -537,6 +562,48 @@ export function DiceConsole({
                     type="button"
                     onClick={handleSkillRoll}
                     disabled={skills.length === 0 || isRolling}
+                    className="w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: '#7c3aed', color: '#fff' }}
+                  >
+                    {isRolling ? 'Rolling…' : 'Roll d100'}
+                  </button>
+                </>
+              )}
+
+              {/* Power Check */}
+              {tab === 'power' && (
+                <>
+                  <div>
+                    <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>Power</div>
+                    {powers.length === 0 ? (
+                      <p className="text-xs" style={{ color: '#6b7280' }}>No rollable powers assigned.</p>
+                    ) : (
+                      <select
+                        value={selectedPowerId}
+                        onChange={(e) => setSelectedPowerId(Number(e.target.value))}
+                        className="arcane-input"
+                      >
+                        {powers.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({p.effectiveValue}%)
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {powers.length > 0 && (
+                    <DifficultySelector
+                      selected={powerTier}
+                      onChange={setPowerTier}
+                      baseTarget={powers.find((p) => p.id === selectedPowerId)?.effectiveValue ?? null}
+                    />
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handlePowerRoll}
+                    disabled={powers.length === 0 || isRolling}
                     className="w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ backgroundColor: '#7c3aed', color: '#fff' }}
                   >
