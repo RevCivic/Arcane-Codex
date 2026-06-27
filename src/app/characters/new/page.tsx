@@ -1,4 +1,5 @@
 import { createCharacter, getAllTags } from '@/app/actions'
+import { CharacterTextSuggestionPanel } from '@/components/CharacterTextSuggestionPanel'
 import { TagInput } from '@/components/TagInput'
 import Link from 'next/link'
 
@@ -20,6 +21,7 @@ export default async function NewCharacterPage() {
       </h1>
 
       <form action={createCharacter} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+        <CharacterTextSuggestionPanel />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>First Name</label>

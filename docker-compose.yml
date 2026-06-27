@@ -14,6 +14,49 @@ services:
       retries: 10
     restart: unless-stopped
 
+  ai:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    environment:
+      - AI_MODE=cpu
+      - AI_PROVIDER=${AI_PROVIDER:-local}
+      - AI_MODEL_CPU=${AI_MODEL_CPU:-codellama:7b-instruct-q4}
+      - AI_MODEL_GPU=${AI_MODEL_GPU:-mistral:7b-instruct}
+      - AI_MAX_TOKENS=${AI_MAX_TOKENS:-700}
+      - AI_TEMPERATURE=${AI_TEMPERATURE:-0.4}
+      - AI_RETRAIN_TOKEN=${AI_RETRAIN_TOKEN}
+      - AI_TRAINING_DATA_PATH=/data/feedback.jsonl
+      - AI_MODEL_REGISTRY_PATH=/data/models.json
+    volumes:
+      - ai_data:/data
+    restart: unless-stopped
+
+  ai-gpu:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    profiles: ["gpu"]
+    environment:
+      - AI_MODE=gpu
+      - AI_PROVIDER=${AI_PROVIDER:-local}
+      - AI_MODEL_CPU=${AI_MODEL_CPU:-codellama:7b-instruct-q4}
+      - AI_MODEL_GPU=${AI_MODEL_GPU:-mistral:7b-instruct}
+      - AI_MAX_TOKENS=${AI_MAX_TOKENS:-700}
+      - AI_TEMPERATURE=${AI_TEMPERATURE:-0.4}
+      - AI_TRAINING_DATA_PATH=/data/feedback.jsonl
+      - AI_MODEL_REGISTRY_PATH=/data/models.json
+    volumes:
+      - ai_data:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
   app:
     build:
       context: .
@@ -35,7 +78,15 @@ services:
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_URL=${AUTH_URL}
       - AUTH_TRUST_HOST=${AUTH_TRUST_HOST}
+      - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ai:8000}
+      - AI_MODE=${AI_MODE:-cpu}
+      - AI_PROVIDER=${AI_PROVIDER:-local}
+      - AI_MODEL_CPU=${AI_MODEL_CPU:-codellama:7b-instruct-q4}
+      - AI_MODEL_GPU=${AI_MODEL_GPU:-mistral:7b-instruct}
+      - AI_MAX_TOKENS=${AI_MAX_TOKENS:-700}
+      - AI_TEMPERATURE=${AI_TEMPERATURE:-0.4}
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  ai_data:
