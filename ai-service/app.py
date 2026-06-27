@@ -141,7 +141,7 @@ def generate_character_text(payload: CharacterTextInput) -> dict[str, Any]:
     if payload.baseDescription.strip():
         desc = f"{payload.baseDescription.strip()} {desc}"
     if payload.additionalPrompt.strip():
-        desc = f"{desc} {payload.additionalPrompt.strip()}"
+        desc = f"{desc}\n{payload.additionalPrompt.strip()}"
 
     return {
         "modelName": model,
