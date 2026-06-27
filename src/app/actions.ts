@@ -888,7 +888,12 @@ async function syncCharacterPowerAbility(
       await prisma.characterAbility.update({
         where: { characterId_name: { characterId, name: cleanAbility } },
         data: { sourceCharacterPowerId: characterPowerId },
-      }).catch(() => { /* ignore if unique constraint already taken */ })
+      }).catch((err: unknown) => {
+        // Ignore unique constraint violations (another power already holds this ability link)
+        // but rethrow unexpected errors
+        if (err instanceof Error && err.message.includes('Unique constraint')) return
+        throw err
+      })
     }
   }
 }
@@ -1609,7 +1614,11 @@ export async function saveRoll(
       await tx.characterAbility.update({
         where: { id: data.abilityId! },
         data: { markedForImprovement: true },
-      }).catch(() => { /* ability may have been deleted — ignore */ })
+      }).catch((err: unknown) => {
+        // Ability may have been deleted between roll and mark — ignore not-found errors
+        if (err instanceof Error && err.message.includes('Record to update not found')) return
+        throw err
+      })
     }
 
     if (luckAwarded <= 0) {
