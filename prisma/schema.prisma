@@ -360,6 +360,13 @@ model AIModelVersion {
   createdAt DateTime @default(now())
 }
 
+/// Admin-managed key-value configuration for AI behaviour (e.g. primaryPrompt).
+model AIConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 /// Requested AI retraining jobs (admin only).
 model AITrainingJob {
   id               Int                 @id @default(autoincrement())

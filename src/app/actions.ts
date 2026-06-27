@@ -1898,7 +1898,8 @@ export async function generateCharacterTextSuggestion(
       additionalPrompt: (input.additionalPrompt ?? '').trim(),
     }
 
-    const ai = await generateCharacterTextFromAI(aiPayload)
+    const primaryPromptConfig = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
+    const ai = await generateCharacterTextFromAI({ ...aiPayload, systemPrompt: primaryPromptConfig?.value ?? '' })
     const generation = await prisma.aIGeneration.create({
       data: {
         type: AIGenerationType.CHARACTER_TEXT,
@@ -1983,7 +1984,8 @@ export async function generateCharacterStatsSkillsSuggestion(
       skills,
     }
 
-    const ai = await generateCharacterStatsSkillsFromAI(aiPayload)
+    const primaryPromptConfig = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
+    const ai = await generateCharacterStatsSkillsFromAI({ ...aiPayload, systemPrompt: primaryPromptConfig?.value ?? '' })
     const generation = await prisma.aIGeneration.create({
       data: {
         type: AIGenerationType.CHARACTER_STATS_SKILLS,
@@ -2054,7 +2056,8 @@ export async function generateCharacterBulkTextSuggestions(
 
     if (rows.length === 0) return { ok: false, error: 'No rows were provided for AI enrichment.' }
 
-    const ai = await generateCharacterBulkTextFromAI(rows)
+    const primaryPromptConfig = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
+    const ai = await generateCharacterBulkTextFromAI(rows, primaryPromptConfig?.value ?? '')
     const generation = await prisma.aIGeneration.create({
       data: {
         type: AIGenerationType.CHARACTER_BULK_TEXT,
@@ -2240,6 +2243,23 @@ export async function getAITrainingDashboard() {
   ])
 
   return { activeModel, recentJobs }
+}
+
+export async function getAIPrimaryPrompt(): Promise<string> {
+  await requireAdminUser()
+  const config = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
+  return config?.value ?? ''
+}
+
+export async function saveAIPrimaryPrompt(formData: FormData) {
+  await requireAdminUser()
+  const prompt = (formData.get('primaryPrompt') as string | null)?.trim() ?? ''
+  await prisma.aIConfig.upsert({
+    where: { key: 'primaryPrompt' },
+    update: { value: prompt },
+    create: { key: 'primaryPrompt', value: prompt },
+  })
+  revalidatePath('/admin/ai')
 }
 
 export async function createSkill(formData: FormData) {

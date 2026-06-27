@@ -115,6 +115,7 @@ export async function generateCharacterTextFromAI(input: {
   homeOrigin: string
   baseDescription: string
   additionalPrompt: string
+  systemPrompt?: string
 }): Promise<{ modelName: string; modelVersion: string; mode: 'cpu' | 'gpu'; suggestion: CharacterTextSuggestion }> {
   const result = await callAI<typeof input, ServiceEnvelope<unknown>>('/v1/generate/character-text', input)
   const raw = asObject(result.suggestion)
@@ -178,6 +179,7 @@ export async function generateCharacterStatsSkillsFromAI(input: {
   race: string
   description: string
   additionalPrompt: string
+  systemPrompt?: string
   skills: SkillPromptInput[]
 }): Promise<{
   modelName: string
@@ -206,13 +208,14 @@ export async function generateCharacterBulkTextFromAI(rows: Array<{
   lastName: string
   role: string
   status: string
-}>): Promise<{
+}>, systemPrompt?: string): Promise<{
   modelName: string
   modelVersion: string
   mode: 'cpu' | 'gpu'
   suggestions: CharacterBulkTextSuggestion[]
 }> {
-  const result = await callAI<typeof rows, ServiceEnvelope<unknown>>('/v1/generate/character-bulk-text', rows)
+  const payload = systemPrompt ? rows.map((r) => ({ ...r, systemPrompt })) : rows
+  const result = await callAI<typeof payload, ServiceEnvelope<unknown>>('/v1/generate/character-bulk-text', payload)
   const suggestions = Array.isArray(result.suggestions) ? result.suggestions : []
 
   return {

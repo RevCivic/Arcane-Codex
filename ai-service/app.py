@@ -70,6 +70,7 @@ class CharacterTextInput(BaseModel):
     homeOrigin: str = ""
     baseDescription: str = ""
     additionalPrompt: str = ""
+    systemPrompt: str = ""
 
 
 class SkillInput(BaseModel):
@@ -85,6 +86,7 @@ class CharacterStatsInput(BaseModel):
     race: str = ""
     description: str = ""
     additionalPrompt: str = ""
+    systemPrompt: str = ""
     skills: list[SkillInput] = Field(default_factory=list)
 
 
@@ -95,6 +97,7 @@ class CharacterBulkRowInput(BaseModel):
     lastName: str = ""
     role: str = ""
     status: str = ""
+    systemPrompt: str = ""
 
 
 class RetrainRequest(BaseModel):
@@ -142,6 +145,8 @@ def generate_character_text(payload: CharacterTextInput) -> dict[str, Any]:
         desc = f"{payload.baseDescription.strip()} {desc}"
     if payload.additionalPrompt.strip():
         desc = f"{desc}\n{payload.additionalPrompt.strip()}"
+    if payload.systemPrompt.strip():
+        desc = f"{payload.systemPrompt.strip()}\n{desc}"
 
     return {
         "modelName": model,
