@@ -1770,6 +1770,65 @@ export async function clearSkillImprovementMarks(characterId: number): Promise<v
   revalidatePath(`/characters/${characterId}/sheet`)
 }
 
+/**
+ * Rolls 1d4-1 + modifier for post-mission ability improvement and applies the
+ * result to the character-specific ability. Clears the improvement mark regardless
+ * of the roll outcome (even a 0 counts as having attempted improvement).
+ * Accessible to the character owner or any admin.
+ *
+ * Returns the die value, the modifier, the total gain, and the new ability value.
+ */
+export async function rollAbilityImprovement(
+  characterId: number,
+  abilityId: number,
+  modifier: number
+): Promise<{ die: number; modifier: number; gain: number; newValue: number }> {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  const ability = await prisma.characterAbility.findUnique({ where: { id: abilityId } })
+  if (!ability || ability.characterId !== characterId) throw new Error('Ability not found')
+
+  // Roll 1d4 (range 1–4), subtract 1 to get effective range 0–3, then add modifier; minimum gain is 0
+  const die = Math.floor(Math.random() * 4) + 1
+  const gain = Math.max(0, die - 1 + modifier)
+  const newValue = ability.currentValue + gain
+
+  await prisma.characterAbility.update({
+    where: { id: abilityId },
+    data: { currentValue: newValue, markedForImprovement: false },
+  })
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+  return { die, modifier, gain, newValue }
+}
+
+/**
+ * Clears all ability improvement marks for a character (e.g. at end of mission).
+ * Accessible to the character owner or any admin.
+ */
+export async function clearAbilityImprovementMarks(characterId: number): Promise<void> {
+  const user = await requireAuthorizedUser()
+
+  const character = await prisma.character.findUnique({ where: { id: characterId } })
+  if (!character) throw new Error('Character not found')
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Forbidden')
+  }
+
+  await prisma.characterAbility.updateMany({
+    where: { characterId, markedForImprovement: true },
+    data: { markedForImprovement: false },
+  })
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
+
 type CharacterTextSuggestionInput = {
   characterId?: number | null
   name?: string
