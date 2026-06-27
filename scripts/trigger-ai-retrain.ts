@@ -5,13 +5,14 @@ const mode = process.env.AI_MODE === 'gpu' ? 'gpu' : 'cpu'
 if (!token) {
   throw new Error('AI_RETRAIN_TOKEN is required')
 }
+const retrainToken: string = token
 
 async function run() {
   const response = await fetch(`${appUrl}/api/admin/ai/retrain`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-ai-retrain-token': token,
+      'x-ai-retrain-token': retrainToken,
     },
     body: JSON.stringify({ mode }),
   })

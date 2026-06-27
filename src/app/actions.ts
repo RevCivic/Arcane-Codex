@@ -1701,9 +1701,9 @@ async function assertCharacterAccess(characterId: number, user: { email: string;
     where: { id: characterId },
     select: { id: true, claimedByEmail: true },
   })
-  if (!character) throw new Error('Character not found')
+  if (!character) throw new Error(`Character ${characterId} not found`)
   if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
-    throw new Error('Forbidden')
+    throw new Error(`Access denied for character ${characterId}`)
   }
 }
 
@@ -1931,7 +1931,7 @@ export async function captureAIFeedback(input: AIFeedbackInput): Promise<{ ok: b
         generationId: input.generationId,
         status: input.status as AIFeedbackStatus,
         createdByEmail: user.email,
-        finalValues: input.finalValues,
+        finalValues: (input.finalValues as Prisma.InputJsonValue | undefined) ?? undefined,
         note: input.note?.trim() || null,
       },
     })
