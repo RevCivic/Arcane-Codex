@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { captureAIFeedback, generateCharacterStatsSkillsSuggestion } from '@/app/actions'
+import { AIPromptContextFields } from '@/components/AIPromptContextFields'
+import { DEFAULT_AI_PROMPT_CONTEXT, type AIPromptContext } from '@/lib/aiPromptContext'
 
 type Props = {
   characterId: number
@@ -51,6 +53,7 @@ export function CharacterSheetSuggestionPanel({ characterId }: Props) {
   const [stats, setStats] = useState<StatSuggestion | null>(null)
   const [skills, setSkills] = useState<SkillSuggestion[]>([])
   const [additionalPrompt, setAdditionalPrompt] = useState('')
+  const [promptContext, setPromptContext] = useState<AIPromptContext>(DEFAULT_AI_PROMPT_CONTEXT)
   const [showPrompt, setShowPrompt] = useState(false)
 
   async function handleGenerate(event: React.MouseEvent<HTMLButtonElement>) {
@@ -67,6 +70,7 @@ export function CharacterSheetSuggestionPanel({ characterId }: Props) {
       race: getInputValue(form, 'characterRace'),
       description: getInputValue(form, 'characterDescription'),
       additionalPrompt,
+      promptContext,
     })
 
     setLoading(false)
@@ -93,7 +97,7 @@ export function CharacterSheetSuggestionPanel({ characterId }: Props) {
       await captureAIFeedback({
         generationId,
         status: 'ACCEPTED',
-        finalValues: { stats, skills },
+        finalValues: { stats, skills, promptContext },
       })
     }
   }
@@ -124,6 +128,7 @@ export function CharacterSheetSuggestionPanel({ characterId }: Props) {
               luck: getInputValue(form, 'luck'),
               build: getInputValue(form, 'build'),
             },
+            promptContext,
           }
         : undefined
 
@@ -163,18 +168,21 @@ export function CharacterSheetSuggestionPanel({ characterId }: Props) {
       </div>
 
       {showPrompt && (
-        <div className="mt-3">
-          <label className="block text-xs mb-1" style={{ color: '#9ca3af' }}>
-            Additional instructions for the AI
-          </label>
-          <textarea
-            value={additionalPrompt}
-            onChange={(e) => setAdditionalPrompt(e.target.value)}
-            rows={3}
-            placeholder="e.g. Emphasize combat skills and high strength for a soldier archetype…"
-            className="w-full rounded px-2 py-1.5 text-xs resize-y"
-            style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' }}
-          />
+        <div className="mt-3 space-y-3">
+          <AIPromptContextFields value={promptContext} onChange={setPromptContext} />
+          <div>
+            <label className="block text-xs mb-1" style={{ color: '#9ca3af' }}>
+              Additional instructions for the AI
+            </label>
+            <textarea
+              value={additionalPrompt}
+              onChange={(e) => setAdditionalPrompt(e.target.value)}
+              rows={3}
+              placeholder="e.g. Build this as a fragile occult prodigy with excellent lore and weak endurance…"
+              className="w-full rounded px-2 py-1.5 text-xs resize-y"
+              style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' }}
+            />
+          </div>
         </div>
       )}
 

@@ -1,3 +1,5 @@
+import type { AIPromptContext } from '@/lib/aiPromptContext'
+
 const AI_SERVICE_URL = (process.env.AI_SERVICE_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 const AI_MODE = process.env.AI_MODE === 'gpu' ? 'gpu' : 'cpu'
 const REQUEST_TIMEOUT_MS = 15_000
@@ -9,6 +11,11 @@ export type CharacterTextSuggestion = {
   currentLocation: string
   homeOrigin: string
   role: string
+  entityType: string
+  narrativeRole: string
+  motivations: string
+  demeanor: string
+  mechanicalFocus: string
 }
 
 export type CharacterStatsSuggestion = {
@@ -43,6 +50,20 @@ export type CharacterBulkTextSuggestion = {
   description: string
 }
 
+export type AIEvaluationSnapshot = {
+  modelName: string
+  modelVersion: string
+  criteria: Array<{ key: string; label: string; description: string }>
+  cases: Array<{
+    id: string
+    label: string
+    entityType: string
+    promptSummary: string
+    suggestion: CharacterTextSuggestion
+    scores: Record<string, number>
+  }>
+}
+
 export type SkillPromptInput = {
   id: number
   name: string
@@ -56,6 +77,10 @@ type ServiceEnvelope<T> = {
   mode: 'cpu' | 'gpu'
   suggestion?: T
   suggestions?: T[]
+}
+
+type AIPromptContextInput = Partial<Omit<AIPromptContext, 'entityType'>> & {
+  entityType?: string
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -80,16 +105,18 @@ function asInt(value: unknown, fallback = 0) {
   return fallback
 }
 
-async function callAI<TInput, TOutput>(path: string, payload: TInput): Promise<TOutput> {
+async function fetchAI<TOutput>(path: string, init?: RequestInit): Promise<TOutput> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   try {
     const res = await fetch(`${AI_SERVICE_URL}${path}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
       cache: 'no-store',
       signal: controller.signal,
+      ...init,
+      headers: {
+        'content-type': 'application/json',
+        ...(init?.headers ?? {}),
+      },
     })
 
     if (!res.ok) {
@@ -100,6 +127,13 @@ async function callAI<TInput, TOutput>(path: string, payload: TInput): Promise<T
   } finally {
     clearTimeout(timeout)
   }
+}
+
+async function callAI<TInput, TOutput>(path: string, payload: TInput): Promise<TOutput> {
+  return fetchAI<TOutput>(path, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function generateCharacterTextFromAI(input: {
@@ -116,6 +150,7 @@ export async function generateCharacterTextFromAI(input: {
   baseDescription: string
   additionalPrompt: string
   systemPrompt?: string
+  promptContext?: AIPromptContextInput
 }): Promise<{ modelName: string; modelVersion: string; mode: 'cpu' | 'gpu'; suggestion: CharacterTextSuggestion }> {
   const result = await callAI<typeof input, ServiceEnvelope<unknown>>('/v1/generate/character-text', input)
   const raw = asObject(result.suggestion)
@@ -131,6 +166,11 @@ export async function generateCharacterTextFromAI(input: {
       currentLocation: asString(raw.currentLocation),
       homeOrigin: asString(raw.homeOrigin),
       role: asString(raw.role),
+      entityType: asString(raw.entityType),
+      narrativeRole: asString(raw.narrativeRole),
+      motivations: asString(raw.motivations),
+      demeanor: asString(raw.demeanor),
+      mechanicalFocus: asString(raw.mechanicalFocus),
     },
   }
 }
@@ -180,6 +220,7 @@ export async function generateCharacterStatsSkillsFromAI(input: {
   description: string
   additionalPrompt: string
   systemPrompt?: string
+  promptContext?: AIPromptContextInput
   skills: SkillPromptInput[]
 }): Promise<{
   modelName: string
@@ -208,13 +249,19 @@ export async function generateCharacterBulkTextFromAI(rows: Array<{
   lastName: string
   role: string
   status: string
-}>, systemPrompt?: string): Promise<{
+  promptContext?: AIPromptContextInput
+}>, systemPrompt?: string, promptContext?: AIPromptContextInput, additionalPrompt?: string): Promise<{
   modelName: string
   modelVersion: string
   mode: 'cpu' | 'gpu'
   suggestions: CharacterBulkTextSuggestion[]
 }> {
-  const payload = systemPrompt ? rows.map((r) => ({ ...r, systemPrompt })) : rows
+  const payload = rows.map((r) => ({
+    ...r,
+    ...(systemPrompt ? { systemPrompt } : {}),
+    ...(promptContext ? { promptContext } : {}),
+    ...(additionalPrompt ? { additionalPrompt } : {}),
+  }))
   const result = await callAI<typeof payload, ServiceEnvelope<unknown>>('/v1/generate/character-bulk-text', payload)
   const suggestions = Array.isArray(result.suggestions) ? result.suggestions : []
 
@@ -254,5 +301,50 @@ export async function triggerAIRetrain(payload: {
     modelName: asString(result.modelName),
     modelVersion: asString(result.modelVersion),
     mode: result.mode === 'gpu' ? 'gpu' : 'cpu',
+  }
+}
+
+export async function getAIEvaluationSnapshotFromAI(): Promise<AIEvaluationSnapshot> {
+  const result = await fetchAI<Record<string, unknown>>('/v1/evaluate/character-generators', { method: 'GET' })
+  const criteria = Array.isArray(result.criteria) ? result.criteria : []
+  const cases = Array.isArray(result.cases) ? result.cases : []
+
+  return {
+    modelName: asString(result.modelName) || (AI_MODE === 'gpu' ? 'gpu-model' : 'cpu-model'),
+    modelVersion: asString(result.modelVersion) || 'unknown',
+    criteria: criteria.map((item) => {
+      const obj = asObject(item)
+      return {
+        key: asString(obj.key),
+        label: asString(obj.label),
+        description: asString(obj.description),
+      }
+    }),
+    cases: cases.map((item) => {
+      const obj = asObject(item)
+      const scores = asObject(obj.scores)
+      return {
+        id: asString(obj.id),
+        label: asString(obj.label),
+        entityType: asString(obj.entityType),
+        promptSummary: asString(obj.promptSummary),
+        suggestion: {
+          description: asString(asObject(obj.suggestion).description),
+          affiliation: asString(asObject(obj.suggestion).affiliation),
+          currentCase: asString(asObject(obj.suggestion).currentCase),
+          currentLocation: asString(asObject(obj.suggestion).currentLocation),
+          homeOrigin: asString(asObject(obj.suggestion).homeOrigin),
+          role: asString(asObject(obj.suggestion).role),
+          entityType: asString(asObject(obj.suggestion).entityType),
+          narrativeRole: asString(asObject(obj.suggestion).narrativeRole),
+          motivations: asString(asObject(obj.suggestion).motivations),
+          demeanor: asString(asObject(obj.suggestion).demeanor),
+          mechanicalFocus: asString(asObject(obj.suggestion).mechanicalFocus),
+        },
+        scores: Object.fromEntries(
+          Object.entries(scores).map(([key, value]) => [key, clamp(asInt(value, 0), 0, 5)]),
+        ),
+      }
+    }),
   }
 }

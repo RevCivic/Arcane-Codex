@@ -7,11 +7,13 @@ import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import {
   generateCharacterBulkTextFromAI,
+  getAIEvaluationSnapshotFromAI,
   generateCharacterStatsSkillsFromAI,
   generateCharacterTextFromAI,
   sendAIFeedbackToService,
   triggerAIRetrain,
 } from '@/lib/aiClient'
+import type { AIPromptContext } from '@/lib/aiPromptContext'
 import { prisma } from '@/lib/prisma'
 import { randomUUID } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -1843,6 +1845,7 @@ type CharacterTextSuggestionInput = {
   homeOrigin?: string
   description?: string
   additionalPrompt?: string
+  promptContext?: Partial<AIPromptContext>
 }
 
 type CharacterTextSuggestionResult = {
@@ -1855,6 +1858,11 @@ type CharacterTextSuggestionResult = {
     currentLocation: string
     homeOrigin: string
     role: string
+    entityType: string
+    narrativeRole: string
+    motivations: string
+    demeanor: string
+    mechanicalFocus: string
   }
   error?: string
 }
@@ -1896,6 +1904,16 @@ export async function generateCharacterTextSuggestion(
       homeOrigin: (input.homeOrigin ?? '').trim(),
       baseDescription: (input.description ?? '').trim(),
       additionalPrompt: (input.additionalPrompt ?? '').trim(),
+      promptContext: {
+        entityType: (input.promptContext?.entityType ?? '').trim(),
+        narrativeRole: (input.promptContext?.narrativeRole ?? '').trim(),
+        tone: (input.promptContext?.tone ?? '').trim(),
+        playerRelationship: (input.promptContext?.playerRelationship ?? '').trim(),
+        threatLevel: (input.promptContext?.threatLevel ?? '').trim(),
+        factionAlignment: (input.promptContext?.factionAlignment ?? '').trim(),
+        metaphysicalNature: (input.promptContext?.metaphysicalNature ?? '').trim(),
+        mechanicalFocus: (input.promptContext?.mechanicalFocus ?? '').trim(),
+      },
     }
 
     const primaryPromptConfig = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
@@ -1928,6 +1946,7 @@ type CharacterStatsSkillsSuggestionInput = {
   race?: string
   description?: string
   additionalPrompt?: string
+  promptContext?: Partial<AIPromptContext>
 }
 
 type CharacterStatsSkillsSuggestionResult = {
@@ -1981,6 +2000,16 @@ export async function generateCharacterStatsSkillsSuggestion(
       race: (input.race ?? '').trim(),
       description: (input.description ?? '').trim(),
       additionalPrompt: (input.additionalPrompt ?? '').trim(),
+      promptContext: {
+        entityType: (input.promptContext?.entityType ?? '').trim(),
+        narrativeRole: (input.promptContext?.narrativeRole ?? '').trim(),
+        tone: (input.promptContext?.tone ?? '').trim(),
+        playerRelationship: (input.promptContext?.playerRelationship ?? '').trim(),
+        threatLevel: (input.promptContext?.threatLevel ?? '').trim(),
+        factionAlignment: (input.promptContext?.factionAlignment ?? '').trim(),
+        metaphysicalNature: (input.promptContext?.metaphysicalNature ?? '').trim(),
+        mechanicalFocus: (input.promptContext?.mechanicalFocus ?? '').trim(),
+      },
       skills,
     }
 
@@ -2015,6 +2044,8 @@ export async function generateCharacterStatsSkillsSuggestion(
 }
 
 type CharacterBulkSuggestionInput = {
+  additionalPrompt?: string
+  promptContext?: Partial<AIPromptContext>
   rows: Array<{
     rowIndex: number
     name?: string
@@ -2054,17 +2085,29 @@ export async function generateCharacterBulkTextSuggestions(
       }))
       .filter((row) => Number.isFinite(row.rowIndex))
 
+    const promptContext = {
+      entityType: (input.promptContext?.entityType ?? '').trim(),
+      narrativeRole: (input.promptContext?.narrativeRole ?? '').trim(),
+      tone: (input.promptContext?.tone ?? '').trim(),
+      playerRelationship: (input.promptContext?.playerRelationship ?? '').trim(),
+      threatLevel: (input.promptContext?.threatLevel ?? '').trim(),
+      factionAlignment: (input.promptContext?.factionAlignment ?? '').trim(),
+      metaphysicalNature: (input.promptContext?.metaphysicalNature ?? '').trim(),
+      mechanicalFocus: (input.promptContext?.mechanicalFocus ?? '').trim(),
+    }
+    const additionalPrompt = (input.additionalPrompt ?? '').trim()
+
     if (rows.length === 0) return { ok: false, error: 'No rows were provided for AI enrichment.' }
 
     const primaryPromptConfig = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
-    const ai = await generateCharacterBulkTextFromAI(rows, primaryPromptConfig?.value ?? '')
+    const ai = await generateCharacterBulkTextFromAI(rows, primaryPromptConfig?.value ?? '', promptContext, additionalPrompt)
     const generation = await prisma.aIGeneration.create({
       data: {
         type: AIGenerationType.CHARACTER_BULK_TEXT,
         createdByEmail: user.email,
         modelName: ai.modelName,
         modelVersion: ai.modelVersion,
-        inputPayload: { rows },
+        inputPayload: { rows, promptContext, additionalPrompt },
         suggestion: { suggestions: ai.suggestions },
       },
       select: { id: true },
@@ -2166,13 +2209,26 @@ export async function requestAIModelRetrain(
     sourceModelVersion: item.generation.modelVersion,
   }))
 
+  const groupedByEntityType = trainingExamples.reduce<Record<string, number>>((acc, example) => {
+    const payload = typeof example.inputPayload === 'object' && example.inputPayload ? example.inputPayload : {}
+    const promptContext =
+      'promptContext' in payload && typeof payload.promptContext === 'object' && payload.promptContext
+        ? (payload.promptContext as Record<string, unknown>)
+        : {}
+    const entityType = typeof promptContext.entityType === 'string' && promptContext.entityType.trim()
+      ? promptContext.entityType.trim()
+      : 'unspecified'
+    acc[entityType] = (acc[entityType] ?? 0) + 1
+    return acc
+  }, {})
+
   const job = await prisma.aITrainingJob.create({
     data: {
       requestedByEmail: user.email,
       status: AITrainingJobStatus.PENDING,
       mode,
       baseModel,
-      payload: { trainingExamples: trainingExamples.length },
+      payload: { trainingExamples: trainingExamples.length, groupedByEntityType },
     },
     select: { id: true },
   })
@@ -2196,7 +2252,7 @@ export async function requestAIModelRetrain(
           modelName: retrain.modelName,
           version: retrain.modelVersion,
           mode: retrain.mode,
-          metadata: { trainingExamples: trainingExamples.length, sourceJobId: job.id },
+          metadata: { trainingExamples: trainingExamples.length, sourceJobId: job.id, groupedByEntityType },
           isActive: true,
         },
       }),
@@ -2243,6 +2299,22 @@ export async function getAITrainingDashboard() {
   ])
 
   return { activeModel, recentJobs }
+}
+
+export async function getAIEvaluationSnapshot() {
+  await requireAdminUser()
+
+  try {
+    return await getAIEvaluationSnapshotFromAI()
+  } catch (error) {
+    return {
+      modelName: '',
+      modelVersion: '',
+      criteria: [],
+      cases: [],
+      error: error instanceof Error ? error.message : 'Failed to load AI evaluation snapshot',
+    }
+  }
 }
 
 export async function getAIPrimaryPrompt(): Promise<string> {

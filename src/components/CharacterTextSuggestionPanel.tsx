@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { captureAIFeedback, generateCharacterTextSuggestion } from '@/app/actions'
+import { AIPromptContextFields } from '@/components/AIPromptContextFields'
+import { DEFAULT_AI_PROMPT_CONTEXT, type AIPromptContext } from '@/lib/aiPromptContext'
 
 type Suggestion = {
   description: string
@@ -10,6 +12,11 @@ type Suggestion = {
   currentLocation: string
   homeOrigin: string
   role: string
+  entityType: string
+  narrativeRole: string
+  motivations: string
+  demeanor: string
+  mechanicalFocus: string
 }
 
 function getInputValue(form: HTMLFormElement, name: string) {
@@ -33,6 +40,7 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [additionalPrompt, setAdditionalPrompt] = useState('')
+  const [promptContext, setPromptContext] = useState<AIPromptContext>(DEFAULT_AI_PROMPT_CONTEXT)
   const [showPrompt, setShowPrompt] = useState(false)
 
   async function handleGenerate(event: React.MouseEvent<HTMLButtonElement>) {
@@ -56,6 +64,7 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
       homeOrigin: getInputValue(form, 'homeOrigin'),
       description: getInputValue(form, 'description'),
       additionalPrompt,
+      promptContext,
     })
 
     setLoading(false)
@@ -81,6 +90,7 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
             currentLocation: getInputValue(form, 'currentLocation'),
             homeOrigin: getInputValue(form, 'homeOrigin'),
             role: getInputValue(form, 'role'),
+            promptContext,
           }
         : undefined
 
@@ -133,18 +143,21 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
       </div>
 
       {showPrompt && (
-        <div className="mt-3">
-          <label className="block text-xs mb-1" style={{ color: '#9ca3af' }}>
-            Additional instructions for the AI
-          </label>
-          <textarea
-            value={additionalPrompt}
-            onChange={(e) => setAdditionalPrompt(e.target.value)}
-            rows={3}
-            placeholder="e.g. Make the character mysterious and haunted by their past…"
-            className="w-full rounded px-2 py-1.5 text-xs resize-y"
-            style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' }}
-          />
+        <div className="mt-3 space-y-3">
+          <AIPromptContextFields value={promptContext} onChange={setPromptContext} />
+          <div>
+            <label className="block text-xs mb-1" style={{ color: '#9ca3af' }}>
+              Additional instructions for the AI
+            </label>
+            <textarea
+              value={additionalPrompt}
+              onChange={(e) => setAdditionalPrompt(e.target.value)}
+              rows={3}
+              placeholder="e.g. Make the character an unreliable ally whose confidence hides a recent occult failure…"
+              className="w-full rounded px-2 py-1.5 text-xs resize-y"
+              style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' }}
+            />
+          </div>
         </div>
       )}
 
@@ -159,6 +172,13 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
           <p className="text-xs" style={{ color: '#9ca3af' }}>
             Suggested only: review and edit before saving.
           </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]" style={{ color: '#cbd5e1' }}>
+            <p><strong style={{ color: '#a78bfa' }}>Entity:</strong> {suggestion.entityType || 'Inferred'}</p>
+            <p><strong style={{ color: '#a78bfa' }}>Narrative Role:</strong> {suggestion.narrativeRole || '—'}</p>
+            <p><strong style={{ color: '#a78bfa' }}>Motivations:</strong> {suggestion.motivations || '—'}</p>
+            <p><strong style={{ color: '#a78bfa' }}>Demeanor:</strong> {suggestion.demeanor || '—'}</p>
+            <p className="sm:col-span-2"><strong style={{ color: '#a78bfa' }}>Mechanical Focus:</strong> {suggestion.mechanicalFocus || '—'}</p>
+          </div>
           <p className="text-xs" style={{ color: '#e2e8f0' }}>
             {suggestion.description}
           </p>

@@ -20,6 +20,8 @@ The app will be available at `http://localhost:3000` (or whatever `HOST_PORT` is
 Arcane Codex now includes an internal AI service container for **character text and BRP stat/skill suggestions only**.
 It does **not** generate images.
 
+The current generator is prompt-driven: admins can define a global campaign prompt, and users can steer suggestions with structured intent such as ally, enemy, entity, deity, tone, threat, and mechanical focus.
+
 - Default CPU profile (smaller/quantized model): started automatically as `ai`.
 - Optional GPU profile (larger/faster model): start with:
 
@@ -56,6 +58,7 @@ npm run dev
 
 - Admins can trigger retraining from **Admin → Skills → AI Training Control**.
 - Retraining uses accepted/edited feedback records and stores model versions for rollback history.
+- **Admin → AI / Language Model** also shows an evaluation snapshot for representative investigator, ally, enemy, entity, and deity prompts so you can review distinctiveness and prompt adherence.
 
 For periodic retraining, configure `AI_RETRAIN_TOKEN` and run:
 
