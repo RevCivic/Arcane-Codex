@@ -15,6 +15,25 @@ enum AccessRole {
   ADMIN
 }
 
+enum AIGenerationType {
+  CHARACTER_TEXT
+  CHARACTER_STATS_SKILLS
+  CHARACTER_BULK_TEXT
+}
+
+enum AIFeedbackStatus {
+  ACCEPTED
+  EDITED
+  REJECTED
+}
+
+enum AITrainingJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -64,37 +83,40 @@ model AllowedEmail {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   character Character?
+  aiGenerations AIGeneration[]
+  aiFeedback    AIFeedback[]
+  aiTrainingJobs AITrainingJob[]
 }
 
 model Character {
-  id                 Int                @id @default(autoincrement())
-  name               String
-  firstName          String?
-  lastName           String?
-  race               String?
-  gender             String?
-  age                BigInt?
-  role               String?
-  description        String?
-  stats              String?
-  affiliation        String?
-  currentCase        String?
-  currentLocation    String?
-  homeOrigin         String?
-  imageUrl           String?
-  referenceLinks     Json?
-  status             String?            @default("Active")
-  claimedByEmail     String?            @unique
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  claimedBy          AllowedEmail?      @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
-  tags               Tag[]
-  sheet              CharacterSheet?
-  characterPowers    CharacterPower[]
-  characterAbilities CharacterAbility[]
-  inventoryItems     InventoryItem[]
-  events             Event[]
-  rollHistory        RollHistory[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  firstName       String?
+  lastName        String?
+  race            String?
+  gender          String?
+  age             BigInt?
+  role            String?
+  description     String?
+  stats           String?
+  affiliation     String?
+  currentCase     String?
+  currentLocation String?
+  homeOrigin      String?
+  imageUrl        String?
+  referenceLinks  Json?
+  status          String?          @default("Active")
+  claimedByEmail  String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  claimedBy       AllowedEmail?    @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
+  tags            Tag[]
+  sheet           CharacterSheet?
+  characterPowers CharacterPower[]
+  inventoryItems  InventoryItem[]
+  events          Event[]
+  rollHistory     RollHistory[]
+  aiGenerations   AIGeneration[]
 }
 
 model Tag {
@@ -294,4 +316,62 @@ model RollHistory {
   abilityId   Int?
   ability     CharacterAbility? @relation(fields: [abilityId], references: [id], onDelete: SetNull)
   createdAt   DateTime          @default(now())
+}
+
+/// AI-generated suggestions before user acceptance/edit/reject.
+model AIGeneration {
+  id            String           @id @default(cuid())
+  type          AIGenerationType
+  createdByEmail String?
+  createdBy     AllowedEmail?    @relation(fields: [createdByEmail], references: [email], onDelete: SetNull)
+  characterId   Int?
+  character     Character?       @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  modelName     String
+  modelVersion  String?
+  inputPayload  Json
+  suggestion    Json
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  feedback      AIFeedback[]
+}
+
+/// Human feedback for trainable AI generation quality.
+model AIFeedback {
+  id             Int              @id @default(autoincrement())
+  generationId   String
+  generation     AIGeneration     @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  status         AIFeedbackStatus
+  createdByEmail String?
+  createdBy      AllowedEmail?    @relation(fields: [createdByEmail], references: [email], onDelete: SetNull)
+  finalValues    Json?
+  note           String?
+  createdAt      DateTime         @default(now())
+}
+
+/// Persisted model snapshots for version tracking and rollback.
+model AIModelVersion {
+  id         Int      @id @default(autoincrement())
+  modelName  String
+  version    String   @unique
+  mode       String
+  metadata   Json?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+/// Requested AI retraining jobs (admin only).
+model AITrainingJob {
+  id              Int                 @id @default(autoincrement())
+  requestedByEmail String?
+  requestedBy     AllowedEmail?       @relation(fields: [requestedByEmail], references: [email], onDelete: SetNull)
+  status          AITrainingJobStatus @default(PENDING)
+  mode            String
+  baseModel       String
+  payload         Json?
+  result          Json?
+  error           String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 }

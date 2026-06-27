@@ -14,6 +14,7 @@ import type { MarkedSkill } from '@/components/SkillImprovementPanel'
 import { AbilityImprovementPanel } from '@/components/AbilityImprovementPanel'
 import type { MarkedAbility } from '@/components/AbilityImprovementPanel'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { CharacterSheetSuggestionPanel } from '@/components/CharacterSheetSuggestionPanel'
 import { SheetLayoutManager } from '@/components/SheetLayoutManager'
 import type { SheetModule } from '@/components/SheetLayoutManager'
 
@@ -337,6 +338,11 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             label: '📊 Character Stats',
             content: (
               <form action={action} className="space-y-8">
+                <input type="hidden" name="characterName" value={character.name} />
+                <input type="hidden" name="characterRole" value={character.role ?? ''} />
+                <input type="hidden" name="characterRace" value={character.race ?? ''} />
+                <input type="hidden" name="characterDescription" value={character.description ?? ''} />
+                <CharacterSheetSuggestionPanel characterId={characterId} />
                 {/* BRP Primary Characteristics */}
                 <CollapsibleSection
                   storageKey="primary-characteristics"

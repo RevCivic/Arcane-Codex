@@ -1,10 +1,17 @@
 'use server'
 
 import { auth } from '@/auth'
-import { AccessRole, Prisma } from '@/generated/prisma'
+import { AIFeedbackStatus, AIGenerationType, AITrainingJobStatus, AccessRole, Prisma } from '@/generated/prisma'
 import { getD100ResultType, getLuckGainForRoll } from '@/lib/diceRules'
 import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
+import {
+  generateCharacterBulkTextFromAI,
+  generateCharacterStatsSkillsFromAI,
+  generateCharacterTextFromAI,
+  sendAIFeedbackToService,
+  triggerAIRetrain,
+} from '@/lib/aiClient'
 import { prisma } from '@/lib/prisma'
 import { randomUUID } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -481,6 +488,7 @@ export async function createCharactersBulk(formData: FormData) {
   const firstNames = getFormStrings(formData, 'firstName')
   const lastNames = getFormStrings(formData, 'lastName')
   const roles = getFormStrings(formData, 'role')
+  const descriptions = getFormStrings(formData, 'description')
   const statuses = getFormStrings(formData, 'status')
 
   const rows = names
@@ -491,6 +499,7 @@ export async function createCharactersBulk(formData: FormData) {
         firstName: getNullableString(firstNames[i] ?? ''),
         lastName: getNullableString(lastNames[i] ?? ''),
         role: getNullableString(roles[i] ?? ''),
+        description: getNullableString(descriptions[i] ?? ''),
         status: getNullableString(statuses[i] ?? '') || 'Active',
       }
     })
@@ -1761,61 +1770,412 @@ export async function clearSkillImprovementMarks(characterId: number): Promise<v
   revalidatePath(`/characters/${characterId}/sheet`)
 }
 
-// ─── Ability Improvement ──────────────────────────────────────────────────────
-
-/**
- * Rolls 1d4-1 + modifier for post-mission ability improvement and applies the
- * result to the character's ability value.  Mirrors rollSkillImprovement.
- * Accessible to the character owner or any admin.
- */
-export async function rollAbilityImprovement(
-  characterId: number,
-  abilityId: number,
-  modifier: number
-): Promise<{ die: number; modifier: number; gain: number; newValue: number }> {
-  const user = await requireAuthorizedUser()
-
-  const character = await prisma.character.findUnique({ where: { id: characterId } })
-  if (!character) throw new Error('Character not found')
-  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
-    throw new Error('Forbidden')
-  }
-
-  const ability = await prisma.characterAbility.findUnique({ where: { id: abilityId } })
-  if (!ability || ability.characterId !== characterId) throw new Error('Ability not found')
-
-  const die = Math.floor(Math.random() * 4) + 1
-  const gain = Math.max(0, die - 1 + modifier)
-  const newValue = ability.currentValue + gain
-
-  await prisma.characterAbility.update({
-    where: { id: abilityId },
-    data: { currentValue: newValue, markedForImprovement: false },
-  })
-
-  revalidatePath(`/characters/${characterId}/sheet`)
-  return { die, modifier, gain, newValue }
+type CharacterTextSuggestionInput = {
+  characterId?: number | null
+  name?: string
+  firstName?: string
+  lastName?: string
+  race?: string
+  gender?: string
+  role?: string
+  affiliation?: string
+  currentCase?: string
+  currentLocation?: string
+  homeOrigin?: string
+  description?: string
 }
 
-/**
- * Clears all ability improvement marks for a character (e.g. at end of mission).
- * Accessible to the character owner or any admin.
- */
-export async function clearAbilityImprovementMarks(characterId: number): Promise<void> {
+type CharacterTextSuggestionResult = {
+  ok: boolean
+  generationId?: string
+  suggestion?: {
+    description: string
+    affiliation: string
+    currentCase: string
+    currentLocation: string
+    homeOrigin: string
+    role: string
+  }
+  error?: string
+}
+
+async function assertCharacterAccess(characterId: number, user: { email: string; role: AccessRole }) {
+  const character = await prisma.character.findUnique({
+    where: { id: characterId },
+    select: { id: true, claimedByEmail: true },
+  })
+  if (!character) throw new Error(`Character ${characterId} not found`)
+  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error(`Access denied for character ${characterId}`)
+  }
+}
+
+export async function generateCharacterTextSuggestion(
+  input: CharacterTextSuggestionInput,
+): Promise<CharacterTextSuggestionResult> {
   const user = await requireAuthorizedUser()
 
-  const character = await prisma.character.findUnique({ where: { id: characterId } })
-  if (!character) throw new Error('Character not found')
-  if (character.claimedByEmail !== user.email && user.role !== AccessRole.ADMIN) {
-    throw new Error('Forbidden')
-  }
+  try {
+    const characterId =
+      typeof input.characterId === 'number' && Number.isFinite(input.characterId)
+        ? Math.trunc(input.characterId)
+        : null
 
-  await prisma.characterAbility.updateMany({
-    where: { characterId, markedForImprovement: true },
-    data: { markedForImprovement: false },
+    if (characterId !== null) await assertCharacterAccess(characterId, user)
+
+    const aiPayload = {
+      name: (input.name ?? '').trim(),
+      firstName: (input.firstName ?? '').trim(),
+      lastName: (input.lastName ?? '').trim(),
+      race: (input.race ?? '').trim(),
+      gender: (input.gender ?? '').trim(),
+      role: (input.role ?? '').trim(),
+      affiliation: (input.affiliation ?? '').trim(),
+      currentCase: (input.currentCase ?? '').trim(),
+      currentLocation: (input.currentLocation ?? '').trim(),
+      homeOrigin: (input.homeOrigin ?? '').trim(),
+      baseDescription: (input.description ?? '').trim(),
+    }
+
+    const ai = await generateCharacterTextFromAI(aiPayload)
+    const generation = await prisma.aIGeneration.create({
+      data: {
+        type: AIGenerationType.CHARACTER_TEXT,
+        createdByEmail: user.email,
+        characterId,
+        modelName: ai.modelName,
+        modelVersion: ai.modelVersion,
+        inputPayload: aiPayload,
+        suggestion: ai.suggestion,
+      },
+      select: { id: true },
+    })
+
+    return { ok: true, generationId: generation.id, suggestion: ai.suggestion }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to generate character suggestion'
+    console.error('[ai] character text suggestion failed', error)
+    return { ok: false, error: message }
+  }
+}
+
+type CharacterStatsSkillsSuggestionInput = {
+  characterId?: number | null
+  name?: string
+  role?: string
+  race?: string
+  description?: string
+}
+
+type CharacterStatsSkillsSuggestionResult = {
+  ok: boolean
+  generationId?: string
+  suggestion?: {
+    stats: {
+      str: number
+      con: number
+      siz: number
+      dex: number
+      intelligence: number
+      pow: number
+      cha: number
+      app: number
+      edu: number
+      currentHp: number
+      maxHp: number
+      currentSanity: number
+      maxSanity: number
+      currentMp: number
+      maxMp: number
+      luck: number
+      build: number
+    }
+    skills: Array<{ skillId: number; value: number }>
+  }
+  error?: string
+}
+
+export async function generateCharacterStatsSkillsSuggestion(
+  input: CharacterStatsSkillsSuggestionInput,
+): Promise<CharacterStatsSkillsSuggestionResult> {
+  const user = await requireAuthorizedUser()
+
+  try {
+    const characterId =
+      typeof input.characterId === 'number' && Number.isFinite(input.characterId)
+        ? Math.trunc(input.characterId)
+        : null
+    if (characterId !== null) await assertCharacterAccess(characterId, user)
+
+    const skills = await prisma.skill.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      select: { id: true, name: true, category: true, baseValue: true },
+    })
+
+    const aiPayload = {
+      name: (input.name ?? '').trim(),
+      role: (input.role ?? '').trim(),
+      race: (input.race ?? '').trim(),
+      description: (input.description ?? '').trim(),
+      skills,
+    }
+
+    const ai = await generateCharacterStatsSkillsFromAI(aiPayload)
+    const generation = await prisma.aIGeneration.create({
+      data: {
+        type: AIGenerationType.CHARACTER_STATS_SKILLS,
+        createdByEmail: user.email,
+        characterId,
+        modelName: ai.modelName,
+        modelVersion: ai.modelVersion,
+        inputPayload: {
+          name: aiPayload.name,
+          role: aiPayload.role,
+          race: aiPayload.race,
+          description: aiPayload.description,
+          skillCatalog: skills,
+        },
+        suggestion: ai.suggestion,
+      },
+      select: { id: true },
+    })
+
+    return { ok: true, generationId: generation.id, suggestion: ai.suggestion }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to generate stats and skills suggestion'
+    console.error('[ai] character stats/skills suggestion failed', error)
+    return { ok: false, error: message }
+  }
+}
+
+type CharacterBulkSuggestionInput = {
+  rows: Array<{
+    rowIndex: number
+    name?: string
+    firstName?: string
+    lastName?: string
+    role?: string
+    status?: string
+  }>
+}
+
+type CharacterBulkSuggestionResult = {
+  ok: boolean
+  generationId?: string
+  suggestions?: Array<{
+    rowIndex: number
+    role: string
+    status: string
+    description: string
+  }>
+  error?: string
+}
+
+export async function generateCharacterBulkTextSuggestions(
+  input: CharacterBulkSuggestionInput,
+): Promise<CharacterBulkSuggestionResult> {
+  const user = await requireAuthorizedUser()
+
+  try {
+    const rows = input.rows
+      .map((row) => ({
+        rowIndex: row.rowIndex,
+        name: (row.name ?? '').trim(),
+        firstName: (row.firstName ?? '').trim(),
+        lastName: (row.lastName ?? '').trim(),
+        role: (row.role ?? '').trim(),
+        status: (row.status ?? '').trim(),
+      }))
+      .filter((row) => Number.isFinite(row.rowIndex))
+
+    if (rows.length === 0) return { ok: false, error: 'No rows were provided for AI enrichment.' }
+
+    const ai = await generateCharacterBulkTextFromAI(rows)
+    const generation = await prisma.aIGeneration.create({
+      data: {
+        type: AIGenerationType.CHARACTER_BULK_TEXT,
+        createdByEmail: user.email,
+        modelName: ai.modelName,
+        modelVersion: ai.modelVersion,
+        inputPayload: { rows },
+        suggestion: { suggestions: ai.suggestions },
+      },
+      select: { id: true },
+    })
+
+    return { ok: true, generationId: generation.id, suggestions: ai.suggestions }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to enrich bulk rows'
+    console.error('[ai] character bulk suggestion failed', error)
+    return { ok: false, error: message }
+  }
+}
+
+type AIFeedbackInput = {
+  generationId: string
+  status: 'ACCEPTED' | 'EDITED' | 'REJECTED'
+  finalValues?: Record<string, unknown>
+  note?: string
+}
+
+export async function captureAIFeedback(input: AIFeedbackInput): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireAuthorizedUser()
+
+  try {
+    const generation = await prisma.aIGeneration.findUnique({
+      where: { id: input.generationId },
+      select: { id: true, createdByEmail: true },
+    })
+    if (!generation) throw new Error('AI generation record not found')
+    if (generation.createdByEmail !== user.email && user.role !== AccessRole.ADMIN) throw new Error('Forbidden')
+
+    await prisma.aIFeedback.create({
+      data: {
+        generationId: input.generationId,
+        status: input.status as AIFeedbackStatus,
+        createdByEmail: user.email,
+        finalValues: (input.finalValues as Prisma.InputJsonValue | undefined) ?? undefined,
+        note: input.note?.trim() || null,
+      },
+    })
+
+    try {
+      await sendAIFeedbackToService({
+        generationId: input.generationId,
+        status: input.status,
+        finalValues: input.finalValues,
+      })
+    } catch (error) {
+      console.error('[ai] feedback sync failed', error)
+    }
+
+    return { ok: true }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to capture AI feedback'
+    return { ok: false, error: message }
+  }
+}
+
+type AITrainingRequestInput = {
+  mode?: 'cpu' | 'gpu'
+  baseModel?: string
+}
+
+export async function requestAIModelRetrain(
+  input: AITrainingRequestInput = {},
+): Promise<{ ok: boolean; jobId?: number; modelVersion?: string; error?: string }> {
+  const user = await requireAdminUser()
+  const mode = input.mode === 'gpu' ? 'gpu' : 'cpu'
+  const baseModel =
+    input.baseModel?.trim() ||
+    (mode === 'gpu'
+      ? process.env.AI_MODEL_GPU || process.env.AI_MODEL_CPU || 'model'
+      : process.env.AI_MODEL_CPU || process.env.AI_MODEL_GPU || 'model')
+
+  const trainingSet = await prisma.aIFeedback.findMany({
+    where: { status: { in: [AIFeedbackStatus.ACCEPTED, AIFeedbackStatus.EDITED] } },
+    orderBy: { createdAt: 'desc' },
+    take: 500,
+    include: {
+      generation: {
+        select: {
+          type: true,
+          inputPayload: true,
+          suggestion: true,
+          modelName: true,
+          modelVersion: true,
+        },
+      },
+    },
   })
 
-  revalidatePath(`/characters/${characterId}/sheet`)
+  const trainingExamples = trainingSet.map((item) => ({
+    generationType: item.generation.type,
+    inputPayload: item.generation.inputPayload,
+    suggestedOutput: item.generation.suggestion,
+    status: item.status,
+    finalValues: item.finalValues,
+    sourceModelName: item.generation.modelName,
+    sourceModelVersion: item.generation.modelVersion,
+  }))
+
+  const job = await prisma.aITrainingJob.create({
+    data: {
+      requestedByEmail: user.email,
+      status: AITrainingJobStatus.PENDING,
+      mode,
+      baseModel,
+      payload: { trainingExamples: trainingExamples.length },
+    },
+    select: { id: true },
+  })
+
+  try {
+    await prisma.aITrainingJob.update({
+      where: { id: job.id },
+      data: { status: AITrainingJobStatus.RUNNING, startedAt: new Date() },
+    })
+
+    const retrain = await triggerAIRetrain({
+      mode,
+      baseModel,
+      trainingExamples,
+    })
+
+    await prisma.$transaction([
+      prisma.aIModelVersion.updateMany({ data: { isActive: false } }),
+      prisma.aIModelVersion.create({
+        data: {
+          modelName: retrain.modelName,
+          version: retrain.modelVersion,
+          mode: retrain.mode,
+          metadata: { trainingExamples: trainingExamples.length, sourceJobId: job.id },
+          isActive: true,
+        },
+      }),
+      prisma.aITrainingJob.update({
+        where: { id: job.id },
+        data: {
+          status: AITrainingJobStatus.SUCCEEDED,
+          completedAt: new Date(),
+          result: retrain,
+        },
+      }),
+    ])
+
+    revalidatePath('/admin/skills')
+    return { ok: true, jobId: job.id, modelVersion: retrain.modelVersion }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'AI retraining failed'
+    await prisma.aITrainingJob.update({
+      where: { id: job.id },
+      data: {
+        status: AITrainingJobStatus.FAILED,
+        completedAt: new Date(),
+        error: message,
+      },
+    })
+    console.error('[ai] retraining failed', error)
+    return { ok: false, jobId: job.id, error: message }
+  }
+}
+
+export async function getAITrainingDashboard() {
+  await requireAdminUser()
+
+  const [activeModel, recentJobs] = await Promise.all([
+    prisma.aIModelVersion.findFirst({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.aITrainingJob.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      include: { requestedBy: { select: { email: true } } },
+    }),
+  ])
+
+  return { activeModel, recentJobs }
 }
 
 export async function createSkill(formData: FormData) {

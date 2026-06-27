@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { referenceLinksToText } from '@/lib/referenceLinks'
 import { notFound } from 'next/navigation'
 import { getAllTags, updateCharacter } from '@/app/actions'
+import { CharacterTextSuggestionPanel } from '@/components/CharacterTextSuggestionPanel'
 import { TagInput } from '@/components/TagInput'
 import Link from 'next/link'
 
@@ -35,6 +36,7 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
       </h1>
 
       <form action={action} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+        <CharacterTextSuggestionPanel characterId={character.id} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>First Name</label>

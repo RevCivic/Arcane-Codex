@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 
 type BulkEntryColumn = {
   name: string
@@ -20,6 +21,7 @@ export function BulkEntryTable({
   submitLabel,
   columns,
   action,
+  extraActions,
 }: {
   title: string
   description: string
@@ -28,6 +30,7 @@ export function BulkEntryTable({
   submitLabel: string
   columns: BulkEntryColumn[]
   action: (formData: FormData) => void | Promise<void>
+  extraActions?: ReactNode
 }) {
   const [rows, setRows] = useState<number[]>([0])
 
@@ -118,6 +121,7 @@ export function BulkEntryTable({
           >
             + Add Row
           </button>
+          {extraActions}
           <button
             type="submit"
             className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"

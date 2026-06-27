@@ -15,6 +15,20 @@ docker compose up -d
 
 The app will be available at `http://localhost:3000` (or whatever `HOST_PORT` is set to).
 
+### AI assistant container (text + stats only)
+
+Arcane Codex now includes an internal AI service container for **character text and BRP stat/skill suggestions only**.
+It does **not** generate images.
+
+- Default CPU profile (smaller/quantized model): started automatically as `ai`.
+- Optional GPU profile (larger/faster model): start with:
+
+```bash
+docker compose --profile gpu up -d ai-gpu app db
+```
+
+When using GPU mode, set `AI_MODE=gpu` and `AI_SERVICE_URL=http://ai-gpu:8000`.
+
 ### Changing the host port
 
 Set `HOST_PORT` before starting Compose, or add it to your `.env` file:
@@ -37,6 +51,19 @@ cp .env.example .env
 npx prisma migrate dev
 npm run dev
 ```
+
+### AI retraining (manual + scheduled)
+
+- Admins can trigger retraining from **Admin → Skills → AI Training Control**.
+- Retraining uses accepted/edited feedback records and stores model versions for rollback history.
+
+For periodic retraining, configure `AI_RETRAIN_TOKEN` and run:
+
+```bash
+APP_URL=http://localhost:3000 AI_RETRAIN_TOKEN=... npm run ai:retrain
+```
+
+You can schedule this command with cron/systemd/GitHub Actions.
 
 ## Migrating existing SQLite data to PostgreSQL
 

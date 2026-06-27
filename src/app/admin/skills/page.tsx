@@ -6,8 +6,9 @@ import { normalizeEmail } from '@/lib/normalizeEmail'
 import { AccessRole } from '@/generated/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createSkill, deleteSkill } from '@/app/actions'
+import { createSkill, deleteSkill, getAITrainingDashboard } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
+import { AITrainingPanel } from '@/components/AITrainingPanel'
 
 const CATEGORY_OPTIONS = ['Combat', 'Investigation', 'Academic', 'Social', 'Physical', 'Technical', 'Other']
 
@@ -19,10 +20,13 @@ export default async function AdminSkillsPage() {
   const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
   if (!allowed || allowed.role !== AccessRole.ADMIN) redirect('/')
 
-  const skills = await prisma.skill.findMany({
-    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    include: { _count: { select: { characterValues: true } } },
-  })
+  const [skills, aiDashboard] = await Promise.all([
+    prisma.skill.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      include: { _count: { select: { characterValues: true } } },
+    }),
+    getAITrainingDashboard(),
+  ])
 
   // Group by category for display
   const skillsByCategory = new Map<string, typeof skills>()
@@ -56,6 +60,25 @@ export default async function AdminSkillsPage() {
           {skills.length} skills
         </span>
       </div>
+
+      <AITrainingPanel
+        initialModel={
+          aiDashboard.activeModel
+            ? {
+                modelName: aiDashboard.activeModel.modelName,
+                version: aiDashboard.activeModel.version,
+                mode: aiDashboard.activeModel.mode,
+              }
+            : null
+        }
+        initialJobs={aiDashboard.recentJobs.map((job) => ({
+          id: job.id,
+          status: job.status,
+          mode: job.mode,
+          baseModel: job.baseModel,
+          requestedByEmail: job.requestedBy?.email ?? null,
+        }))}
+      />
 
       {/* ── Add Skill Form ─────────────────────────────────────────────────── */}
       <div className="card-arcane rounded-lg p-6 mb-8" style={{ fontFamily: 'Georgia, serif' }}>
