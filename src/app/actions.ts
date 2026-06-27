@@ -890,8 +890,7 @@ async function syncCharacterPowerAbility(
         data: { sourceCharacterPowerId: characterPowerId },
       }).catch((err: unknown) => {
         // Ignore unique constraint violations (another power already holds this ability link)
-        // but rethrow unexpected errors
-        if (err instanceof Error && err.message.includes('Unique constraint')) return
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return
         throw err
       })
     }
@@ -1616,7 +1615,7 @@ export async function saveRoll(
         data: { markedForImprovement: true },
       }).catch((err: unknown) => {
         // Ability may have been deleted between roll and mark — ignore not-found errors
-        if (err instanceof Error && err.message.includes('Record to update not found')) return
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') return
         throw err
       })
     }

@@ -53,9 +53,9 @@ export function AbilityImprovementPanel({
         const modifier = modifiers[ability.id] ?? 0
         try {
           const result = await rollAbilityImprovement(characterId, ability.id, modifier)
-          return { ability, result, error: null as unknown }
+          return { ability, result, error: null as Error | null }
         } catch (error) {
-          return { ability, result: null as null, error }
+          return { ability, result: null as { die: number; modifier: number; gain: number; newValue: number } | null, error: error as Error | null }
         }
       })
 
