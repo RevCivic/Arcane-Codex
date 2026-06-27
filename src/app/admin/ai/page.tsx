@@ -6,7 +6,7 @@ import { normalizeEmail } from '@/lib/normalizeEmail'
 import { AccessRole } from '@/generated/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getAITrainingDashboard, getAIPrimaryPrompt, saveAIPrimaryPrompt } from '@/app/actions'
+import { getAIEvaluationSnapshot, getAITrainingDashboard, getAIPrimaryPrompt, saveAIPrimaryPrompt } from '@/app/actions'
 import { AITrainingPanel } from '@/components/AITrainingPanel'
 
 export default async function AdminAIPage() {
@@ -17,9 +17,10 @@ export default async function AdminAIPage() {
   const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
   if (!allowed || allowed.role !== AccessRole.ADMIN) redirect('/')
 
-  const [aiDashboard, primaryPrompt] = await Promise.all([
+  const [aiDashboard, primaryPrompt, evaluation] = await Promise.all([
     getAITrainingDashboard(),
     getAIPrimaryPrompt(),
+    getAIEvaluationSnapshot(),
   ])
 
   const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
@@ -88,6 +89,59 @@ export default async function AdminAIPage() {
           requestedByEmail: job.requestedBy?.email ?? null,
         }))}
       />
+
+      <div className="card-arcane rounded-lg p-6" style={{ fontFamily: 'Georgia, serif' }}>
+        <h2 className="text-sm uppercase tracking-widest mb-1" style={labelStyle}>
+          🧪 Evaluation Snapshot
+        </h2>
+        <p className="text-xs mb-4" style={{ color: '#6b7280' }}>
+          Review the current model against representative investigator, ally, enemy, deity, mundane, and occult prompts.
+        </p>
+
+        {'error' in evaluation && evaluation.error ? (
+          <p className="text-xs" style={{ color: '#f87171' }}>⚠ {evaluation.error}</p>
+        ) : (
+          <>
+            <div className="mb-4 text-xs" style={{ color: '#9ca3af' }}>
+              <p>
+                Evaluated model:{' '}
+                <strong style={{ color: '#e2e8f0' }}>
+                  {evaluation.modelName} {evaluation.modelVersion ? `(${evaluation.modelVersion})` : ''}
+                </strong>
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+              {evaluation.criteria.map((criterion) => (
+                <div key={criterion.key} className="rounded p-3" style={{ border: '1px solid #1f2937', backgroundColor: '#0d0d1a' }}>
+                  <p className="text-xs uppercase tracking-wider" style={{ color: '#a78bfa' }}>{criterion.label}</p>
+                  <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>{criterion.description}</p>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {evaluation.cases.map((item) => (
+                <div key={item.id} className="rounded p-4" style={{ border: '1px solid #1f2937', backgroundColor: '#0d0d15' }}>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider" style={{ color: '#d97706' }}>{item.label}</p>
+                      <p className="text-[11px]" style={{ color: '#6b7280' }}>{item.promptSummary}</p>
+                    </div>
+                    <p className="text-[11px]" style={{ color: '#a78bfa' }}>{item.entityType}</p>
+                  </div>
+                  <p className="text-xs mb-2" style={{ color: '#e2e8f0' }}>{item.suggestion.description}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]" style={{ color: '#cbd5e1' }}>
+                    {Object.entries(item.scores).map(([key, value]) => (
+                      <div key={key} className="rounded px-2 py-1" style={{ border: '1px solid #1f2937' }}>
+                        <strong style={{ color: '#a78bfa' }}>{key}:</strong> {value}/5
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
