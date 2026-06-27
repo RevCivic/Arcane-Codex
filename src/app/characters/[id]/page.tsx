@@ -8,7 +8,7 @@ import { normalizeReferenceLinks } from '@/lib/referenceLinks'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
-import { deleteCharacter, claimCharacter, unclaimCharacter, adminAssignCharacter, assignPower, updateCharacterPower, removeCharacterPower } from '@/app/actions'
+import { deleteCharacter, claimCharacter, unclaimCharacter, adminAssignCharacter, assignPower, updateCharacterPower, removeCharacterPower, createCharacterAbility, updateCharacterAbility, deleteCharacterAbility } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
 
 export default async function CharacterDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +28,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
           include: { power: { select: { id: true, name: true, baseAbility: true, basePercentage: true } } },
           orderBy: { power: { name: 'asc' } },
         },
+        characterAbilities: { orderBy: { name: 'asc' } },
         sheet: { include: { skillValues: true } },
       },
     }),
@@ -347,9 +348,14 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {character.characterPowers.map((cp) => {
-              const effective = cp.power.basePercentage != null
-                ? cp.power.basePercentage + cp.modifier
-                : (cp.power.baseAbility ? skillNameMap.get(cp.power.baseAbility) : undefined)
+              const abilityForPower = character.characterAbilities.find(
+                (ca) => ca.sourceCharacterPowerId === cp.id
+              )
+              const effective = abilityForPower
+                ? abilityForPower.currentValue
+                : cp.power.basePercentage != null
+                  ? cp.power.basePercentage + cp.modifier
+                  : (cp.power.baseAbility ? skillNameMap.get(cp.power.baseAbility) : undefined)
 
               return (
                 <div key={cp.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
@@ -375,6 +381,9 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
                         <span className="ml-1 font-mono" style={{ color: cp.modifier > 0 ? '#4ade80' : '#f87171' }}>
                           ({cp.modifier > 0 ? '+' : ''}{cp.modifier})
                         </span>
+                      )}
+                      {abilityForPower?.markedForImprovement && (
+                        <span className="ml-1" title="Marked for improvement">📌</span>
                       )}
                     </p>
                   )}
@@ -407,6 +416,87 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
           </div>
         )}
       </div>
+
+      {/* Abilities (standalone, DM-managed) */}
+      {(isAdmin || character.characterAbilities.length > 0) && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+              ✨ Abilities
+            </h2>
+          </div>
+
+          {/* Admin: Add standalone ability */}
+          {isAdmin && (
+            <form action={createCharacterAbility} className="mb-4 p-4 rounded-lg space-y-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #2d1b69', fontFamily: 'Georgia, serif' }}>
+              <h3 className="text-xs uppercase tracking-widest" style={{ color: '#a78bfa' }}>✨ Add Ability</h3>
+              <input type="hidden" name="characterId" value={characterId} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Ability Name</label>
+                  <input name="name" type="text" required className="arcane-input" placeholder="e.g. Arcane Perception" />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Starting Value (%)</label>
+                  <input name="currentValue" type="number" required min={0} max={200} className="arcane-input" placeholder="e.g. 30" />
+                </div>
+              </div>
+              <button type="submit" className="text-xs px-4 py-1.5 rounded hover:opacity-90" style={{ backgroundColor: '#5b21b6', color: '#e9d5ff' }}>
+                Add Ability
+              </button>
+            </form>
+          )}
+
+          {character.characterAbilities.length === 0 ? (
+            <p className="text-sm" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>No standalone abilities assigned to this character.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {character.characterAbilities.map((ca) => (
+                <div key={ca.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>{ca.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono px-1 rounded text-xs" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{ca.currentValue}%</span>
+                      {ca.markedForImprovement && (
+                        <span className="text-xs" title="Marked for improvement">📌</span>
+                      )}
+                      {isAdmin && (
+                        <form action={deleteCharacterAbility.bind(null, ca.id)} className="inline">
+                          <button type="submit" className="text-xs px-2 py-0.5 rounded hover:text-red-300" style={{ color: '#f87171', border: '1px solid #3f1212' }}>
+                            Remove
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Admin: edit ability */}
+                  {isAdmin && (
+                    <details className="mt-2">
+                      <summary className="text-xs cursor-pointer" style={{ color: '#4b5563' }}>Edit ability…</summary>
+                      <form action={updateCharacterAbility.bind(null, ca.id)} className="mt-2 grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs mb-1" style={{ color: '#6b7280' }}>Name</label>
+                          <input name="name" type="text" defaultValue={ca.name} className="arcane-input" />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-1" style={{ color: '#6b7280' }}>Current Value (%)</label>
+                          <input name="currentValue" type="number" defaultValue={ca.currentValue} min={0} max={200} className="arcane-input" />
+                        </div>
+                        <div className="col-span-2">
+                          <button type="submit" className="text-xs px-3 py-1 rounded hover:opacity-90" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>
+                            Save
+                          </button>
+                        </div>
+                      </form>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

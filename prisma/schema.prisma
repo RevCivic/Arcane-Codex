@@ -246,27 +246,52 @@ model Power {
 
 /// A character's assignment of a specific power, with an individual modifier.
 model CharacterPower {
-  id          Int       @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   characterId Int
-  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  character   Character         @relation(fields: [characterId], references: [id], onDelete: Cascade)
   powerId     Int
-  power       Power     @relation(fields: [powerId], references: [id], onDelete: Cascade)
+  power       Power             @relation(fields: [powerId], references: [id], onDelete: Cascade)
   /// Flat ±% modifier on top of power.basePercentage (positive = more proficient, negative = detriment).
-  modifier    Int       @default(0)
+  modifier    Int               @default(0)
   /// Optional free-text reason for the modifier, e.g. "split tongue −20 to verbal".
   notes       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  ability     CharacterAbility?
 
   @@unique([characterId, powerId])
 }
 
+/// A character-specific ability entry, tracking current proficiency and improvement marks.
+/// Unlike Skills (which are global definitions), abilities are per-character and can be
+/// freely added or removed by the DM. Power assignments automatically create/maintain
+/// these entries when a power has a rollable ability.
+model CharacterAbility {
+  id                     Int             @id @default(autoincrement())
+  characterId            Int
+  character              Character       @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  name                   String
+  currentValue           Int
+  /// Flagged true when a FAILURE or FUMBLE is rolled on this ability during a session.
+  /// Cleared after the post-mission improvement roll is executed.
+  markedForImprovement   Boolean         @default(false)
+  /// Optional link to the CharacterPower whose baseAbility created this entry.
+  /// Set to null when the ability outlives the power assignment.
+  sourceCharacterPowerId Int?            @unique
+  sourceCharacterPower   CharacterPower? @relation(fields: [sourceCharacterPowerId], references: [id], onDelete: SetNull)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  rollHistory            RollHistory[]
+
+  @@unique([characterId, name])
+}
+
 /// Persisted roll records visible to the character owner and admins.
 model RollHistory {
-  id          Int       @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   characterId Int
-  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  /// 'ability' | 'skill' | 'free'
+  character   Character         @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  /// 'ability' | 'skill' | 'power' | 'free'
   rollType    String
   /// Human-readable label, e.g. "STR Check", "Spot Hidden", "2d6+1"
   label       String
@@ -286,8 +311,11 @@ model RollHistory {
   luckSpent   Int?
   /// Skill linked to this roll (skill rolls only); used for improvement tracking
   skillId     Int?
-  skill       Skill?    @relation(fields: [skillId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
+  skill       Skill?            @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  /// CharacterAbility linked to this roll (power rolls only); used for improvement tracking
+  abilityId   Int?
+  ability     CharacterAbility? @relation(fields: [abilityId], references: [id], onDelete: SetNull)
+  createdAt   DateTime          @default(now())
 }
 
 /// AI-generated suggestions before user acceptance/edit/reject.
