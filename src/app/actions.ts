@@ -1842,6 +1842,7 @@ type CharacterTextSuggestionInput = {
   currentLocation?: string
   homeOrigin?: string
   description?: string
+  additionalPrompt?: string
 }
 
 type CharacterTextSuggestionResult = {
@@ -1894,6 +1895,7 @@ export async function generateCharacterTextSuggestion(
       currentLocation: (input.currentLocation ?? '').trim(),
       homeOrigin: (input.homeOrigin ?? '').trim(),
       baseDescription: (input.description ?? '').trim(),
+      additionalPrompt: (input.additionalPrompt ?? '').trim(),
     }
 
     const ai = await generateCharacterTextFromAI(aiPayload)
@@ -1924,6 +1926,7 @@ type CharacterStatsSkillsSuggestionInput = {
   role?: string
   race?: string
   description?: string
+  additionalPrompt?: string
 }
 
 type CharacterStatsSkillsSuggestionResult = {
@@ -1976,6 +1979,7 @@ export async function generateCharacterStatsSkillsSuggestion(
       role: (input.role ?? '').trim(),
       race: (input.race ?? '').trim(),
       description: (input.description ?? '').trim(),
+      additionalPrompt: (input.additionalPrompt ?? '').trim(),
       skills,
     }
 
@@ -1992,6 +1996,7 @@ export async function generateCharacterStatsSkillsSuggestion(
           role: aiPayload.role,
           race: aiPayload.race,
           description: aiPayload.description,
+          additionalPrompt: aiPayload.additionalPrompt,
           skillCatalog: skills,
         },
         suggestion: ai.suggestion,

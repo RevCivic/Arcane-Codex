@@ -32,6 +32,8 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
   const [error, setError] = useState<string | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
+  const [additionalPrompt, setAdditionalPrompt] = useState('')
+  const [showPrompt, setShowPrompt] = useState(false)
 
   async function handleGenerate(event: React.MouseEvent<HTMLButtonElement>) {
     const form = event.currentTarget.closest('form')
@@ -53,6 +55,7 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
       currentLocation: getInputValue(form, 'currentLocation'),
       homeOrigin: getInputValue(form, 'homeOrigin'),
       description: getInputValue(form, 'description'),
+      additionalPrompt,
     })
 
     setLoading(false)
@@ -108,16 +111,42 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
         <p className="text-xs uppercase tracking-wider" style={{ color: '#a78bfa' }}>
           AI Character Detail Suggestions
         </p>
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={loading}
-          className="px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider hover:opacity-90 disabled:opacity-50"
-          style={{ backgroundColor: '#5b21b6', color: '#e9d5ff' }}
-        >
-          {loading ? 'Generating…' : 'Generate Details'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPrompt((v) => !v)}
+            className="px-2 py-1 rounded text-[11px] font-semibold uppercase tracking-wider"
+            style={{ border: '1px solid #374151', color: '#9ca3af' }}
+          >
+            {showPrompt ? 'Hide Prompt' : 'Add Prompt'}
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={loading}
+            className="px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: '#5b21b6', color: '#e9d5ff' }}
+          >
+            {loading ? 'Generating…' : 'Generate Details'}
+          </button>
+        </div>
       </div>
+
+      {showPrompt && (
+        <div className="mt-3">
+          <label className="block text-xs mb-1" style={{ color: '#9ca3af' }}>
+            Additional instructions for the AI
+          </label>
+          <textarea
+            value={additionalPrompt}
+            onChange={(e) => setAdditionalPrompt(e.target.value)}
+            rows={3}
+            placeholder="e.g. Make the character mysterious and haunted by their past…"
+            className="w-full rounded px-2 py-1.5 text-xs resize-y"
+            style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' }}
+          />
+        </div>
+      )}
 
       {error && (
         <p className="text-xs mt-2" style={{ color: '#f87171' }}>

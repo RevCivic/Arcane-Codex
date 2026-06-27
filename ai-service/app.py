@@ -69,6 +69,7 @@ class CharacterTextInput(BaseModel):
     currentLocation: str = ""
     homeOrigin: str = ""
     baseDescription: str = ""
+    additionalPrompt: str = ""
 
 
 class SkillInput(BaseModel):
@@ -83,6 +84,7 @@ class CharacterStatsInput(BaseModel):
     role: str = ""
     race: str = ""
     description: str = ""
+    additionalPrompt: str = ""
     skills: list[SkillInput] = Field(default_factory=list)
 
 
@@ -138,6 +140,8 @@ def generate_character_text(payload: CharacterTextInput) -> dict[str, Any]:
     )
     if payload.baseDescription.strip():
         desc = f"{payload.baseDescription.strip()} {desc}"
+    if payload.additionalPrompt.strip():
+        desc = f"{desc} {payload.additionalPrompt.strip()}"
 
     return {
         "modelName": model,
@@ -160,7 +164,7 @@ def generate_character_stats(payload: CharacterStatsInput) -> dict[str, Any]:
     model = str(registry.get("active_model", active_model_name()))
     version = str(registry.get("active_version", "bootstrap-v1"))
 
-    seed_input = f"{payload.name}|{payload.role}|{payload.race}|{payload.description}"
+    seed_input = f"{payload.name}|{payload.role}|{payload.race}|{payload.description}|{payload.additionalPrompt}"
     rnd = random.Random(seed_input)
 
     def brp_stat(low: int = 7, high: int = 18) -> int:

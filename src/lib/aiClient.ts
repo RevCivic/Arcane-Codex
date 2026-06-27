@@ -114,6 +114,7 @@ export async function generateCharacterTextFromAI(input: {
   currentLocation: string
   homeOrigin: string
   baseDescription: string
+  additionalPrompt: string
 }): Promise<{ modelName: string; modelVersion: string; mode: 'cpu' | 'gpu'; suggestion: CharacterTextSuggestion }> {
   const result = await callAI<typeof input, ServiceEnvelope<unknown>>('/v1/generate/character-text', input)
   const raw = asObject(result.suggestion)
@@ -176,6 +177,7 @@ export async function generateCharacterStatsSkillsFromAI(input: {
   role: string
   race: string
   description: string
+  additionalPrompt: string
   skills: SkillPromptInput[]
 }): Promise<{
   modelName: string
