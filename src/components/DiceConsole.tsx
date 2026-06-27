@@ -29,6 +29,9 @@ export interface PowerEntry {
   id: number
   name: string
   effectiveValue: number
+  /** CharacterAbility.id linked to this power entry; null if no ability record exists */
+  abilityId: number | null
+  markedForImprovement: boolean
 }
 
 export interface HistoryEntry {
@@ -45,6 +48,8 @@ export interface HistoryEntry {
   luckSpent: number | null
   /** Skill ID for skill rolls, null otherwise */
   skillId: number | null
+  /** CharacterAbility ID for power rolls, null otherwise */
+  abilityId: number | null
   createdAt: string
 }
 
@@ -258,6 +263,11 @@ export function DiceConsole({
     () => new Set(skills.filter((s) => s.markedForImprovement).map((s) => s.id))
   )
 
+  // Improvement marks for abilities (power rolls): set of abilityIds
+  const [markedAbilityIds, setMarkedAbilityIds] = useState<Set<number>>(
+    () => new Set(powers.filter((p) => p.abilityId != null && p.markedForImprovement).map((p) => p.abilityId!))
+  )
+
   // History: initialised from server, new rolls prepended
   const [history, setHistory] = useState<HistoryEntry[]>(initialHistory)
   const tempIdRef = useRef(-1)
@@ -289,6 +299,7 @@ export function DiceConsole({
           dice:       parseDice(entry.dice),
           modifier:   entry.modifier,
           skillId:    entry.skillId,
+          abilityId:  entry.abilityId,
         })
         setHistory((prev) =>
           prev.map((r) =>
@@ -308,6 +319,14 @@ export function DiceConsole({
           entry.skillId != null
         ) {
           setMarkedSkillIds((prev) => new Set([...prev, entry.skillId!]))
+        }
+
+        // Optimistically mark ability for improvement on FAILURE or FUMBLE (power rolls)
+        if (
+          (resolvedResultType === 'FAILURE' || resolvedResultType === 'FUMBLE') &&
+          entry.abilityId != null
+        ) {
+          setMarkedAbilityIds((prev) => new Set([...prev, entry.abilityId!]))
         }
 
         if (resolvedResultType === 'FAILURE' && effectiveTarget !== null) {
@@ -332,7 +351,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'ability', label: `${stat.label} Check`, roll, target, difficulty: abilityTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null, abilityId: null },
       roll, target
     )
   }
@@ -344,7 +363,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'skill', label: skill.name, roll, target, difficulty: skillTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: skill.id },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: skill.id, abilityId: null },
       roll, target
     )
   }
@@ -356,7 +375,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'power', label: power.name, roll, target, difficulty: powerTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null, abilityId: power.abilityId },
       roll, target
     )
   }
@@ -369,7 +388,7 @@ export function DiceConsole({
     }`
     dispatchRoll(
       { rollType: 'free', label, roll: total, target: null, difficulty: null,
-        resultType: null, dice: JSON.stringify(dice), modifier, luckSpent: null, skillId: null },
+        resultType: null, dice: JSON.stringify(dice), modifier, luckSpent: null, skillId: null, abilityId: null },
       total, null
     )
   }
@@ -583,13 +602,30 @@ export function DiceConsole({
                         onChange={(e) => setSelectedPowerId(Number(e.target.value))}
                         className="arcane-input"
                       >
-                        {powers.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} ({p.effectiveValue}%)
-                          </option>
-                        ))}
+                        {powers.map((p) => {
+                          const isMarked = p.abilityId != null && markedAbilityIds.has(p.abilityId)
+                          return (
+                            <option key={p.id} value={p.id}>
+                              {p.name} ({p.effectiveValue}%){isMarked ? ' 📌' : ''}
+                            </option>
+                          )
+                        })}
                       </select>
                     )}
+                    {/* Improvement mark badge for the selected power */}
+                    {(() => {
+                      const selPower = powers.find((p) => p.id === selectedPowerId)
+                      const isMarked = selPower?.abilityId != null && markedAbilityIds.has(selPower.abilityId)
+                      return isMarked ? (
+                        <div
+                          className="mt-2 text-xs px-2 py-1 rounded flex items-center gap-1"
+                          style={{ backgroundColor: '#1e1133', border: '1px solid #7c3aed66', color: '#a78bfa' }}
+                        >
+                          <span>📌</span>
+                          <span>Marked for improvement — roll after the mission ends</span>
+                        </div>
+                      ) : null
+                    })()}
                   </div>
 
                   {powers.length > 0 && (

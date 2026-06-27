@@ -11,6 +11,8 @@ import { DiceConsole } from '@/components/DiceConsole'
 import type { StatEntry, SkillEntry, PowerEntry } from '@/components/DiceConsole'
 import { SkillImprovementPanel } from '@/components/SkillImprovementPanel'
 import type { MarkedSkill } from '@/components/SkillImprovementPanel'
+import { AbilityImprovementPanel } from '@/components/AbilityImprovementPanel'
+import type { MarkedAbility } from '@/components/AbilityImprovementPanel'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { SheetLayoutManager } from '@/components/SheetLayoutManager'
 import type { SheetModule } from '@/components/SheetLayoutManager'
@@ -103,6 +105,9 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
           include: { power: { select: { id: true, name: true, baseAbility: true, basePercentage: true } } },
           orderBy: { power: { name: 'asc' } },
         },
+        characterAbilities: {
+          orderBy: { name: 'asc' },
+        },
         inventoryItems: true,
       },
     }),
@@ -171,14 +176,29 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
       sheet?.skillValues.find((sv) => sv.skillId === skill.id)?.markedForImprovement ?? false,
   }))
 
-  // Powers with a resolvable percentage — same derivation logic as the Powers panel below.
+  // Build a lookup: ability name → CharacterAbility record
+  const abilityByName = new Map(
+    character.characterAbilities.map((ca) => [ca.name, ca])
+  )
+
+  // Powers with a resolvable percentage — uses CharacterAbility currentValue when available,
+  // otherwise falls back to power basePercentage + modifier.
   const consolePowers: PowerEntry[] = character.characterPowers
     .flatMap((cp) => {
-      const effectivePct = cp.power.basePercentage != null
-        ? cp.power.basePercentage + cp.modifier
-        : (cp.power.baseAbility ? skillNameMap.get(cp.power.baseAbility) : undefined)
+      const ability = cp.power.baseAbility ? abilityByName.get(cp.power.baseAbility) : undefined
+      const effectivePct = ability
+        ? ability.currentValue
+        : cp.power.basePercentage != null
+          ? cp.power.basePercentage + cp.modifier
+          : undefined
       if (effectivePct == null) return []
-      return [{ id: cp.power.id, name: cp.power.name, effectiveValue: effectivePct }]
+      return [{
+        id: cp.power.id,
+        name: cp.power.name,
+        effectiveValue: effectivePct,
+        abilityId: ability?.id ?? null,
+        markedForImprovement: ability?.markedForImprovement ?? false,
+      }]
     })
 
   // Skills currently marked for post-mission improvement
@@ -192,6 +212,15 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
       name: skill.name,
       category: skill.category,
       currentValue: skillValueMap.get(skill.id) ?? skill.baseValue,
+    }))
+
+  // Abilities currently marked for post-mission improvement
+  const markedAbilities: MarkedAbility[] = character.characterAbilities
+    .filter((ca) => ca.markedForImprovement)
+    .map((ca) => ({
+      id: ca.id,
+      name: ca.name,
+      currentValue: ca.currentValue,
     }))
 
   // Serialise DB roll history for client component (Date → ISO string).
@@ -208,6 +237,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     modifier:   r.modifier,
     luckSpent:  r.luckSpent,
     skillId:    r.skillId,
+    abilityId:  r.abilityId,
     createdAt:  r.createdAt.toISOString(),
   }))
 
@@ -500,6 +530,43 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             ),
           } satisfies SheetModule,
 
+          // ── Ability Improvement ─────────────────────────────────────────
+          {
+            key: 'ability-improvement',
+            label: '✨ Ability Improvement',
+            content: (
+              <CollapsibleSection
+                storageKey="ability-improvement"
+                defaultOpen={markedAbilities.length > 0}
+                title={
+                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+                    ✨ Ability Improvement
+                    {markedAbilities.length > 0 && (
+                      <span
+                        className="ml-2 text-xs px-2 py-0.5 rounded-full font-semibold align-middle"
+                        style={{ backgroundColor: '#1e1133', color: '#c4b5fd', border: '1px solid #7c3aed66' }}
+                      >
+                        {markedAbilities.length} pending
+                      </span>
+                    )}
+                  </h2>
+                }
+              >
+                {markedAbilities.length === 0 ? (
+                  <p className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
+                    No abilities are marked for improvement. Abilities are marked automatically when you roll a
+                    Failure or Fumble on a power check.
+                  </p>
+                ) : (
+                  <AbilityImprovementPanel
+                    characterId={characterId}
+                    initialMarkedAbilities={markedAbilities}
+                  />
+                )}
+              </CollapsibleSection>
+            ),
+          } satisfies SheetModule,
+
           // ── Dice Console ────────────────────────────────────────────────
           {
             key: 'dice',
@@ -560,47 +627,80 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
               ]
             : []),
 
-          // ── Powers (conditional) ────────────────────────────────────────
-          ...(character.characterPowers.length > 0
+          // ── Powers + Abilities (conditional) ───────────────────────────
+          ...(character.characterPowers.length > 0 || character.characterAbilities.length > 0
             ? [
                 {
                   key: 'powers',
-                  label: '⚡ Powers',
+                  label: '⚡ Powers & Abilities',
                   content: (
                     <CollapsibleSection
                       storageKey="powers"
                       title={
                         <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-                          ⚡ Powers
+                          ⚡ Powers &amp; Abilities
                         </h2>
                       }
                     >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {character.characterPowers.map((cp) => {
-                          const effectivePct = cp.power.basePercentage != null
-                            ? cp.power.basePercentage + cp.modifier
-                            : (cp.power.baseAbility ? skillNameMap.get(cp.power.baseAbility) : undefined)
-                          return (
-                            <div key={cp.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
-                              <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{cp.power.name}</h3>
-                              {cp.power.baseAbility && (
-                                <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
-                                  🎲 {cp.power.baseAbility}
-                                  {effectivePct != null ? (
-                                    <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{effectivePct}%</span>
-                                  ) : null}
-                                  {cp.modifier !== 0 && (
-                                    <span className="ml-1 font-mono" style={{ color: cp.modifier > 0 ? '#4ade80' : '#f87171' }}>
-                                      ({cp.modifier > 0 ? '+' : ''}{cp.modifier})
-                                    </span>
-                                  )}
-                                </p>
-                              )}
-                              {cp.notes && <p className="text-xs italic mt-1" style={{ color: '#6b7280' }}>{cp.notes}</p>}
-                            </div>
-                          )
-                        })}
-                      </div>
+                      {/* Power cards */}
+                      {character.characterPowers.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                          {character.characterPowers.map((cp) => {
+                            const ability = cp.power.baseAbility ? abilityByName.get(cp.power.baseAbility) : undefined
+                            const effectivePct = ability
+                              ? ability.currentValue
+                              : cp.power.basePercentage != null
+                                ? cp.power.basePercentage + cp.modifier
+                                : undefined
+                            return (
+                              <div key={cp.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                                <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{cp.power.name}</h3>
+                                {cp.power.baseAbility && (
+                                  <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
+                                    🎲 {cp.power.baseAbility}
+                                    {effectivePct != null ? (
+                                      <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{effectivePct}%</span>
+                                    ) : null}
+                                    {cp.modifier !== 0 && (
+                                      <span className="ml-1 font-mono" style={{ color: cp.modifier > 0 ? '#4ade80' : '#f87171' }}>
+                                        ({cp.modifier > 0 ? '+' : ''}{cp.modifier})
+                                      </span>
+                                    )}
+                                    {ability?.markedForImprovement && (
+                                      <span className="ml-1" title="Marked for improvement">📌</span>
+                                    )}
+                                  </p>
+                                )}
+                                {cp.notes && <p className="text-xs italic mt-1" style={{ color: '#6b7280' }}>{cp.notes}</p>}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Standalone ability cards (not tied to a power) */}
+                      {character.characterAbilities.filter(
+                        (ca) => !character.characterPowers.some((cp) => cp.power.baseAbility === ca.name)
+                      ).length > 0 && (
+                        <>
+                          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+                            Additional Abilities
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {character.characterAbilities
+                              .filter((ca) => !character.characterPowers.some((cp) => cp.power.baseAbility === ca.name))
+                              .map((ca) => (
+                                <div key={ca.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>{ca.name}</span>
+                                    <span className="font-mono px-1 rounded text-xs" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{ca.currentValue}%</span>
+                                    {ca.markedForImprovement && <span title="Marked for improvement">📌</span>}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </>
+                      )}
                     </CollapsibleSection>
                   ),
                 } satisfies SheetModule,
