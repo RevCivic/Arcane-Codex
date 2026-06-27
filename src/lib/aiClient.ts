@@ -79,6 +79,10 @@ type ServiceEnvelope<T> = {
   suggestions?: T[]
 }
 
+type AIPromptContextInput = Partial<Omit<AIPromptContext, 'entityType'>> & {
+  entityType?: string
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, Math.trunc(value)))
 }
@@ -146,7 +150,7 @@ export async function generateCharacterTextFromAI(input: {
   baseDescription: string
   additionalPrompt: string
   systemPrompt?: string
-  promptContext?: Partial<AIPromptContext>
+  promptContext?: AIPromptContextInput
 }): Promise<{ modelName: string; modelVersion: string; mode: 'cpu' | 'gpu'; suggestion: CharacterTextSuggestion }> {
   const result = await callAI<typeof input, ServiceEnvelope<unknown>>('/v1/generate/character-text', input)
   const raw = asObject(result.suggestion)
@@ -216,7 +220,7 @@ export async function generateCharacterStatsSkillsFromAI(input: {
   description: string
   additionalPrompt: string
   systemPrompt?: string
-  promptContext?: Partial<AIPromptContext>
+  promptContext?: AIPromptContextInput
   skills: SkillPromptInput[]
 }): Promise<{
   modelName: string
@@ -245,8 +249,8 @@ export async function generateCharacterBulkTextFromAI(rows: Array<{
   lastName: string
   role: string
   status: string
-  promptContext?: Partial<AIPromptContext>
-}>, systemPrompt?: string, promptContext?: Partial<AIPromptContext>, additionalPrompt?: string): Promise<{
+  promptContext?: AIPromptContextInput
+}>, systemPrompt?: string, promptContext?: AIPromptContextInput, additionalPrompt?: string): Promise<{
   modelName: string
   modelVersion: string
   mode: 'cpu' | 'gpu'
