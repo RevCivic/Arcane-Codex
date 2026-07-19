@@ -24,7 +24,6 @@ export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputP
   const [tags, setTags] = useState<string[]>(() => normalizeAndDeduplicateTags(initialTags))
   const [draft, setDraft] = useState('')
   const datalistId = useId()
-  const scrollboxId = useId()
   const normalizedAllTags = useMemo(() => normalizeAndDeduplicateTags(allTags), [allTags])
 
   const addTag = (raw: string) => {
@@ -78,43 +77,42 @@ export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputP
         {/* Existing tags scrollbox */}
         {normalizedAllTags.length > 0 && (
           <div className="mb-2">
-            <p
-              id={scrollboxId}
-              className="text-xs uppercase tracking-wider mb-1"
-              style={{ color: '#6b7280' }}
-            >
-              Existing tags
-            </p>
-            <div
-              role="group"
-              aria-labelledby={scrollboxId}
-              className="overflow-y-auto rounded"
-              style={{
-                maxHeight: '9rem',
-                backgroundColor: '#0d0d14',
-                border: '1px solid #1f2937',
-                padding: '0.375rem 0.5rem',
-              }}
-            >
-              {normalizedAllTags.map((tag) => {
-                const checked = tags.includes(tag)
-                return (
-                  <label
-                    key={tag}
-                    className="flex items-center gap-2 text-xs py-0.5 cursor-pointer select-none"
-                    style={{ color: checked ? '#c4b5fd' : '#9ca3af' }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleExistingTag(tag)}
-                      className="accent-purple-500"
-                    />
-                    {tag}
-                  </label>
-                )
-              })}
-            </div>
+            <fieldset style={{ border: 'none', margin: 0, padding: 0 }}>
+              <legend
+                className="text-xs uppercase tracking-wider mb-1"
+                style={{ color: '#6b7280' }}
+              >
+                Existing tags
+              </legend>
+              <div
+                className="overflow-y-auto rounded"
+                style={{
+                  maxHeight: '9rem',
+                  backgroundColor: '#0d0d14',
+                  border: '1px solid #1f2937',
+                  padding: '0.375rem 0.5rem',
+                }}
+              >
+                {normalizedAllTags.map((tag) => {
+                  const checked = tags.includes(tag)
+                  return (
+                    <label
+                      key={tag}
+                      className="flex items-center gap-2 text-xs py-0.5 cursor-pointer select-none"
+                      style={{ color: checked ? '#c4b5fd' : '#9ca3af' }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleExistingTag(tag)}
+                        className="accent-purple-500"
+                      />
+                      {tag}
+                    </label>
+                  )
+                })}
+              </div>
+            </fieldset>
           </div>
         )}
 
