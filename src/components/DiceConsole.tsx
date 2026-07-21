@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useTransition, useCallback, useEffect } from 'react'
 import { saveRoll, spendLuckOnRoll } from '@/app/actions'
 import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
 
@@ -316,7 +316,7 @@ export function DiceConsole({
   const [scrambleRune, setScrambleRune] = useState('')
   const [flavorText,   setFlavorText]   = useState<string | null>(null)
 
-  function startScramble(resultType: ResultType | null) {
+  const startScramble = useCallback((resultType: ResultType | null) => {
     if (scrambleTimer.current)    clearTimeout(scrambleTimer.current)
     if (scrambleInterval.current) clearInterval(scrambleInterval.current)
 
@@ -336,7 +336,15 @@ export function DiceConsole({
       setIsScrambling(false)
       if (resultType) setFlavorText(randomFlavor(resultType))
     }, 400)
-  }
+  }, [])
+
+  // Clear pending timers when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (scrambleTimer.current)    clearTimeout(scrambleTimer.current)
+      if (scrambleInterval.current) clearInterval(scrambleInterval.current)
+    }
+  }, [])
 
   // React 19 async transitions
   const [isRolling,  startRollTransition]  = useTransition()
