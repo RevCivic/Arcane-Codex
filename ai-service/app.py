@@ -999,8 +999,9 @@ def _build_chat_response(request: ChatRequest) -> str:
     is_suggestion = any(k in lower_msg for k in ["suggest", "idea", "help", "recommend", "what should", "how should", "can you", "would you", "could you"])
     is_name = any(k in lower_msg for k in ["name", "call", "named", "title"])
     # Catch info-seeking queries ("tell me about X", "who is X", "describe X")
-    is_inquiry = any(k in lower_msg for k in ["tell me", "tell me about", "describe", "explain", "who is", "who are", "what is", "what are"])
+    is_inquiry = any(k in lower_msg for k in ["tell me", "describe", "explain", "who is", "who are", "what is", "what are"])
     # Catch creation / follow-up action phrases ("let's build X", "connect this to X")
+    # Include both "let's" and "lets" to handle omitted apostrophes.
     is_build = any(k in lower_msg for k in ["build", "create", "develop", "connect this", "link this", "let's", "lets"])
 
     # Build contextual response
@@ -1142,15 +1143,16 @@ def _build_chat_response(request: ChatRequest) -> str:
             "What aspect would you like to explore? I can assist with backstory, personality, stats, campaign plotting, or world-building details.",
             "Happy to help refine any element of the campaign. Share what you're working on — a character, a plot thread, or a piece of setting lore — and I'll build on it.",
         ]
+        general_pick = pick(rnd, general)
         if lore_summary:
             lore_ctx_prefixes = [
-                f"The lore library has context available. {pick(rnd, general)}",
-                pick(rnd, general),
-                f"With the campaign lore loaded: {pick(rnd, general)}",
+                f"The lore library has context available. {general_pick}",
+                general_pick,
+                f"With the campaign lore loaded: {general_pick}",
             ]
             parts.append(pick(rnd, lore_ctx_prefixes))
         else:
-            parts.append(pick(rnd, general))
+            parts.append(general_pick)
 
     # Only add an open-ended follow-up on the very first exchange; after that the conversation
     # should be guided by the user's replies, not by repeating the same prompt questions.
