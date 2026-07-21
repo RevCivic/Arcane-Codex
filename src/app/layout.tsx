@@ -19,6 +19,7 @@ const navLinks = [
   { href: '/inventory', label: 'Inventory', icon: '🎒' },
   { href: '/events', label: 'Events', icon: '📜' },
   { href: '/powers', label: 'Powers', icon: '⚡' },
+  { href: '/chat', label: 'Chat', icon: '🔮' },
 ]
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

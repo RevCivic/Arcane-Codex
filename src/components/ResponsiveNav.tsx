@@ -183,6 +183,15 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
                       <span>🎯</span>
                       <span className="whitespace-normal break-words">Admin Skills</span>
                     </Link>
+                    <Link
+                      href="/admin/lore"
+                      onClick={() => setMobileOpen(false)}
+                      className={mobileNavItemClass}
+                      style={navItemStyle}
+                    >
+                      <span>📚</span>
+                      <span className="whitespace-normal break-words">Admin Lore</span>
+                    </Link>
                   </>
                 )}
 

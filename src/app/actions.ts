@@ -1,7 +1,7 @@
 'use server'
 
 import { auth } from '@/auth'
-import { AIFeedbackStatus, AIGenerationType, AITrainingJobStatus, AccessRole, Prisma } from '@/generated/prisma'
+import { AIFeedbackStatus, AIGenerationType, AITrainingJobStatus, AccessRole, LoreDocumentType, Prisma } from '@/generated/prisma'
 import { getD100ResultType, getLuckGainForRoll } from '@/lib/diceRules'
 import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
@@ -2093,8 +2093,12 @@ export async function generateCharacterTextSuggestion(
       },
     }
 
-    const primaryPromptConfig = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
-    const ai = await generateCharacterTextFromAI({ ...aiPayload, systemPrompt: primaryPromptConfig?.value ?? '' })
+    const [primaryPromptConfig, loreContext] = await Promise.all([
+      prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } }),
+      getActiveLoreContext(),
+    ])
+    const systemPrompt = [primaryPromptConfig?.value ?? '', loreContext].filter(Boolean).join('\n\n')
+    const ai = await generateCharacterTextFromAI({ ...aiPayload, systemPrompt })
     const generation = await prisma.aIGeneration.create({
       data: {
         type: AIGenerationType.CHARACTER_TEXT,
@@ -2190,8 +2194,12 @@ export async function generateCharacterStatsSkillsSuggestion(
       skills,
     }
 
-    const primaryPromptConfig = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
-    const ai = await generateCharacterStatsSkillsFromAI({ ...aiPayload, systemPrompt: primaryPromptConfig?.value ?? '' })
+    const [primaryPromptConfig, loreContext] = await Promise.all([
+      prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } }),
+      getActiveLoreContext(),
+    ])
+    const systemPrompt = [primaryPromptConfig?.value ?? '', loreContext].filter(Boolean).join('\n\n')
+    const ai = await generateCharacterStatsSkillsFromAI({ ...aiPayload, systemPrompt })
     const generation = await prisma.aIGeneration.create({
       data: {
         type: AIGenerationType.CHARACTER_STATS_SKILLS,
@@ -2276,8 +2284,12 @@ export async function generateCharacterBulkTextSuggestions(
 
     if (rows.length === 0) return { ok: false, error: 'No rows were provided for AI enrichment.' }
 
-    const primaryPromptConfig = await prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } })
-    const ai = await generateCharacterBulkTextFromAI(rows, primaryPromptConfig?.value ?? '', promptContext, additionalPrompt)
+    const [primaryPromptConfig, loreContext] = await Promise.all([
+      prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } }),
+      getActiveLoreContext(),
+    ])
+    const systemPrompt = [primaryPromptConfig?.value ?? '', loreContext].filter(Boolean).join('\n\n')
+    const ai = await generateCharacterBulkTextFromAI(rows, systemPrompt, promptContext, additionalPrompt)
     const generation = await prisma.aIGeneration.create({
       data: {
         type: AIGenerationType.CHARACTER_BULK_TEXT,
@@ -2671,4 +2683,238 @@ export async function addAllowedEmail(formData: FormData) {
   })
 
   revalidatePath('/admin/access')
+}
+
+// ─── Lore Document Library ────────────────────────────────────────────────────
+
+export type LoreDocumentRow = {
+  id: number
+  title: string
+  type: LoreDocumentType
+  summary: string | null
+  isActive: boolean
+  sortOrder: number
+  tags: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type LoreDocumentDetail = LoreDocumentRow & { content: string }
+
+export async function getLoreDocuments(filters?: {
+  type?: LoreDocumentType
+  isActive?: boolean
+}): Promise<LoreDocumentRow[]> {
+  const where: Record<string, unknown> = {}
+  if (filters?.type) where.type = filters.type
+  if (filters?.isActive !== undefined) where.isActive = filters.isActive
+
+  return prisma.loreDocument.findMany({
+    where,
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      summary: true,
+      isActive: true,
+      sortOrder: true,
+      tags: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  })
+}
+
+export async function getLoreDocumentById(id: number): Promise<LoreDocumentDetail | null> {
+  return prisma.loreDocument.findUnique({ where: { id } })
+}
+
+export async function getActiveLoreContext(): Promise<string> {
+  const docs = await prisma.loreDocument.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    select: { title: true, type: true, summary: true, content: true },
+  })
+
+  if (!docs.length) return ''
+
+  const sections = docs.map((doc) => {
+    const header = `[${doc.type.replace(/_/g, ' ')}] ${doc.title}`
+    const body = doc.summary ? doc.summary : doc.content.slice(0, 500)
+    return `${header}\n${body}`
+  })
+
+  return `--- World Lore Context ---\n${sections.join('\n\n')}\n--- End Lore Context ---`
+}
+
+export async function createLoreDocument(formData: FormData) {
+  await requireAdminUser()
+
+  const title = (formData.get('title') as string | null)?.trim() ?? ''
+  const type = (formData.get('type') as LoreDocumentType | null) ?? LoreDocumentType.CUSTOM
+  const summary = (formData.get('summary') as string | null)?.trim() || null
+  const content = (formData.get('content') as string | null)?.trim() ?? ''
+  const isActive = formData.get('isActive') === 'true'
+  const sortOrder = parseInt((formData.get('sortOrder') as string | null) ?? '0', 10) || 0
+  const tags = (formData.get('tags') as string | null)?.trim() || null
+
+  if (!title) throw new Error('Title is required')
+  if (!content) throw new Error('Content is required')
+
+  await prisma.loreDocument.create({
+    data: { title, type, summary, content, isActive, sortOrder, tags },
+  })
+
+  revalidatePath('/admin/lore')
+  redirect('/admin/lore')
+}
+
+export async function updateLoreDocument(id: number, formData: FormData) {
+  await requireAdminUser()
+
+  const title = (formData.get('title') as string | null)?.trim() ?? ''
+  const type = (formData.get('type') as LoreDocumentType | null) ?? LoreDocumentType.CUSTOM
+  const summary = (formData.get('summary') as string | null)?.trim() || null
+  const content = (formData.get('content') as string | null)?.trim() ?? ''
+  const isActive = formData.get('isActive') === 'true'
+  const sortOrder = parseInt((formData.get('sortOrder') as string | null) ?? '0', 10) || 0
+  const tags = (formData.get('tags') as string | null)?.trim() || null
+
+  if (!title) throw new Error('Title is required')
+  if (!content) throw new Error('Content is required')
+
+  await prisma.loreDocument.update({
+    where: { id },
+    data: { title, type, summary, content, isActive, sortOrder, tags },
+  })
+
+  revalidatePath('/admin/lore')
+  redirect('/admin/lore')
+}
+
+export async function toggleLoreDocumentActive(id: number, isActive: boolean) {
+  await requireAdminUser()
+  await prisma.loreDocument.update({ where: { id }, data: { isActive } })
+  revalidatePath('/admin/lore')
+}
+
+export async function deleteLoreDocument(id: number) {
+  await requireAdminUser()
+  await prisma.loreDocument.delete({ where: { id } })
+  revalidatePath('/admin/lore')
+}
+
+// ─── Chat Sessions ────────────────────────────────────────────────────────────
+
+export type ChatSessionRow = {
+  id: number
+  title: string
+  characterId: number | null
+  characterName: string | null
+  createdAt: Date
+  updatedAt: Date
+  messageCount: number
+}
+
+export type ChatMessageRow = {
+  id: number
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: Date
+}
+
+export async function getChatSessions(characterId?: number): Promise<ChatSessionRow[]> {
+  const user = await requireAuthorizedUser()
+
+  const sessions = await prisma.chatSession.findMany({
+    where: {
+      createdByEmail: user.email,
+      ...(characterId !== undefined ? { characterId } : {}),
+    },
+    orderBy: { updatedAt: 'desc' },
+    select: {
+      id: true,
+      title: true,
+      characterId: true,
+      character: { select: { name: true } },
+      createdAt: true,
+      updatedAt: true,
+      _count: { select: { messages: true } },
+    },
+  })
+
+  return sessions.map((s) => ({
+    id: s.id,
+    title: s.title,
+    characterId: s.characterId,
+    characterName: s.character?.name ?? null,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+    messageCount: s._count.messages,
+  }))
+}
+
+export async function getChatSessionWithMessages(
+  sessionId: number,
+): Promise<{ session: ChatSessionRow; messages: ChatMessageRow[] } | null> {
+  const user = await requireAuthorizedUser()
+
+  const session = await prisma.chatSession.findUnique({
+    where: { id: sessionId },
+    include: {
+      character: { select: { name: true } },
+      messages: { orderBy: { createdAt: 'asc' } },
+      _count: { select: { messages: true } },
+    },
+  })
+
+  if (!session) return null
+  if (session.createdByEmail !== user.email && user.role !== AccessRole.ADMIN) return null
+
+  return {
+    session: {
+      id: session.id,
+      title: session.title,
+      characterId: session.characterId,
+      characterName: session.character?.name ?? null,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      messageCount: session._count.messages,
+    },
+    messages: session.messages.map((m) => ({
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      createdAt: m.createdAt,
+    })),
+  }
+}
+
+export async function renameChatSession(sessionId: number, title: string) {
+  const user = await requireAuthorizedUser()
+  const session = await prisma.chatSession.findUnique({ where: { id: sessionId } })
+  if (!session) throw new Error('Session not found')
+  if (session.createdByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Access denied')
+  }
+
+  await prisma.chatSession.update({
+    where: { id: sessionId },
+    data: { title: title.trim() || 'Untitled Session' },
+  })
+
+  revalidatePath('/chat')
+}
+
+export async function deleteChatSession(sessionId: number) {
+  const user = await requireAuthorizedUser()
+  const session = await prisma.chatSession.findUnique({ where: { id: sessionId } })
+  if (!session) throw new Error('Session not found')
+  if (session.createdByEmail !== user.email && user.role !== AccessRole.ADMIN) {
+    throw new Error('Access denied')
+  }
+
+  await prisma.chatSession.delete({ where: { id: sessionId } })
+  revalidatePath('/chat')
 }

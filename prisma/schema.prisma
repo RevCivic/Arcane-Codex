@@ -34,6 +34,20 @@ enum AITrainingJobStatus {
   FAILED
 }
 
+enum LoreDocumentType {
+  CHARACTER_BACKSTORY
+  CAMPAIGN_ARC
+  SPECIES_DETAIL
+  FACTION_DETAIL
+  WORLD_LORE
+  CUSTOM
+}
+
+enum ChatMessageRole {
+  user
+  assistant
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -86,6 +100,7 @@ model AllowedEmail {
   aiGenerations  AIGeneration[]
   aiFeedback     AIFeedback[]
   aiTrainingJobs AITrainingJob[]
+  chatSessions   ChatSession[]
 }
 
 model Character {
@@ -118,6 +133,7 @@ model Character {
   events             Event[]
   rollHistory        RollHistory[]
   aiGenerations      AIGeneration[]
+  chatSessions       ChatSession[]
 }
 
 model Tag {
@@ -382,4 +398,47 @@ model AITrainingJob {
   completedAt      DateTime?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
+}
+
+/// World-building documents used to ground AI generation and chat.
+model LoreDocument {
+  id        Int              @id @default(autoincrement())
+  title     String
+  type      LoreDocumentType @default(CUSTOM)
+  /// Short blurb (1-3 sentences) injected into AI prompts as context.
+  summary   String?
+  /// Full document content (supports Markdown).
+  content   String
+  /// When false the document is excluded from AI context assembly.
+  isActive  Boolean          @default(true)
+  /// Lower numbers appear first in assembled context.
+  sortOrder Int              @default(0)
+  /// Comma-separated tags for filtering.
+  tags      String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+/// A saved AI chat session.
+model ChatSession {
+  id               Int           @id @default(autoincrement())
+  title            String        @default("Untitled Session")
+  /// Optional character this session is focused on.
+  characterId      Int?
+  character        Character?    @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  createdByEmail   String?
+  createdBy        AllowedEmail? @relation(fields: [createdByEmail], references: [email], onDelete: SetNull)
+  messages         ChatMessage[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+/// A single message within a ChatSession.
+model ChatMessage {
+  id        Int             @id @default(autoincrement())
+  sessionId Int
+  session   ChatSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      ChatMessageRole
+  content   String
+  createdAt DateTime        @default(now())
 }
