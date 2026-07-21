@@ -1133,9 +1133,6 @@ def chat(request: ChatRequest) -> dict[str, Any]:
     }
 
 
-
-
-
 @app.post("/v1/train/retrain")
 def retrain_model(payload: RetrainRequest) -> dict[str, Any]:
     registry = load_registry()

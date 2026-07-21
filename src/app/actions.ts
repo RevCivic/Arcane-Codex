@@ -2741,7 +2741,7 @@ export async function getActiveLoreContext(): Promise<string> {
 
   const sections = docs.map((doc) => {
     const header = `[${doc.type.replace(/_/g, ' ')}] ${doc.title}`
-    const body = doc.summary ? doc.summary : doc.content.slice(0, 500)
+    const body = doc.summary || doc.content.slice(0, 500)
     return `${header}\n${body}`
   })
 
