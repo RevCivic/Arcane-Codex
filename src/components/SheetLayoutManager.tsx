@@ -93,7 +93,11 @@ function useStoredOrder(
 function useIsTouchDevice(): boolean {
   const [isTouch, setIsTouch] = useState(false)
   useEffect(() => {
-    setIsTouch(window.matchMedia('(pointer: coarse)').matches)
+    const mq = window.matchMedia('(pointer: coarse)')
+    setIsTouch(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsTouch(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
   }, [])
   return isTouch
 }
@@ -142,8 +146,8 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
   // ── Touch reorder handlers ───────────────────────────────────────────────────
 
   const moveUp = useCallback((index: number) => {
-    if (index === 0) return
     setDraftOrder((prev) => {
+      if (index === 0) return prev
       const next = [...prev]
       ;[next[index - 1], next[index]] = [next[index], next[index - 1]]
       return next
@@ -217,9 +221,7 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
               className="text-xs flex-1"
               style={{ color: '#a78bfa', fontFamily: 'Georgia, serif' }}
             >
-              {isTouchDevice
-                ? '✦ Use ▲ ▼ buttons to reorder — unsaved until you tap Save Layout'
-                : '✦ Drag modules to reorder — unsaved until you click Save Layout'}
+              {`✦ ${isTouchDevice ? 'Use ▲ ▼ buttons to reorder' : 'Drag modules to reorder'} — unsaved until you ${isTouchDevice ? 'tap' : 'click'} Save Layout`}
             </span>
             <button
               type="button"
