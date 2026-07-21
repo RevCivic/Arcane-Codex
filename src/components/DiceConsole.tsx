@@ -84,6 +84,40 @@ const RESULT_CONFIG: Record<
   FUMBLE:   { color: '#dc2626', bg: '#1a0505', border: '#dc262666', glow: 'rgba(220,38,38,0.4)',    emoji: '💀', label: 'Fumble'           },
 }
 
+const ARCANE_RUNES = ['ᚱ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᛏ', 'ᚲ', 'ᛉ', 'ᛊ', 'ᛒ', 'ᛗ', 'ᛚ', 'ᚾ', 'ᚹ', 'ᚷ', 'ᛞ', 'ᛟ']
+
+const FLAVOR_TEXT: Record<ResultType, string[]> = {
+  CRITICAL: [
+    'The Arcane weaves in your favor.',
+    'Fate smiles upon the worthy.',
+    'The stars align — fortune is absolute.',
+    'The Codex sings with radiant power.',
+  ],
+  SUCCESS: [
+    'The threads hold.',
+    'Your will overcomes.',
+    'The veil parts, just enough.',
+    'Fortune favors the prepared.',
+  ],
+  FAILURE: [
+    'The stars turn cold.',
+    'The veil does not part.',
+    'The weave slips through your grasp.',
+    'Fate withholds its gift.',
+  ],
+  FUMBLE: [
+    'The Codex recoils.',
+    'Chaos unravels the weave.',
+    'The arcane backlash is severe.',
+    'The darkness answers instead.',
+  ],
+}
+
+function randomFlavor(rt: ResultType): string {
+  const opts = FLAVOR_TEXT[rt]
+  return opts[Math.floor(Math.random() * opts.length)]
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function applyDifficulty(base: number, tier: DifficultyTier): number {
@@ -272,6 +306,38 @@ export function DiceConsole({
   const [history, setHistory] = useState<HistoryEntry[]>(initialHistory)
   const tempIdRef = useRef(-1)
 
+  // Roll animation key — increments on each new roll to ensure a single reveal animation
+  const rollAnimKeyRef   = useRef(0)
+  const scrambleTimer    = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrambleInterval = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Arcane rune scramble state
+  const [isScrambling, setIsScrambling] = useState(false)
+  const [scrambleRune, setScrambleRune] = useState('')
+  const [flavorText,   setFlavorText]   = useState<string | null>(null)
+
+  function startScramble(resultType: ResultType | null) {
+    if (scrambleTimer.current)    clearTimeout(scrambleTimer.current)
+    if (scrambleInterval.current) clearInterval(scrambleInterval.current)
+
+    setIsScrambling(true)
+    setScrambleRune(ARCANE_RUNES[Math.floor(Math.random() * ARCANE_RUNES.length)])
+    setFlavorText(null)
+
+    scrambleInterval.current = setInterval(() => {
+      setScrambleRune(ARCANE_RUNES[Math.floor(Math.random() * ARCANE_RUNES.length)])
+    }, 80)
+
+    scrambleTimer.current = setTimeout(() => {
+      if (scrambleInterval.current) {
+        clearInterval(scrambleInterval.current)
+        scrambleInterval.current = null
+      }
+      setIsScrambling(false)
+      if (resultType) setFlavorText(randomFlavor(resultType))
+    }, 400)
+  }
+
   // React 19 async transitions
   const [isRolling,  startRollTransition]  = useTransition()
   const [isSpending, startSpendTransition] = useTransition()
@@ -283,6 +349,8 @@ export function DiceConsole({
     rawRoll: number,
     effectiveTarget: number | null
   ) {
+    rollAnimKeyRef.current++
+    startScramble(entry.resultType as ResultType | null)
     const tempId = tempIdRef.current--
     setHistory((prev) => [{ ...entry, id: tempId, createdAt: new Date().toISOString() }, ...prev].slice(0, 20))
     setPendingLuck(null)
@@ -406,6 +474,7 @@ export function DiceConsole({
           )
         )
         setPendingLuck(null)
+        setFlavorText(randomFlavor('SUCCESS'))
       } catch {
         // State unchanged; user can retry
       }
@@ -526,7 +595,7 @@ export function DiceConsole({
                     type="button"
                     onClick={handleAbilityRoll}
                     disabled={availableStats.length === 0 || !selectedStat || isRolling}
-                    className="w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className={`w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed${isScrambling ? ' btn-channeling' : ''}`}
                     style={{ backgroundColor: '#7c3aed', color: '#fff' }}
                   >
                     {isRolling ? 'Rolling…' : 'Roll d100'}
@@ -581,7 +650,7 @@ export function DiceConsole({
                     type="button"
                     onClick={handleSkillRoll}
                     disabled={skills.length === 0 || isRolling}
-                    className="w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className={`w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed${isScrambling ? ' btn-channeling' : ''}`}
                     style={{ backgroundColor: '#7c3aed', color: '#fff' }}
                   >
                     {isRolling ? 'Rolling…' : 'Roll d100'}
@@ -640,7 +709,7 @@ export function DiceConsole({
                     type="button"
                     onClick={handlePowerRoll}
                     disabled={powers.length === 0 || isRolling}
-                    className="w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className={`w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed${isScrambling ? ' btn-channeling' : ''}`}
                     style={{ backgroundColor: '#7c3aed', color: '#fff' }}
                   >
                     {isRolling ? 'Rolling…' : 'Roll d100'}
@@ -707,7 +776,7 @@ export function DiceConsole({
                     type="button"
                     onClick={handleFreeRoll}
                     disabled={isRolling}
-                    className="w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
+                    className={`w-full py-3 rounded uppercase tracking-wider text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40${isScrambling ? ' btn-channeling' : ''}`}
                     style={{ backgroundColor: '#7c3aed', color: '#fff' }}
                   >
                     {isRolling
@@ -737,9 +806,9 @@ export function DiceConsole({
 
               {/* Current result */}
               {latest ? (
-                <div key={latest.id} className="dice-result-reveal">
+                <div key={rollAnimKeyRef.current} className="dice-result-reveal">
                   <div
-                    className="rounded-lg p-5 text-center"
+                    className={`rounded-lg p-5 text-center${!isScrambling && latestRT ? ` result-pulse-${latestRT}` : ''}`}
                     style={
                       latestRT
                         ? {
@@ -759,20 +828,22 @@ export function DiceConsole({
                       style={{
                         fontSize: '5rem',
                         lineHeight: 1,
-                        color: latestRT ? RESULT_CONFIG[latestRT].color : '#e2e8f0',
-                        textShadow: latestRT ? `0 0 40px ${RESULT_CONFIG[latestRT].glow}` : 'none',
+                        color: isScrambling ? '#7c3aed' : (latestRT ? RESULT_CONFIG[latestRT].color : '#e2e8f0'),
+                        textShadow: isScrambling
+                          ? '0 0 30px rgba(124,58,237,0.8)'
+                          : (latestRT ? `0 0 40px ${RESULT_CONFIG[latestRT].glow}` : 'none'),
                       }}
                     >
-                      {latest.roll}
+                      {isScrambling ? scrambleRune : latest.roll}
                     </div>
 
-                    {latest.target !== null && (
+                    {!isScrambling && latest.target !== null && (
                       <div className="text-sm mb-3" style={{ color: '#9ca3af' }}>
                         rolled {latest.roll} · target {latest.target}
                       </div>
                     )}
 
-                    {latest.rollType === 'free' && (() => {
+                    {!isScrambling && latest.rollType === 'free' && (() => {
                       const dice = parseDice(latest.dice)
                       return dice && dice.length > 1 ? (
                         <div className="flex flex-wrap justify-center gap-1.5 mb-3">
@@ -792,7 +863,7 @@ export function DiceConsole({
                       ) : null
                     })()}
 
-                    {latestRT && (
+                    {!isScrambling && latestRT && (
                       <div
                         className="inline-block text-sm font-bold uppercase tracking-widest px-4 py-1 rounded-full"
                         style={{
@@ -803,6 +874,11 @@ export function DiceConsole({
                       >
                         {RESULT_CONFIG[latestRT].emoji} {RESULT_CONFIG[latestRT].label}
                         {latest.luckSpent ? ` (${latest.luckSpent} Luck)` : ''}
+                      </div>
+                    )}
+                    {!isScrambling && flavorText && (
+                      <div className="mt-3 text-xs italic" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+                        {flavorText}
                       </div>
                     )}
                   </div>

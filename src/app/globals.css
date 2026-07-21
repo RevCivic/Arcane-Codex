@@ -126,8 +126,57 @@ body {
   animation: dice-result-reveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* Result-specific glow pulse animations */
+@keyframes pulse-critical {
+  0%   { box-shadow: 0 0 28px rgba(251, 191, 36, 0.4); }
+  50%  { box-shadow: 0 0 60px rgba(251, 191, 36, 0.8), 0 0 100px rgba(251, 191, 36, 0.3); }
+  100% { box-shadow: 0 0 28px rgba(251, 191, 36, 0.4); }
+}
+
+@keyframes pulse-success {
+  0%   { box-shadow: 0 0 28px rgba(74, 222, 128, 0.25); }
+  50%  { box-shadow: 0 0 45px rgba(74, 222, 128, 0.5); }
+  100% { box-shadow: 0 0 28px rgba(74, 222, 128, 0.25); }
+}
+
+@keyframes pulse-failure {
+  0%   { box-shadow: 0 0 28px rgba(248, 113, 113, 0.25); }
+  50%  { box-shadow: 0 0 14px rgba(248, 113, 113, 0.1); }
+  100% { box-shadow: 0 0 28px rgba(248, 113, 113, 0.25); }
+}
+
+@keyframes pulse-fumble {
+  0%   { box-shadow: 0 0 28px rgba(220, 38, 38, 0.4); transform: scale(1); }
+  20%  { box-shadow: 0 0 8px rgba(220, 38, 38, 0.15); transform: scale(0.98); }
+  60%  { box-shadow: 0 0 55px rgba(220, 38, 38, 0.75); transform: scale(1.01); }
+  100% { box-shadow: 0 0 28px rgba(220, 38, 38, 0.4); transform: scale(1); }
+}
+
+.result-pulse-CRITICAL { animation: dice-result-reveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulse-critical 1.6s ease-in-out 0.35s infinite; }
+.result-pulse-SUCCESS  { animation: dice-result-reveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulse-success  2s ease-in-out 0.35s infinite; }
+.result-pulse-FAILURE  { animation: dice-result-reveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulse-failure  2.5s ease-in-out 0.35s 2; }
+.result-pulse-FUMBLE   { animation: dice-result-reveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulse-fumble   0.7s ease-out 0.35s; }
+
+/* Roll button channeling effect */
+@keyframes btn-channeling {
+  0%   { box-shadow: 0 0 0 rgba(124, 58, 237, 0); }
+  50%  { box-shadow: 0 0 18px rgba(124, 58, 237, 0.75), 0 0 36px rgba(217, 119, 6, 0.3); }
+  100% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+.btn-channeling {
+  animation: btn-channeling 0.55s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .dice-result-reveal {
+  .dice-result-reveal,
+  .result-pulse-CRITICAL,
+  .result-pulse-SUCCESS,
+  .result-pulse-FAILURE,
+  .result-pulse-FUMBLE {
+    animation: none;
+  }
+  .btn-channeling {
     animation: none;
   }
 }
