@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useSyncExternalStore } from 'react'
+import { useState, useCallback, useRef, useSyncExternalStore, useEffect } from 'react'
 
 export interface SheetModule {
   key: string
@@ -88,6 +88,20 @@ function useStoredOrder(
   return [order, saveOrder]
 }
 
+// ── Custom hook: detects touch-primary devices ────────────────────────────────
+
+function useIsTouchDevice(): boolean {
+  const [isTouch, setIsTouch] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(pointer: coarse)')
+    setIsTouch(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsTouch(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return isTouch
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
@@ -102,6 +116,8 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
   const [draftOrder, setDraftOrder] = useState<string[]>([])
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  const isTouchDevice = useIsTouchDevice()
 
   const expandAll = useCallback(() => window.dispatchEvent(new Event('arcane:expandAll')), [])
   const collapseAll = useCallback(() => window.dispatchEvent(new Event('arcane:collapseAll')), [])
@@ -126,6 +142,26 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
     setDragIndex(null)
     setDragOverIndex(null)
   }, [persistOrder, draftOrder])
+
+  // ── Touch reorder handlers ───────────────────────────────────────────────────
+
+  const moveUp = useCallback((index: number) => {
+    setDraftOrder((prev) => {
+      if (index === 0) return prev
+      const next = [...prev]
+      ;[next[index - 1], next[index]] = [next[index], next[index - 1]]
+      return next
+    })
+  }, [])
+
+  const moveDown = useCallback((index: number) => {
+    setDraftOrder((prev) => {
+      if (index >= prev.length - 1) return prev
+      const next = [...prev]
+      ;[next[index], next[index + 1]] = [next[index + 1], next[index]]
+      return next
+    })
+  }, [])
 
   // ── Drag handlers ────────────────────────────────────────────────────────────
 
@@ -185,7 +221,7 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
               className="text-xs flex-1"
               style={{ color: '#a78bfa', fontFamily: 'Georgia, serif' }}
             >
-              ✦ Drag modules to reorder — unsaved until you click Save Layout
+              {`✦ ${isTouchDevice ? 'Use ▲ ▼ buttons to reorder' : 'Drag modules to reorder'} — unsaved until you ${isTouchDevice ? 'tap' : 'click'} Save Layout`}
             </span>
             <button
               type="button"
@@ -244,18 +280,18 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
             <div
               key={module.key}
               className="mb-8"
-              draggable={isEditing}
-              onDragStart={isEditing ? (e) => handleDragStart(e, index) : undefined}
-              onDragOver={isEditing ? (e) => handleDragOver(e, index) : undefined}
-              onDrop={isEditing ? (e) => handleDrop(e, index) : undefined}
-              onDragEnd={isEditing ? handleDragEnd : undefined}
+              draggable={isEditing && !isTouchDevice}
+              onDragStart={isEditing && !isTouchDevice ? (e) => handleDragStart(e, index) : undefined}
+              onDragOver={isEditing && !isTouchDevice ? (e) => handleDragOver(e, index) : undefined}
+              onDrop={isEditing && !isTouchDevice ? (e) => handleDrop(e, index) : undefined}
+              onDragEnd={isEditing && !isTouchDevice ? handleDragEnd : undefined}
               style={{
                 opacity: isDragging ? 0.4 : 1,
                 transition: 'opacity 0.15s',
                 outline: isDropTarget ? '2px dashed #7c3aed' : '2px solid transparent',
                 outlineOffset: '4px',
                 borderRadius: '8px',
-                cursor: isEditing ? 'grab' : undefined,
+                cursor: isEditing && !isTouchDevice ? 'grab' : undefined,
               }}
             >
               {/* Drag handle — only visible in edit mode */}
@@ -273,14 +309,64 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
                     color: '#a78bfa',
                     fontSize: '11px',
                     userSelect: 'none',
-                    cursor: 'grab',
+                    cursor: isTouchDevice ? 'default' : 'grab',
                     fontFamily: 'Georgia, serif',
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                   }}
                 >
-                  <span style={{ fontSize: '16px', lineHeight: 1, color: '#6b7280' }}>⠿</span>
-                  {module.label}
+                  {!isTouchDevice && (
+                    <span style={{ fontSize: '16px', lineHeight: 1, color: '#6b7280' }}>⠿</span>
+                  )}
+                  <span style={{ flex: 1 }}>{module.label}</span>
+                  {isTouchDevice && (
+                    <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+                      <button
+                        type="button"
+                        aria-label={`Move ${module.label} up`}
+                        disabled={index === 0}
+                        onClick={() => moveUp(index)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '6px',
+                          border: '1px solid #3b1f6e',
+                          backgroundColor: index === 0 ? '#12091f' : '#2d1a4e',
+                          color: index === 0 ? '#4b5563' : '#a78bfa',
+                          fontSize: '18px',
+                          cursor: index === 0 ? 'not-allowed' : 'pointer',
+                          flexShrink: 0,
+                        }}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Move ${module.label} down`}
+                        disabled={index === draftOrder.length - 1}
+                        onClick={() => moveDown(index)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '6px',
+                          border: '1px solid #3b1f6e',
+                          backgroundColor: index === draftOrder.length - 1 ? '#12091f' : '#2d1a4e',
+                          color: index === draftOrder.length - 1 ? '#4b5563' : '#a78bfa',
+                          fontSize: '18px',
+                          cursor: index === draftOrder.length - 1 ? 'not-allowed' : 'pointer',
+                          flexShrink: 0,
+                        }}
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
