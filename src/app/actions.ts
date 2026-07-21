@@ -24,6 +24,8 @@ import { redirect } from 'next/navigation'
 
 // ─── Google Sheet Sync ────────────────────────────────────────────────────────
 
+const DEFAULT_SHEET_ID = '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
+
 async function requireAuthorizedUser() {
   const session = await auth()
   const email = normalizeEmail(session?.user?.email)
@@ -321,7 +323,7 @@ export async function syncCharactersFromSheet(): Promise<{
   await requireAuthorizedUser()
 
   const sheetId =
-    process.env.GOOGLE_SHEET_ID ?? '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
+    process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
   // Use the gviz/tq endpoint which reliably returns CSV without triggering
   // Google's HTML confirm-download warning page (which the /export endpoint
   // can return with a 200 status, silently breaking CSV parsing).
@@ -435,7 +437,7 @@ export async function syncCharactersToSheet(): Promise<{
   await requireAuthorizedUser()
 
   const sheetId =
-    process.env.GOOGLE_SHEET_ID ?? '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
+    process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
 
   let sheets: ReturnType<typeof getGoogleSheetsClient>
   try {
@@ -513,7 +515,8 @@ export async function syncCharactersToSheet(): Promise<{
     },
   })
 
-  // Helper: convert a column index to A1 notation letter(s).
+  // Helper: converts a 0-based column index to Excel-style A1 notation letters.
+  // Examples: 0 → "A", 25 → "Z", 26 → "AA", 27 → "AB".
   function colToLetter(index: number): string {
     let result = ''
     let n = index + 1
@@ -561,7 +564,8 @@ export async function syncCharactersToSheet(): Promise<{
 
       let value: string
       if (field === 'age') {
-        value = char.age !== null && char.age !== undefined ? String(char.age) : ''
+        const raw = char[field as keyof typeof char]
+        value = raw !== null && raw !== undefined ? String(raw) : ''
       } else {
         value = (char[field as keyof typeof char] as string | null) ?? ''
       }
