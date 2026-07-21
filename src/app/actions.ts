@@ -15,6 +15,7 @@ import {
 } from '@/lib/aiClient'
 import type { AIPromptContext } from '@/lib/aiPromptContext'
 import { prisma } from '@/lib/prisma'
+import { getGoogleSheetsClient } from '@/lib/googleSheets'
 import { randomUUID } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -417,6 +418,178 @@ export async function syncCharactersFromSheet(): Promise<{
 
   revalidatePath('/characters')
   return { created, updated }
+}
+
+/** Reads all characters from the database and writes their values back to the
+ *  Google Sheet, touching only columns that already exist in the sheet header
+ *  row.  No new columns or rows are created.
+ *
+ *  Requires GOOGLE_SERVICE_ACCOUNT_JSON (or the individual email/key vars) and
+ *  the service account must have Editor access on the sheet.
+ */
+export async function syncCharactersToSheet(): Promise<{
+  updated: number
+  skipped: number
+  error?: string
+}> {
+  await requireAuthorizedUser()
+
+  const sheetId =
+    process.env.GOOGLE_SHEET_ID ?? '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
+
+  let sheets: ReturnType<typeof getGoogleSheetsClient>
+  try {
+    sheets = getGoogleSheetsClient()
+  } catch (err) {
+    return {
+      updated: 0,
+      skipped: 0,
+      error: err instanceof Error ? err.message : 'Failed to initialise Google Sheets client',
+    }
+  }
+
+  // Read the entire first sheet to get headers + name column in one round-trip.
+  let sheetValues: string[][]
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: 'Sheet1',
+    })
+    sheetValues = (response.data.values ?? []) as string[][]
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return { updated: 0, skipped: 0, error: `Failed to read sheet: ${msg}` }
+  }
+
+  if (sheetValues.length < 2) {
+    return { updated: 0, skipped: 0, error: 'Sheet appears empty or has no data rows' }
+  }
+
+  const headerRow = sheetValues[0]
+  const col = mapHeaders(headerRow)
+
+  if (col.name === undefined && col.firstName === undefined) {
+    return {
+      updated: 0,
+      skipped: 0,
+      error: 'Could not find a "Name" or "First Name" column in the sheet headers',
+    }
+  }
+
+  // Build a map of character name → 1-based row index (row 1 = header).
+  const nameToRow = new Map<string, number>()
+  for (let i = 1; i < sheetValues.length; i++) {
+    const row = sheetValues[i]
+    if (!row || row.every((c) => !c?.trim())) continue
+
+    let name: string | null = null
+    if (col.name !== undefined) {
+      name = row[col.name]?.trim() || null
+    } else {
+      const first = col.firstName !== undefined ? row[col.firstName]?.trim() : ''
+      const last = col.lastName !== undefined ? row[col.lastName]?.trim() : ''
+      name = [first, last].filter(Boolean).join(' ') || null
+    }
+    if (name) nameToRow.set(name, i + 1) // +1 because Sheets rows are 1-based
+  }
+
+  // Fetch all characters from the database.
+  const characters = await prisma.character.findMany({
+    select: {
+      name: true,
+      firstName: true,
+      lastName: true,
+      race: true,
+      gender: true,
+      age: true,
+      role: true,
+      description: true,
+      stats: true,
+      affiliation: true,
+      currentCase: true,
+      currentLocation: true,
+      homeOrigin: true,
+      status: true,
+    },
+  })
+
+  // Helper: convert a column index to A1 notation letter(s).
+  function colToLetter(index: number): string {
+    let result = ''
+    let n = index + 1
+    while (n > 0) {
+      const rem = (n - 1) % 26
+      result = String.fromCharCode(65 + rem) + result
+      n = Math.floor((n - 1) / 26)
+    }
+    return result
+  }
+
+  // Map from Character field name → column index in the sheet.
+  const fieldToCol: Partial<Record<string, number>> = {
+    firstName: col.firstName,
+    lastName: col.lastName,
+    race: col.race,
+    gender: col.gender,
+    age: col.age,
+    role: col.role,
+    description: col.description,
+    stats: col.stats,
+    affiliation: col.affiliation,
+    currentCase: col.currentCase,
+    currentLocation: col.currentLocation,
+    homeOrigin: col.homeOrigin,
+    status: col.status,
+  }
+
+  // Build batched value updates.
+  const data: { range: string; values: string[][] }[] = []
+  let updated = 0
+  let skipped = 0
+
+  for (const char of characters) {
+    const rowNum = nameToRow.get(char.name)
+    if (rowNum === undefined) {
+      skipped++
+      continue
+    }
+
+    for (const [field, colIdx] of Object.entries(fieldToCol)) {
+      if (colIdx === undefined) continue
+      const letter = colToLetter(colIdx)
+      const cellRange = `Sheet1!${letter}${rowNum}`
+
+      let value: string
+      if (field === 'age') {
+        value = char.age !== null && char.age !== undefined ? String(char.age) : ''
+      } else {
+        value = (char[field as keyof typeof char] as string | null) ?? ''
+      }
+
+      data.push({ range: cellRange, values: [[value]] })
+    }
+
+    updated++
+  }
+
+  if (data.length === 0) {
+    return { updated: 0, skipped }
+  }
+
+  try {
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: sheetId,
+      requestBody: {
+        valueInputOption: 'USER_ENTERED',
+        data,
+      },
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return { updated: 0, skipped, error: `Failed to write to sheet: ${msg}` }
+  }
+
+  return { updated, skipped }
 }
 
 // ─── Characters ───────────────────────────────────────────────────────────────

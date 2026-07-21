@@ -206,3 +206,38 @@ For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set
 - **`invalid_client` or OAuth client authentication failed**
   - Verify `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are from the same Google OAuth client.
   - Confirm there are no trailing spaces/quotes in `.env`.
+
+### Google Sheets write-back (DB → Sheet sync)
+
+Reading from the Google Sheet (Sheet → DB) works without any extra credentials — the
+sheet just needs to be publicly readable.
+
+Writing back to the sheet (DB → Sheet) requires a **Google Service Account** with Editor
+access on the spreadsheet. The **⬆ DB → Sheet** button on the Characters page will only
+work once this is configured.
+
+**One-time setup:**
+
+1. In [Google Cloud Console](https://console.cloud.google.com/) open (or create) your project.
+2. Go to **APIs & Services** → **Enabled APIs** and enable the **Google Sheets API**.
+3. Go to **APIs & Services** → **Credentials** → **Create Credentials** → **Service account**.
+4. Give it a name (e.g. `arcane-codex-sync`) and click **Done**.
+5. Open the new service account, go to the **Keys** tab, click **Add Key** → **Create new key** → **JSON**. Download the key file.
+6. Open the Google Sheet you want to write back to. Click **Share**, enter the service account email (looks like `name@project.iam.gserviceaccount.com`), and grant it **Editor** access.
+7. Add the credentials to your `.env`:
+
+   **Option A** — paste the entire JSON key file as one line:
+   ```
+   GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","client_email":"name@project.iam.gserviceaccount.com","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",...}
+   ```
+
+   **Option B** — set the two key fields separately:
+   ```
+   GOOGLE_SERVICE_ACCOUNT_EMAIL=name@project.iam.gserviceaccount.com
+   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIIEv...\n-----END PRIVATE KEY-----\n
+   ```
+
+> **Note:** The write-back only updates cells in columns that already exist in the sheet.
+> No new columns or rows are ever added. Characters in the database that do not appear in
+> the sheet (matched by name) are silently skipped.
+
