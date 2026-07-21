@@ -999,9 +999,9 @@ def _build_chat_response(request: ChatRequest) -> str:
     is_suggestion = any(k in lower_msg for k in ["suggest", "idea", "help", "recommend", "what should", "how should", "can you", "would you", "could you"])
     is_name = any(k in lower_msg for k in ["name", "call", "named", "title"])
     # Catch info-seeking queries ("tell me about X", "who is X", "describe X")
-    is_inquiry = any(k in lower_msg for k in ["tell me", "about", "describe", "explain", "who is", "who are", "what is", "what are"])
+    is_inquiry = any(k in lower_msg for k in ["tell me", "tell me about", "describe", "explain", "who is", "who are", "what is", "what are"])
     # Catch creation / follow-up action phrases ("let's build X", "connect this to X")
-    is_build = any(k in lower_msg for k in ["build", "create", "develop", "connect", "link", "let's", "lets"])
+    is_build = any(k in lower_msg for k in ["build", "create", "develop", "connect this", "link this", "let's", "lets"])
 
     # Build contextual response
     parts: list[str] = []
@@ -1155,7 +1155,7 @@ def _build_chat_response(request: ChatRequest) -> str:
     # Only add an open-ended follow-up on the very first exchange; after that the conversation
     # should be guided by the user's replies, not by repeating the same prompt questions.
     is_first_exchange = len(messages) <= 2
-    if char_name and not (is_backstory or is_personality):
+    if char_name and is_first_exchange and not (is_backstory or is_personality):
         follow_ups = [
             f"Would you like to explore {char_name}'s relationship to any specific faction or event in the lore?",
             f"Is there a specific aspect of {char_name}'s story you'd like to develop further?",
