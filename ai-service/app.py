@@ -926,6 +926,213 @@ def append_feedback(record: FeedbackRecord) -> dict[str, Any]:
     return {"ok": True}
 
 
+# ── Chat ──────────────────────────────────────────────────────────────────────
+
+class ChatMessageInput(BaseModel):
+    role: Literal["user", "assistant"] = "user"
+    content: str = ""
+
+
+class LoreDocumentInput(BaseModel):
+    title: str = ""
+    type: str = ""
+    summary: str = ""
+    content: str = ""
+
+
+class ChatContextInput(BaseModel):
+    primaryPrompt: str = ""
+    loreDocuments: list[LoreDocumentInput] = Field(default_factory=list)
+    character: dict[str, Any] | None = None
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessageInput] = Field(default_factory=list)
+    context: ChatContextInput = Field(default_factory=ChatContextInput)
+
+
+def _build_chat_response(request: ChatRequest) -> str:
+    """
+    Pattern-based conversational response grounded in lore and character context.
+    Generates a structured, helpful reply based on the most recent user message.
+    """
+    messages = request.messages
+    context = request.context
+
+    # Extract last user message
+    user_msg = ""
+    for m in reversed(messages):
+        if m.role == "user":
+            user_msg = clean(m.content)
+            break
+
+    if not user_msg:
+        return "I'm here to assist with your campaign. Ask me about characters, lore, or story ideas."
+
+    rnd = seeded_random(user_msg, len(messages))
+    lower_msg = user_msg.lower()
+
+    # Assemble lore summary for context
+    lore_summary_parts: list[str] = []
+    for doc in context.loreDocuments:
+        if doc.summary:
+            lore_summary_parts.append(f"[{doc.type.replace('_', ' ').title()}] {doc.title}: {doc.summary}")
+        elif doc.content:
+            lore_summary_parts.append(f"[{doc.type.replace('_', ' ').title()}] {doc.title}: {doc.content[:200]}")
+    lore_summary = " | ".join(lore_summary_parts) if lore_summary_parts else ""
+
+    char = context.character
+    char_name = clean(char.get("name", "")) if char else ""
+    char_race = clean(char.get("race", "")) if char else ""
+    char_role = clean(char.get("role", "")) if char else ""
+    char_desc = clean(char.get("description", "")) if char else ""
+    char_affiliation = clean(char.get("affiliation", "")) if char else ""
+
+    # Determine intent from message keywords
+    is_backstory = any(k in lower_msg for k in ["backstory", "history", "past", "origin", "background", "grew up", "childhood"])
+    is_personality = any(k in lower_msg for k in ["personality", "character", "trait", "behave", "attitude", "motivation", "demeanor"])
+    is_stats = any(k in lower_msg for k in ["stats", "skills", "abilities", "numbers", "strength", "dexterity", "sanity", "health", "hp"])
+    is_campaign = any(k in lower_msg for k in ["campaign", "arc", "plot", "story", "adventure", "mission", "case", "encounter"])
+    is_faction = any(k in lower_msg for k in ["faction", "group", "organization", "bureau", "cult", "society", "alliance"])
+    is_species = any(k in lower_msg for k in ["species", "race", "creature", "entity", "being", "ancestry"])
+    is_lore = any(k in lower_msg for k in ["lore", "world", "setting", "history", "mythology", "legend", "rumor"])
+    is_suggestion = any(k in lower_msg for k in ["suggest", "idea", "help", "recommend", "what should", "how should", "can you", "would you", "could you"])
+    is_name = any(k in lower_msg for k in ["name", "call", "named", "title"])
+
+    # Build contextual response
+    parts: list[str] = []
+
+    if char_name and (is_backstory or is_personality):
+        tone_pick = pick(rnd, ["gothic", "scholarly", "atmospheric", "measured"])
+        aspects = [
+            f"{char_name} carries the weight of their {char_race or 'mortal'} heritage through every case they take.",
+            f"Their role as {char_role} shapes how they approach every encounter — methodically, with one eye always on the shadows.",
+            f"What drives {char_name} is not glory but answers: the kind that only come at a cost.",
+            f"There is a restlessness to {char_name} that allies find useful and enemies find dangerous.",
+        ]
+        if char_affiliation:
+            aspects.append(f"Their connection to {char_affiliation} provides resources, but also obligations they cannot easily set aside.")
+        if char_desc:
+            aspects.append(f"In their own words, they might say: \"{char_desc[:120]}{'...' if len(char_desc) > 120 else ''}\"")
+        parts.append(pick(rnd, aspects))
+        parts.append(pick(rnd, [
+            f"For backstory depth, consider what event first revealed the supernatural to {char_name} — and what it cost them.",
+            f"A strong backstory often hinges on a single defining moment of loss or revelation. What was {char_name}'s?",
+            f"The most compelling characters carry a contradiction. What does {char_name} believe that the evidence is slowly disproving?",
+        ]))
+
+    elif is_campaign or (is_suggestion and not char_name):
+        campaign_ideas = [
+            "A sealed archive surfaces — containing files that should not exist, written by investigators who died before the events they describe.",
+            "A series of ritualistic disappearances follows a pattern tied to an alignment of stars not due for another century.",
+            "A trusted ally begins reporting memories of events that never occurred — but which match events that are about to happen.",
+            "The Bureau receives a warning from a rival cell: something ancient has been awakened, and it knows their names.",
+            "A small coastal town stops responding to correspondence. Investigators arrive to find the residents — but no one can agree on what they see.",
+        ]
+        if lore_summary:
+            parts.append(f"Drawing on the established lore for this campaign:")
+        parts.append(pick(rnd, campaign_ideas))
+        parts.append(pick(rnd, [
+            "This arc works best if the threat escalates in stages — mundane unease, then impossible evidence, then irreversible consequence.",
+            "Consider anchoring the plot to a specific lore document: what faction or species is behind this, and what do they want?",
+            "A strong campaign arc always has a human face on the supernatural threat. Who is the collaborator, and why did they make the deal?",
+        ]))
+
+    elif is_faction:
+        faction_lines = [
+            "Factions are most compelling when their goals are internally consistent but externally incompatible with the investigators' survival.",
+            "A faction's power should always feel just slightly beyond the investigators' reach — enough to be a threat, not so much as to feel hopeless.",
+            "Consider the faction's founding myth. Every organization believes a story about itself that justifies its worst actions.",
+        ]
+        if lore_summary:
+            parts.append("Based on the lore context for this setting:")
+        parts.append(pick(rnd, faction_lines))
+
+    elif is_species:
+        species_lines = [
+            "The most memorable entities are defined by what they want, not just what they can do. What need drives this creature?",
+            "Consider how this species perceives time, identity, or reality differently from mortals — that gap is where horror lives.",
+            "A creature's weakness should feel like a logical consequence of its nature, not an arbitrary rule.",
+        ]
+        parts.append(pick(rnd, species_lines))
+
+    elif is_lore:
+        lore_lines = [
+            "The strongest world lore ties the supernatural to something grounded in history or human psychology.",
+            "Consider what ordinary people in this setting believe about the strange occurrences — rumor and misinformation are as important as fact.",
+            "Good lore creates questions that the campaign can answer — but reveals enough to make those questions feel urgent.",
+        ]
+        if lore_summary:
+            parts.append(f"The current lore library provides context across {len(context.loreDocuments)} document(s). Here's a guiding thought:")
+        parts.append(pick(rnd, lore_lines))
+
+    elif is_stats:
+        if char_name:
+            parts.append(
+                f"For {char_name}'s mechanical profile, consider their role as {char_role or 'an investigator'}: "
+                f"the stats should reflect what they have paid for in experience. "
+                f"High EDU and INT for scholarly types, high DEX and CON for field agents — but always leave one stat lower than expected to create vulnerability."
+            )
+        else:
+            parts.append(
+                "Stat allocation is most interesting when it reflects a character's history rather than an optimal build. "
+                "Where are the gaps — the skills they never trained, the resilience they haven't been tested on yet?"
+            )
+
+    elif is_name:
+        name_suggestions = [
+            "For gothic occult investigators, names with weight work well — something that sounds like it belongs in an old case file.",
+            "Consider a name that reflects cultural heritage or a chosen alias. Many Bureau agents operate under pseudonyms.",
+            "A memorable name often has a slight incongruity — something too formal for the chaos they operate in, or too ordinary for someone who deals with the impossible.",
+        ]
+        parts.append(pick(rnd, name_suggestions))
+
+    else:
+        # General helpful response
+        general = [
+            "I can help you develop characters, explore campaign arcs, detail factions and species, or work through story ideas grounded in the established lore.",
+            "What aspect would you like to explore? I can assist with backstory, personality, stats, campaign plotting, or world-building details.",
+            "Happy to help refine any element of the campaign. Share what you're working on — a character, a plot thread, or a piece of setting lore — and I'll build on it.",
+        ]
+        if lore_summary:
+            parts.append(f"The lore library has context available. {pick(rnd, general)}")
+        else:
+            parts.append(pick(rnd, general))
+
+    # Always close with a follow-up prompt if char is in context
+    if char_name and not (is_backstory or is_personality):
+        follow_ups = [
+            f"Would you like to explore {char_name}'s relationship to any specific faction or event in the lore?",
+            f"Is there a specific aspect of {char_name}'s story you'd like to develop further?",
+            f"Let me know if you'd like to focus on {char_name}'s mechanical profile, their backstory, or their role in the current campaign arc.",
+        ]
+        parts.append(pick(rnd, follow_ups))
+    elif not char_name:
+        parts.append(pick(rnd, [
+            "Is there a specific character, faction, or arc you'd like to focus on?",
+            "Let me know if you'd like to tie this to a specific document in the lore library.",
+            "Would you like me to connect this to an existing character or build something new from scratch?",
+        ]))
+
+    return " ".join(p for p in parts if p)
+
+
+@app.post("/v1/chat")
+def chat(request: ChatRequest) -> dict[str, Any]:
+    registry = load_registry()
+    model = str(registry.get("active_model", active_model_name()))
+    version = str(registry.get("active_version", "bootstrap-v1"))
+
+    response_text = _build_chat_response(request)
+
+    return {
+        "modelName": model,
+        "modelVersion": version,
+        "mode": AI_MODE,
+        "response": response_text,
+    }
+
+
 @app.post("/v1/train/retrain")
 def retrain_model(payload: RetrainRequest) -> dict[str, Any]:
     registry = load_registry()

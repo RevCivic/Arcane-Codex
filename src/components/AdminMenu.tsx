@@ -94,6 +94,18 @@ export function AdminMenu() {
             <span>🤖</span>
             <span>AI / LM</span>
           </Link>
+          <Link
+            href="/admin/lore"
+            role="menuitem"
+            tabIndex={0}
+            onClick={() => setOpen(false)}
+            onKeyDown={closeOnMenuItemKey}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+          >
+            <span>📚</span>
+            <span>Lore</span>
+          </Link>
         </div>
       )}
     </div>

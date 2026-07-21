@@ -127,6 +127,16 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
                 📋 Sheet
               </Link>
             )}
+            {/* Chat link — owner or admin */}
+            {(isOwner || isAdmin) && (
+              <Link
+                href={`/characters/${characterId}/chat`}
+                className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
+                style={{ color: '#a78bfa', border: '1px solid #3b1f7a' }}
+              >
+                🔮 Chat
+              </Link>
+            )}
             {isAdmin && (
               <>
                 <Link

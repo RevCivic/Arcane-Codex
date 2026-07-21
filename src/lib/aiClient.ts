@@ -348,3 +348,34 @@ export async function getAIEvaluationSnapshotFromAI(): Promise<AIEvaluationSnaps
     }),
   }
 }
+
+export type ChatMessageInput = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export type ChatLoreDocument = {
+  title: string
+  type: string
+  summary: string
+  content: string
+}
+
+export type ChatContext = {
+  primaryPrompt?: string
+  loreDocuments?: ChatLoreDocument[]
+  character?: Record<string, unknown>
+}
+
+export async function chatWithAI(input: {
+  messages: ChatMessageInput[]
+  context?: ChatContext
+}): Promise<{ modelName: string; modelVersion: string; mode: 'cpu' | 'gpu'; response: string }> {
+  const result = await callAI<typeof input, Record<string, unknown>>('/v1/chat', input)
+  return {
+    modelName: asString(result.modelName) || (AI_MODE === 'gpu' ? 'gpu-model' : 'cpu-model'),
+    modelVersion: asString(result.modelVersion) || 'unknown',
+    mode: result.mode === 'gpu' ? 'gpu' : 'cpu',
+    response: asString(result.response),
+  }
+}

@@ -27,9 +27,15 @@ export default async function AdminAIPage() {
 
   return (
     <div className="max-w-4xl">
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center gap-4">
         <Link href="/admin/access" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← Access Control
+        </Link>
+        <Link href="/chat" className="text-sm transition-colors hover:text-purple-300 ml-auto" style={{ color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
+          🔮 Open Arcanist Chat →
+        </Link>
+        <Link href="/admin/lore" className="text-sm transition-colors hover:text-amber-300" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+          📚 Lore Library →
         </Link>
       </div>
 
