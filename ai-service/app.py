@@ -998,28 +998,47 @@ def _build_chat_response(request: ChatRequest) -> str:
     is_lore = any(k in lower_msg for k in ["lore", "world", "setting", "history", "mythology", "legend", "rumor"])
     is_suggestion = any(k in lower_msg for k in ["suggest", "idea", "help", "recommend", "what should", "how should", "can you", "would you", "could you"])
     is_name = any(k in lower_msg for k in ["name", "call", "named", "title"])
+    # Catch info-seeking queries ("tell me about X", "who is X", "describe X")
+    is_inquiry = any(k in lower_msg for k in ["tell me", "about", "describe", "explain", "who is", "who are", "what is", "what are"])
+    # Catch creation / follow-up action phrases ("let's build X", "connect this to X")
+    is_build = any(k in lower_msg for k in ["build", "create", "develop", "connect", "link", "let's", "lets"])
 
     # Build contextual response
     parts: list[str] = []
 
-    if char_name and (is_backstory or is_personality):
-        tone_pick = pick(rnd, ["gothic", "scholarly", "atmospheric", "measured"])
-        aspects = [
-            f"{char_name} carries the weight of their {char_race or 'mortal'} heritage through every case they take.",
-            f"Their role as {char_role} shapes how they approach every encounter — methodically, with one eye always on the shadows.",
-            f"What drives {char_name} is not glory but answers: the kind that only come at a cost.",
-            f"There is a restlessness to {char_name} that allies find useful and enemies find dangerous.",
-        ]
-        if char_affiliation:
-            aspects.append(f"Their connection to {char_affiliation} provides resources, but also obligations they cannot easily set aside.")
-        if char_desc:
-            aspects.append(f"In their own words, they might say: \"{char_desc[:120]}{'...' if len(char_desc) > 120 else ''}\"")
-        parts.append(pick(rnd, aspects))
-        parts.append(pick(rnd, [
-            f"For backstory depth, consider what event first revealed the supernatural to {char_name} — and what it cost them.",
-            f"A strong backstory often hinges on a single defining moment of loss or revelation. What was {char_name}'s?",
-            f"The most compelling characters carry a contradiction. What does {char_name} believe that the evidence is slowly disproving?",
-        ]))
+    # Personality / backstory — respond even without a character in context
+    if is_backstory or is_personality:
+        if char_name:
+            aspects = [
+                f"{char_name} carries the weight of their {char_race or 'mortal'} heritage through every case they take.",
+                f"Their role as {char_role} shapes how they approach every encounter — methodically, with one eye always on the shadows.",
+                f"What drives {char_name} is not glory but answers: the kind that only come at a cost.",
+                f"There is a restlessness to {char_name} that allies find useful and enemies find dangerous.",
+            ]
+            if char_affiliation:
+                aspects.append(f"Their connection to {char_affiliation} provides resources, but also obligations they cannot easily set aside.")
+            if char_desc:
+                aspects.append(f"In their own words, they might say: \"{char_desc[:120]}{'...' if len(char_desc) > 120 else ''}\"")
+            parts.append(pick(rnd, aspects))
+            parts.append(pick(rnd, [
+                f"For backstory depth, consider what event first revealed the supernatural to {char_name} — and what it cost them.",
+                f"A strong backstory often hinges on a single defining moment of loss or revelation. What was {char_name}'s?",
+                f"The most compelling characters carry a contradiction. What does {char_name} believe that the evidence is slowly disproving?",
+            ]))
+        elif is_personality:
+            parts.append(pick(rnd, [
+                "The most compelling characters carry a contradiction — something they believe that the evidence is slowly disproving.",
+                "Consider what drives this character beneath the surface: the fear they won't name, the loyalty they can't explain.",
+                "Personality traits hit hardest when they emerge from backstory — what shaped this person into who they are now?",
+            ]))
+            parts.append("Share the character's name or open their page for tailored trait suggestions.")
+        else:
+            parts.append(pick(rnd, [
+                "The strongest backstories pivot on a single moment of revelation — the event that made the impossible undeniable.",
+                "Consider what your character knew before the supernatural entered their life, and what they can never unknow.",
+                "A good origin story answers one question: why does this person keep walking toward the danger instead of away from it?",
+            ]))
+            parts.append("Share the character's name or open their page for a backstory built around their specific role and history.")
 
     elif is_campaign or (is_suggestion and not char_name):
         campaign_ideas = [
@@ -1087,6 +1106,35 @@ def _build_chat_response(request: ChatRequest) -> str:
         ]
         parts.append(pick(rnd, name_suggestions))
 
+    elif is_build:
+        # User wants to actively create or connect something
+        if char_name:
+            parts.append(pick(rnd, [
+                f"Let's develop {char_name} further. What's the focus — backstory, personality traits, mechanical stats, or their place in the campaign arc?",
+                f"Good starting point. Tell me which angle to work from for {char_name}: their history, their motivations, or their skills and abilities.",
+                f"Ready to build. What matters most right now for {char_name} — who they were, who they are, or what they can do?",
+            ]))
+        else:
+            parts.append(pick(rnd, [
+                "Let's build this out. What's the focus — a character's backstory, their personality and traits, their stats and skills, or their role in the campaign?",
+                "Ready to develop this. Tell me more: are we working on a character, a faction, a location, or a story arc?",
+                "Good — let's get specific. What are we building, and what do you already know about it?",
+            ]))
+
+    elif is_inquiry:
+        # User is asking for information about something
+        if char_name:
+            parts.append(pick(rnd, [
+                f"I can cover any angle on {char_name}. Do you want to explore their backstory, personality, mechanical profile, or their connections to the current campaign?",
+                f"For {char_name}, the most useful place to start is usually their core motivation — what drives them, and what they're afraid to lose. Want to dig into that?",
+                f"Tell me what aspect of {char_name} you're most interested in: their history, their personality, their stats, or their role in the story so far.",
+            ]))
+        else:
+            if lore_summary:
+                parts.append(f"The campaign lore has context loaded. To give you a useful answer, tell me more: is this about a character, a faction, a location, or something else in the setting?")
+            else:
+                parts.append("Happy to explore this. Is this about a specific character, a faction, a location, or a piece of the setting's lore?")
+
     else:
         # General helpful response
         general = [
@@ -1095,11 +1143,18 @@ def _build_chat_response(request: ChatRequest) -> str:
             "Happy to help refine any element of the campaign. Share what you're working on — a character, a plot thread, or a piece of setting lore — and I'll build on it.",
         ]
         if lore_summary:
-            parts.append(f"The lore library has context available. {pick(rnd, general)}")
+            lore_ctx_prefixes = [
+                f"The lore library has context available. {pick(rnd, general)}",
+                pick(rnd, general),
+                f"With the campaign lore loaded: {pick(rnd, general)}",
+            ]
+            parts.append(pick(rnd, lore_ctx_prefixes))
         else:
             parts.append(pick(rnd, general))
 
-    # Always close with a follow-up prompt if char is in context
+    # Only add an open-ended follow-up on the very first exchange; after that the conversation
+    # should be guided by the user's replies, not by repeating the same prompt questions.
+    is_first_exchange = len(messages) <= 2
     if char_name and not (is_backstory or is_personality):
         follow_ups = [
             f"Would you like to explore {char_name}'s relationship to any specific faction or event in the lore?",
@@ -1107,7 +1162,7 @@ def _build_chat_response(request: ChatRequest) -> str:
             f"Let me know if you'd like to focus on {char_name}'s mechanical profile, their backstory, or their role in the current campaign arc.",
         ]
         parts.append(pick(rnd, follow_ups))
-    elif not char_name:
+    elif not char_name and is_first_exchange:
         parts.append(pick(rnd, [
             "Is there a specific character, faction, or arc you'd like to focus on?",
             "Let me know if you'd like to tie this to a specific document in the lore library.",
