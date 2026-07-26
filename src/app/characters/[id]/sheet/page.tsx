@@ -31,19 +31,33 @@ function StatBox({
   value: number | null | undefined
   description?: string
 }) {
+  const tooltipId = `stat-help-${name}`
+
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs uppercase tracking-wider text-center flex items-center justify-center gap-1" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
         <span>{label}</span>
         {description && (
-          <span
-            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 text-[10px] leading-none cursor-help"
+          <button
+            type="button"
+            className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help"
             style={{ color: '#fbbf24' }}
-            title={description}
-            aria-label={`${label}: ${description}`}
+            aria-label={`${label} explanation`}
+            aria-describedby={tooltipId}
           >
-            i
-          </span>
+            <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <circle cx="10" cy="10" r="7" />
+              <path d="M10 9v4" />
+              <path d="M10 6h.01" />
+            </svg>
+            <span
+              id={tooltipId}
+              role="tooltip"
+              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden w-56 -translate-x-1/2 rounded border border-amber-700/60 bg-[#111827] p-2 text-[11px] normal-case leading-snug text-amber-100 shadow-lg group-hover:block group-focus-visible:block"
+            >
+              {description}
+            </span>
+          </button>
         )}
       </label>
       <input
