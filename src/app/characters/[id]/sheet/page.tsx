@@ -52,11 +52,14 @@ function StatBox({
             type="button"
             className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/80"
             style={{ color: '#fbbf24' }}
-            aria-label={`${label}: ${description}`}
+            aria-label={`${label} explanation`}
+            aria-describedby={tooltipId}
           >
             <InfoBubbleIcon />
+            <span id={tooltipId} className="sr-only">
+              {description}
+            </span>
             <span
-              id={tooltipId}
               role="tooltip"
               aria-hidden="true"
               className="absolute bottom-full left-1/2 z-10 mb-2 hidden w-56 -translate-x-1/2 rounded border border-amber-700/60 bg-[#111827] p-2 text-[11px] normal-case leading-snug text-amber-100 shadow-lg group-hover:block group-focus:block group-focus-visible:block"
