@@ -68,12 +68,10 @@ function StatBox({
             aria-describedby={tooltipId}
           >
             <InfoBubbleIcon />
-            <span id={tooltipId} className="sr-only">
-              {description}
-            </span>
             <span
-              aria-hidden="true"
-              className="absolute bottom-full left-1/2 z-10 mb-2 hidden w-56 -translate-x-1/2 rounded border border-amber-700/60 bg-[#111827] p-2 text-[11px] normal-case leading-snug text-amber-100 shadow-lg group-hover:block group-focus:block group-focus-visible:block"
+              id={tooltipId}
+              role="tooltip"
+              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 rounded border border-amber-700/60 bg-[#111827] p-2 text-[11px] normal-case leading-snug text-amber-100 shadow-lg opacity-0 invisible transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100"
             >
               {description}
             </span>
