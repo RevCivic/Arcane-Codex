@@ -20,11 +20,31 @@ import type { SheetModule } from '@/components/SheetLayoutManager'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function StatBox({ label, name, value }: { label: string; name: string; value: number | null | undefined }) {
+function StatBox({
+  label,
+  name,
+  value,
+  description,
+}: {
+  label: string
+  name: string
+  value: number | null | undefined
+  description?: string
+}) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs uppercase tracking-wider text-center" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-        {label}
+      <label className="text-xs uppercase tracking-wider text-center flex items-center justify-center gap-1" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+        <span>{label}</span>
+        {description && (
+          <span
+            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 text-[10px] leading-none cursor-help"
+            style={{ color: '#fbbf24' }}
+            title={description}
+            aria-label={`${label}: ${description}`}
+          >
+            i
+          </span>
+        )}
       </label>
       <input
         name={name}
@@ -244,6 +264,17 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
 
   const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
   const sectionHead: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif', letterSpacing: '0.1em' }
+  const primaryCharacteristicHelp = {
+    STR: 'Strength: raw physical power for lifting, grappling, and forceful actions.',
+    CON: 'Constitution: stamina, endurance, and resistance to fatigue, poison, and illness.',
+    SIZ: 'Size: body mass and frame; influences durability and physical impact.',
+    DEX: 'Dexterity: agility, coordination, and reaction speed.',
+    INT: 'Intelligence: reasoning, memory, and problem-solving ability.',
+    POW: 'Power: willpower, spiritual force, and resistance in supernatural conflicts.',
+    CHA: 'Charisma: force of personality, leadership, and social influence.',
+    APP: 'Appearance: visual presence and first-impression impact.',
+    EDU: 'Education: formal knowledge, training, and learned expertise.',
+  } as const
 
   return (
     <div className="max-w-5xl">
@@ -355,15 +386,15 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                   }
                 >
                   <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
-                    <StatBox label="STR" name="str"          value={sheet?.str} />
-                    <StatBox label="CON" name="con"          value={sheet?.con} />
-                    <StatBox label="SIZ" name="siz"          value={sheet?.siz} />
-                    <StatBox label="DEX" name="dex"          value={sheet?.dex} />
-                    <StatBox label="INT" name="intelligence" value={sheet?.intelligence} />
-                    <StatBox label="POW" name="pow"          value={sheet?.pow} />
-                    <StatBox label="CHA" name="cha"          value={sheet?.cha} />
-                    <StatBox label="APP" name="app"          value={sheet?.app} />
-                    <StatBox label="EDU" name="edu"          value={sheet?.edu} />
+                    <StatBox label="STR" name="str"          value={sheet?.str} description={primaryCharacteristicHelp.STR} />
+                    <StatBox label="CON" name="con"          value={sheet?.con} description={primaryCharacteristicHelp.CON} />
+                    <StatBox label="SIZ" name="siz"          value={sheet?.siz} description={primaryCharacteristicHelp.SIZ} />
+                    <StatBox label="DEX" name="dex"          value={sheet?.dex} description={primaryCharacteristicHelp.DEX} />
+                    <StatBox label="INT" name="intelligence" value={sheet?.intelligence} description={primaryCharacteristicHelp.INT} />
+                    <StatBox label="POW" name="pow"          value={sheet?.pow} description={primaryCharacteristicHelp.POW} />
+                    <StatBox label="CHA" name="cha"          value={sheet?.cha} description={primaryCharacteristicHelp.CHA} />
+                    <StatBox label="APP" name="app"          value={sheet?.app} description={primaryCharacteristicHelp.APP} />
+                    <StatBox label="EDU" name="edu"          value={sheet?.edu} description={primaryCharacteristicHelp.EDU} />
                   </div>
                 </CollapsibleSection>
 
