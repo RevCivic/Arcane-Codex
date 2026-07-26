@@ -30,6 +30,18 @@ function InfoBubbleIcon() {
   )
 }
 
+const PRIMARY_CHARACTERISTIC_HELP = {
+  STR: 'Strength: raw physical power for lifting, grappling, and forceful actions.',
+  CON: 'Constitution: stamina, endurance, and resistance to fatigue, poison, and illness.',
+  SIZ: 'Size: body mass and frame; influences durability and physical impact.',
+  DEX: 'Dexterity: agility, coordination, and reaction speed.',
+  INT: 'Intelligence: reasoning, memory, and problem-solving ability.',
+  POW: 'Power: willpower, spiritual force, and resistance in supernatural conflicts.',
+  CHA: 'Charisma: force of personality, leadership, and social influence.',
+  APP: 'Appearance: visual presence and first-impression impact.',
+  EDU: 'Education: formal knowledge, training, and learned expertise.',
+} as const
+
 function StatBox({
   label,
   name,
@@ -286,18 +298,6 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
 
   const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
   const sectionHead: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif', letterSpacing: '0.1em' }
-  const primaryCharacteristicHelp = {
-    STR: 'Strength: raw physical power for lifting, grappling, and forceful actions.',
-    CON: 'Constitution: stamina, endurance, and resistance to fatigue, poison, and illness.',
-    SIZ: 'Size: body mass and frame; influences durability and physical impact.',
-    DEX: 'Dexterity: agility, coordination, and reaction speed.',
-    INT: 'Intelligence: reasoning, memory, and problem-solving ability.',
-    POW: 'Power: willpower, spiritual force, and resistance in supernatural conflicts.',
-    CHA: 'Charisma: force of personality, leadership, and social influence.',
-    APP: 'Appearance: visual presence and first-impression impact.',
-    EDU: 'Education: formal knowledge, training, and learned expertise.',
-  } as const
-
   return (
     <div className="max-w-5xl">
       {/* Breadcrumb */}
@@ -408,15 +408,15 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                   }
                 >
                   <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
-                    <StatBox label="STR" name="str"          value={sheet?.str} description={primaryCharacteristicHelp.STR} />
-                    <StatBox label="CON" name="con"          value={sheet?.con} description={primaryCharacteristicHelp.CON} />
-                    <StatBox label="SIZ" name="siz"          value={sheet?.siz} description={primaryCharacteristicHelp.SIZ} />
-                    <StatBox label="DEX" name="dex"          value={sheet?.dex} description={primaryCharacteristicHelp.DEX} />
-                    <StatBox label="INT" name="intelligence" value={sheet?.intelligence} description={primaryCharacteristicHelp.INT} />
-                    <StatBox label="POW" name="pow"          value={sheet?.pow} description={primaryCharacteristicHelp.POW} />
-                    <StatBox label="CHA" name="cha"          value={sheet?.cha} description={primaryCharacteristicHelp.CHA} />
-                    <StatBox label="APP" name="app"          value={sheet?.app} description={primaryCharacteristicHelp.APP} />
-                    <StatBox label="EDU" name="edu"          value={sheet?.edu} description={primaryCharacteristicHelp.EDU} />
+                    <StatBox label="STR" name="str"          value={sheet?.str} description={PRIMARY_CHARACTERISTIC_HELP.STR} />
+                    <StatBox label="CON" name="con"          value={sheet?.con} description={PRIMARY_CHARACTERISTIC_HELP.CON} />
+                    <StatBox label="SIZ" name="siz"          value={sheet?.siz} description={PRIMARY_CHARACTERISTIC_HELP.SIZ} />
+                    <StatBox label="DEX" name="dex"          value={sheet?.dex} description={PRIMARY_CHARACTERISTIC_HELP.DEX} />
+                    <StatBox label="INT" name="intelligence" value={sheet?.intelligence} description={PRIMARY_CHARACTERISTIC_HELP.INT} />
+                    <StatBox label="POW" name="pow"          value={sheet?.pow} description={PRIMARY_CHARACTERISTIC_HELP.POW} />
+                    <StatBox label="CHA" name="cha"          value={sheet?.cha} description={PRIMARY_CHARACTERISTIC_HELP.CHA} />
+                    <StatBox label="APP" name="app"          value={sheet?.app} description={PRIMARY_CHARACTERISTIC_HELP.APP} />
+                    <StatBox label="EDU" name="edu"          value={sheet?.edu} description={PRIMARY_CHARACTERISTIC_HELP.EDU} />
                   </div>
                 </CollapsibleSection>
 
