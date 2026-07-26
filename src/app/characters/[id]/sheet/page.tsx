@@ -20,11 +20,72 @@ import type { SheetModule } from '@/components/SheetLayoutManager'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function StatBox({ label, name, value }: { label: string; name: string; value: number | null | undefined }) {
+function InfoBubbleIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="10" cy="10" r="7" />
+      <path d="M10 9v4" />
+      <path d="M10 6h.01" />
+    </svg>
+  )
+}
+
+const PRIMARY_CHARACTERISTIC_HELP = {
+  STR: 'Strength: raw physical power for lifting, grappling, and forceful actions.',
+  CON: 'Constitution: stamina, endurance, and resistance to fatigue, poison, and illness.',
+  SIZ: 'Size: body mass and frame; influences durability and physical impact.',
+  DEX: 'Dexterity: agility, coordination, and reaction speed.',
+  INT: 'Intelligence: reasoning, memory, and problem-solving ability.',
+  POW: 'Power: willpower, spiritual force, and resistance in supernatural conflicts.',
+  CHA: 'Charisma: force of personality, leadership, and social influence.',
+  APP: 'Appearance: visual presence and first-impression impact.',
+  EDU: 'Education: formal knowledge, training, and learned expertise.',
+} as const
+
+const STAT_TOOLTIP_CLASSNAME = [
+  'pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2',
+  'rounded border border-amber-700/60 bg-[#111827] p-2 text-[11px] normal-case leading-snug text-amber-100 shadow-lg',
+  'opacity-0 invisible transition-opacity duration-150',
+  'group-hover:visible group-hover:opacity-100',
+  'group-focus:visible group-focus:opacity-100',
+  'group-focus-visible:visible group-focus-visible:opacity-100',
+].join(' ')
+
+function StatBox({
+  label,
+  name,
+  value,
+  description,
+}: {
+  label: string
+  name: string
+  value: number | null | undefined
+  description?: string
+}) {
+  const tooltipId = `stat-help-${name}`
+
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs uppercase tracking-wider text-center" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-        {label}
+      <label className="text-xs uppercase tracking-wider text-center flex items-center justify-center gap-1" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+        <span>{label}</span>
+        {description && (
+          <button
+            type="button"
+            className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0d0d15]"
+            style={{ color: '#fbbf24' }}
+            aria-label={`${label} explanation`}
+            aria-describedby={tooltipId}
+          >
+            <InfoBubbleIcon />
+            <span
+              id={tooltipId}
+              role="tooltip"
+              className={STAT_TOOLTIP_CLASSNAME}
+            >
+              {description}
+            </span>
+          </button>
+        )}
       </label>
       <input
         name={name}
@@ -244,7 +305,6 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
 
   const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
   const sectionHead: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif', letterSpacing: '0.1em' }
-
   return (
     <div className="max-w-5xl">
       {/* Breadcrumb */}
@@ -355,15 +415,15 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                   }
                 >
                   <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
-                    <StatBox label="STR" name="str"          value={sheet?.str} />
-                    <StatBox label="CON" name="con"          value={sheet?.con} />
-                    <StatBox label="SIZ" name="siz"          value={sheet?.siz} />
-                    <StatBox label="DEX" name="dex"          value={sheet?.dex} />
-                    <StatBox label="INT" name="intelligence" value={sheet?.intelligence} />
-                    <StatBox label="POW" name="pow"          value={sheet?.pow} />
-                    <StatBox label="CHA" name="cha"          value={sheet?.cha} />
-                    <StatBox label="APP" name="app"          value={sheet?.app} />
-                    <StatBox label="EDU" name="edu"          value={sheet?.edu} />
+                    <StatBox label="STR" name="str"          value={sheet?.str} description={PRIMARY_CHARACTERISTIC_HELP.STR} />
+                    <StatBox label="CON" name="con"          value={sheet?.con} description={PRIMARY_CHARACTERISTIC_HELP.CON} />
+                    <StatBox label="SIZ" name="siz"          value={sheet?.siz} description={PRIMARY_CHARACTERISTIC_HELP.SIZ} />
+                    <StatBox label="DEX" name="dex"          value={sheet?.dex} description={PRIMARY_CHARACTERISTIC_HELP.DEX} />
+                    <StatBox label="INT" name="intelligence" value={sheet?.intelligence} description={PRIMARY_CHARACTERISTIC_HELP.INT} />
+                    <StatBox label="POW" name="pow"          value={sheet?.pow} description={PRIMARY_CHARACTERISTIC_HELP.POW} />
+                    <StatBox label="CHA" name="cha"          value={sheet?.cha} description={PRIMARY_CHARACTERISTIC_HELP.CHA} />
+                    <StatBox label="APP" name="app"          value={sheet?.app} description={PRIMARY_CHARACTERISTIC_HELP.APP} />
+                    <StatBox label="EDU" name="edu"          value={sheet?.edu} description={PRIMARY_CHARACTERISTIC_HELP.EDU} />
                   </div>
                 </CollapsibleSection>
 
