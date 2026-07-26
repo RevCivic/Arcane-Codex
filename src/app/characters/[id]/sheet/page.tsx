@@ -42,6 +42,8 @@ const PRIMARY_CHARACTERISTIC_HELP = {
   EDU: 'Education: formal knowledge, training, and learned expertise.',
 } as const
 
+const STAT_TOOLTIP_CLASSNAME = 'pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 rounded border border-amber-700/60 bg-[#111827] p-2 text-[11px] normal-case leading-snug text-amber-100 shadow-lg opacity-0 invisible transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100'
+
 function StatBox({
   label,
   name,
@@ -64,14 +66,13 @@ function StatBox({
             type="button"
             className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0d0d15]"
             style={{ color: '#fbbf24' }}
-            aria-label={`${label} explanation`}
-            aria-describedby={tooltipId}
+            aria-label={`${label}: ${description}`}
           >
             <InfoBubbleIcon />
             <span
               id={tooltipId}
               role="tooltip"
-              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 rounded border border-amber-700/60 bg-[#111827] p-2 text-[11px] normal-case leading-snug text-amber-100 shadow-lg opacity-0 invisible transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100"
+              className={STAT_TOOLTIP_CLASSNAME}
             >
               {description}
             </span>
