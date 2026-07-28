@@ -290,8 +290,8 @@ function colToLetter(index: number): string {
   let result = ''
   let n = index + 1
   while (n > 0) {
-    const rem = (n - 1) % 26
-    result = String.fromCharCode(65 + rem) + result
+    const remainder = (n - 1) % 26
+    result = String.fromCharCode(65 + remainder) + result
     n = Math.floor((n - 1) / 26)
   }
   return result
@@ -320,6 +320,7 @@ function extractCellHyperlink(cell: SheetCellData | undefined): string | null {
 
   const formula = cell?.userEnteredValue?.formulaValue
   if (formula) {
+    // Sheets formulas escape quotes by doubling them, e.g. "".
     const match = formula.match(/HYPERLINK\(\s*"((?:[^"]|"")+)"/i)
     const formulaUrl = normalizeHttpUrl(match?.[1]?.replace(/""/g, '"'))
     if (formulaUrl) return formulaUrl
@@ -405,9 +406,9 @@ export async function syncCharactersFromSheet(): Promise<{
     const col = mapHeaders(headerRow)
     // We read hyperlink metadata from the name cells because the source sheet
     // stores primary image links as rich links on First Name / Name.
-    const imageLinkedColumnIndices = [...new Set([col.firstName, col.name].filter((value): value is number => value !== undefined))]
+    const imageColumnIndices = [...new Set([col.firstName, col.name].filter((value): value is number => value !== undefined))]
 
-    for (const colIdx of imageLinkedColumnIndices) {
+    for (const colIdx of imageColumnIndices) {
       const colLetter = colToLetter(colIdx)
       const range = `${DEFAULT_SHEET_NAME}!${colLetter}1:${colLetter}${Math.max(rows.length, 1)}`
       const response = await sheets.spreadsheets.get({
@@ -418,7 +419,8 @@ export async function syncCharactersFromSheet(): Promise<{
       })
 
       const rowData = response.data.sheets?.[0]?.data?.[0]?.rowData ?? []
-      for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
+      const maxRows = Math.min(rows.length, rowData.length)
+      for (let rowIndex = 1; rowIndex < maxRows; rowIndex++) {
         const cell = rowData[rowIndex]?.values?.[0] as SheetCellData | undefined
         const imageUrl = extractCellHyperlink(cell)
         // Keep the first discovered link so "First Name" can take precedence
