@@ -103,20 +103,20 @@ function toNullableBigInt(value: unknown): bigint | null {
     } catch {
       return null
     }
-
-    function normalizeHttpUrl(value: string | null | undefined): string | null {
-      const trimmed = value?.trim()
-      if (!trimmed) return null
-      try {
-        const parsed = new URL(trimmed)
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
-        return parsed.toString()
-      } catch {
-        return null
-      }
-    }
   }
   return null
+}
+
+function normalizeHttpUrl(value: string | null | undefined): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
+    return parsed.toString()
+  } catch {
+    return null
+  }
 }
 
 const FOUNDRY_SKILL_CATEGORY_MAP: Record<string, string> = {
