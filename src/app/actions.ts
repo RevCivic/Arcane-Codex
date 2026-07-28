@@ -1,7 +1,7 @@
 'use server'
 
 import { auth } from '@/auth'
-import { AIFeedbackStatus, AIGenerationType, AITrainingJobStatus, AccessRole, LoreDocumentType, Prisma } from '@/generated/prisma'
+import { AIFeedbackStatus, AIGenerationType, AITrainingJobStatus, AccessRole, ImportQueueStatus, LoreDocumentType, Prisma } from '@/generated/prisma'
 import { getD100ResultType, getLuckGainForRoll } from '@/lib/diceRules'
 import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
@@ -314,10 +314,15 @@ function mapHeaders(headers: string[]): ColMap {
   return map
 }
 
-/** Fetches the public Google Sheet as CSV and upserts characters by name. */
+/** Fetches the public Google Sheet as CSV and upserts characters by name.
+ *  - New characters are created immediately.
+ *  - Existing characters with changed fields are placed in an approval queue
+ *    instead of being overwritten directly.
+ */
 export async function syncCharactersFromSheet(): Promise<{
   created: number
   updated: number
+  queued: number
   error?: string
 }> {
   await requireAuthorizedUser()
@@ -333,13 +338,14 @@ export async function syncCharactersFromSheet(): Promise<{
   try {
     const res = await fetch(csvUrl, { cache: 'no-store' })
     if (!res.ok) {
-      return { created: 0, updated: 0, error: `Failed to fetch sheet (HTTP ${res.status})` }
+      return { created: 0, updated: 0, queued: 0, error: `Failed to fetch sheet (HTTP ${res.status})` }
     }
     const contentType = res.headers.get('content-type') ?? ''
     if (contentType.includes('text/html')) {
       return {
         created: 0,
         updated: 0,
+        queued: 0,
         error:
           'Google returned an HTML page instead of CSV data. ' +
           'Make sure the sheet is shared as "Anyone with the link can view".',
@@ -347,12 +353,12 @@ export async function syncCharactersFromSheet(): Promise<{
     }
     text = await res.text()
   } catch {
-    return { created: 0, updated: 0, error: 'Network error — could not reach Google Sheets' }
+    return { created: 0, updated: 0, queued: 0, error: 'Network error — could not reach Google Sheets' }
   }
 
   const rows = parseCSV(text)
   if (rows.length < 2) {
-    return { created: 0, updated: 0, error: 'Sheet appears empty or has no data rows' }
+    return { created: 0, updated: 0, queued: 0, error: 'Sheet appears empty or has no data rows' }
   }
 
   const col = mapHeaders(rows[0])
@@ -361,16 +367,24 @@ export async function syncCharactersFromSheet(): Promise<{
     return {
       created: 0,
       updated: 0,
+      queued: 0,
       error: 'Could not find a "Name" or "First Name" column in the sheet headers',
     }
   }
 
   let created = 0
   let updated = 0
+  let queued = 0
 
   // Fetch all existing characters once to avoid N+1 queries inside the loop.
-  const existing = await prisma.character.findMany({ select: { id: true, name: true } })
-  const existingByName = new Map(existing.map((c) => [c.name, c.id]))
+  const existing = await prisma.character.findMany({
+    select: {
+      id: true, name: true, firstName: true, lastName: true, race: true,
+      gender: true, age: true, role: true, description: true, stats: true,
+      affiliation: true, currentCase: true, currentLocation: true, homeOrigin: true, status: true,
+    },
+  })
+  const existingByName = new Map(existing.map((c) => [c.name, c]))
 
   for (const row of rows.slice(1)) {
     if (row.every((c) => !c.trim())) continue // skip blank rows
@@ -391,35 +405,98 @@ export async function syncCharactersFromSheet(): Promise<{
     const ageRaw = get(col.age)
     const age = toNullableBigInt(ageRaw)
 
-    const data = {
-      firstName,
-      lastName,
-      race: get(col.race),
-      gender: get(col.gender),
-      age,
-      role: get(col.role),
-      description: get(col.description),
-      stats: get(col.stats),
-      affiliation: get(col.affiliation),
-      currentCase: get(col.currentCase),
-      currentLocation: get(col.currentLocation),
-      homeOrigin: get(col.homeOrigin),
+    const incomingData = {
+      firstName: firstName ?? null,
+      lastName: lastName ?? null,
+      race: get(col.race) ?? null,
+      gender: get(col.gender) ?? null,
+      age: age !== null ? String(age) : null,
+      role: get(col.role) ?? null,
+      description: get(col.description) ?? null,
+      stats: get(col.stats) ?? null,
+      affiliation: get(col.affiliation) ?? null,
+      currentCase: get(col.currentCase) ?? null,
+      currentLocation: get(col.currentLocation) ?? null,
+      homeOrigin: get(col.homeOrigin) ?? null,
       status: (col.status !== undefined ? row[col.status]?.trim() : null) || 'Active',
     }
 
-    const existingId = existingByName.get(name)
-    if (existingId !== undefined) {
-      await prisma.character.update({ where: { id: existingId }, data })
-      updated++
+    const existingChar = existingByName.get(name)
+    if (existingChar !== undefined) {
+      // Check whether any field actually differs before queuing.
+      const existingData = {
+        firstName: existingChar.firstName ?? null,
+        lastName: existingChar.lastName ?? null,
+        race: existingChar.race ?? null,
+        gender: existingChar.gender ?? null,
+        age: existingChar.age !== null ? String(existingChar.age) : null,
+        role: existingChar.role ?? null,
+        description: existingChar.description ?? null,
+        stats: existingChar.stats ?? null,
+        affiliation: existingChar.affiliation ?? null,
+        currentCase: existingChar.currentCase ?? null,
+        currentLocation: existingChar.currentLocation ?? null,
+        homeOrigin: existingChar.homeOrigin ?? null,
+        status: existingChar.status ?? 'Active',
+      }
+
+      const hasChanges = (Object.keys(incomingData) as (keyof typeof incomingData)[]).some(
+        (k) => incomingData[k] !== existingData[k]
+      )
+
+      if (!hasChanges) {
+        // Data is identical — nothing to do.
+        updated++ // count as "handled" for consistency
+        continue
+      }
+
+      // Upsert a PENDING queue item: replace any existing PENDING entry for this character.
+      await prisma.importQueueItem.upsert({
+        where: {
+          characterId_status: {
+            characterId: existingChar.id,
+            status: ImportQueueStatus.PENDING,
+          },
+        },
+        update: {
+          incomingData,
+          existingData,
+          updatedAt: new Date(),
+        },
+        create: {
+          characterId: existingChar.id,
+          characterName: name,
+          incomingData,
+          existingData,
+          status: ImportQueueStatus.PENDING,
+        },
+      })
+      queued++
     } else {
-      const created_ = await prisma.character.create({ data: { name, ...data } })
-      existingByName.set(name, created_.id)
+      const dbData = {
+        firstName: incomingData.firstName,
+        lastName: incomingData.lastName,
+        race: incomingData.race,
+        gender: incomingData.gender,
+        age: age,
+        role: incomingData.role,
+        description: incomingData.description,
+        stats: incomingData.stats,
+        affiliation: incomingData.affiliation,
+        currentCase: incomingData.currentCase,
+        currentLocation: incomingData.currentLocation,
+        homeOrigin: incomingData.homeOrigin,
+        status: incomingData.status,
+      }
+      const created_ = await prisma.character.create({ data: { name, ...dbData } })
+      existingByName.set(name, { id: created_.id, name: created_.name, ...dbData, age: created_.age })
       created++
     }
   }
 
   revalidatePath('/characters')
-  return { created, updated }
+  revalidatePath('/admin/import-queue')
+  return { created, updated, queued }
 }
 
 /** Reads all characters from the database and writes their values back to the
@@ -596,7 +673,123 @@ export async function syncCharactersToSheet(): Promise<{
   return { updated, skipped }
 }
 
-// ─── Characters ───────────────────────────────────────────────────────────────
+// ─── Import Queue ─────────────────────────────────────────────────────────────
+
+function applyIncomingDataToCharacter(incoming: Record<string, string | null>) {
+  return {
+    firstName: incoming.firstName ?? undefined,
+    lastName: incoming.lastName ?? undefined,
+    race: incoming.race ?? undefined,
+    gender: incoming.gender ?? undefined,
+    age: incoming.age != null ? BigInt(incoming.age) : undefined,
+    role: incoming.role ?? undefined,
+    description: incoming.description ?? undefined,
+    stats: incoming.stats ?? undefined,
+    affiliation: incoming.affiliation ?? undefined,
+    currentCase: incoming.currentCase ?? undefined,
+    currentLocation: incoming.currentLocation ?? undefined,
+    homeOrigin: incoming.homeOrigin ?? undefined,
+    status: incoming.status ?? undefined,
+  }
+}
+
+export async function getImportQueue() {
+  await requireAdminUser()
+  return prisma.importQueueItem.findMany({
+    where: { status: ImportQueueStatus.PENDING },
+    orderBy: { createdAt: 'asc' },
+  })
+}
+
+export async function getImportQueueCounts() {
+  await requireAdminUser()
+  const pending = await prisma.importQueueItem.count({ where: { status: ImportQueueStatus.PENDING } })
+  return { pending }
+}
+
+export async function approveImportQueueItem(id: number) {
+  const { email } = await requireAdminUser()
+
+  const item = await prisma.importQueueItem.findUnique({ where: { id } })
+  if (!item || item.status !== ImportQueueStatus.PENDING) {
+    throw new Error('Queue item not found or already reviewed')
+  }
+  if (!item.characterId) {
+    throw new Error('Cannot approve a queue item with no associated character')
+  }
+
+  const incoming = item.incomingData as Record<string, string | null>
+  await prisma.$transaction([
+    prisma.character.update({
+      where: { id: item.characterId },
+      data: applyIncomingDataToCharacter(incoming),
+    }),
+    prisma.importQueueItem.update({
+      where: { id },
+      data: { status: ImportQueueStatus.APPROVED, reviewedByEmail: email },
+    }),
+  ])
+
+  revalidatePath('/characters')
+  revalidatePath('/admin/import-queue')
+}
+
+export async function rejectImportQueueItem(id: number) {
+  const { email } = await requireAdminUser()
+
+  const item = await prisma.importQueueItem.findUnique({ where: { id } })
+  if (!item || item.status !== ImportQueueStatus.PENDING) {
+    throw new Error('Queue item not found or already reviewed')
+  }
+
+  await prisma.importQueueItem.update({
+    where: { id },
+    data: { status: ImportQueueStatus.REJECTED, reviewedByEmail: email },
+  })
+
+  revalidatePath('/admin/import-queue')
+}
+
+export async function approveAllImportQueueItems() {
+  const { email } = await requireAdminUser()
+
+  const items = await prisma.importQueueItem.findMany({
+    where: { status: ImportQueueStatus.PENDING },
+  })
+
+  await prisma.$transaction([
+    ...items
+      .filter((item) => item.characterId !== null)
+      .map((item) =>
+        prisma.character.update({
+          where: { id: item.characterId! },
+          data: applyIncomingDataToCharacter(item.incomingData as Record<string, string | null>),
+        })
+      ),
+    prisma.importQueueItem.updateMany({
+      where: { status: ImportQueueStatus.PENDING },
+      data: { status: ImportQueueStatus.APPROVED, reviewedByEmail: email },
+    }),
+  ])
+
+  revalidatePath('/characters')
+  revalidatePath('/admin/import-queue')
+  return { approved: items.length }
+}
+
+export async function rejectAllImportQueueItems() {
+  const { email } = await requireAdminUser()
+
+  const result = await prisma.importQueueItem.updateMany({
+    where: { status: ImportQueueStatus.PENDING },
+    data: { status: ImportQueueStatus.REJECTED, reviewedByEmail: email },
+  })
+
+  revalidatePath('/admin/import-queue')
+  return { rejected: result.count }
+}
+
+
 
 export async function getAllTags() {
   await requireAuthorizedUser()

@@ -15,6 +15,7 @@ type ResponsiveNavProps = {
   navLinks: NavLinkItem[]
   isSignedIn: boolean
   isAdmin: boolean
+  pendingImportCount?: number
 }
 
 const navItemClass =
@@ -23,7 +24,7 @@ const mobileNavItemClass =
   'flex min-h-11 items-center gap-2 rounded px-3 py-2 text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400'
 const navItemStyle = { color: '#9ca3af', fontFamily: 'Georgia, serif' }
 
-export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavProps) {
+export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, pendingImportCount = 0 }: ResponsiveNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -75,7 +76,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
             <span>{link.label}</span>
           </Link>
         ))}
-        {isAdmin && <AdminMenu />}
+        {isAdmin && <AdminMenu pendingImportCount={pendingImportCount} />}
         {isSignedIn && !isAdmin && (
           <Link href="/my-character" className={navItemClass} style={navItemStyle}>
             <span>📋</span>
@@ -191,6 +192,25 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin }: ResponsiveNavPr
                     >
                       <span>📚</span>
                       <span className="whitespace-normal break-words">Admin Lore</span>
+                    </Link>
+                    <Link
+                      href="/admin/import-queue"
+                      onClick={() => setMobileOpen(false)}
+                      className={mobileNavItemClass}
+                      style={navItemStyle}
+                    >
+                      <span>📥</span>
+                      <span className="whitespace-normal break-words">
+                        Import Queue
+                        {pendingImportCount > 0 && (
+                          <span
+                            className="ml-2 rounded-full px-1.5 py-0.5 text-xs font-bold leading-none"
+                            style={{ backgroundColor: '#d97706', color: '#07070d' }}
+                          >
+                            {pendingImportCount}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   </>
                 )}

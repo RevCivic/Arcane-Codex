@@ -3,7 +3,11 @@
 import Link from 'next/link'
 import { useState } from 'react'
 
-export function AdminMenu() {
+type AdminMenuProps = {
+  pendingImportCount?: number
+}
+
+export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
   const [open, setOpen] = useState(false)
   const closeOnMenuItemKey = (event: React.KeyboardEvent<HTMLAnchorElement>) => {
     if (event.key === ' ') {
@@ -39,6 +43,15 @@ export function AdminMenu() {
       >
         <span>🛠️</span>
         <span className="hidden sm:inline">Admin</span>
+        {pendingImportCount > 0 && (
+          <span
+            className="rounded-full px-1.5 py-0.5 text-xs font-bold leading-none"
+            style={{ backgroundColor: '#d97706', color: '#07070d' }}
+            aria-label={`${pendingImportCount} pending import changes`}
+          >
+            {pendingImportCount}
+          </span>
+        )}
       </button>
       {open && (
         <div
@@ -105,6 +118,26 @@ export function AdminMenu() {
           >
             <span>📚</span>
             <span>Lore</span>
+          </Link>
+          <Link
+            href="/admin/import-queue"
+            role="menuitem"
+            tabIndex={0}
+            onClick={() => setOpen(false)}
+            onKeyDown={closeOnMenuItemKey}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+          >
+            <span>📥</span>
+            <span>Import Queue</span>
+            {pendingImportCount > 0 && (
+              <span
+                className="ml-auto rounded-full px-1.5 py-0.5 text-xs font-bold leading-none"
+                style={{ backgroundColor: '#d97706', color: '#07070d' }}
+              >
+                {pendingImportCount}
+              </span>
+            )}
           </Link>
         </div>
       )}

@@ -34,6 +34,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isSignedIn = !!session?.user
   const isAdmin = access?.role === AccessRole.ADMIN
 
+  const pendingImportCount = isAdmin
+    ? await prisma.importQueueItem.count({ where: { status: 'PENDING' } })
+    : 0
+
   return (
     <html lang="en" className="h-full">
       <body className="min-h-full flex flex-col" style={{ backgroundColor: '#0a0a0f', color: '#e2e8f0' }}>
@@ -57,7 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               </div>
             </Link>
-            <ResponsiveNav navLinks={navLinks} isSignedIn={isSignedIn} isAdmin={isAdmin} />
+            <ResponsiveNav navLinks={navLinks} isSignedIn={isSignedIn} isAdmin={isAdmin} pendingImportCount={pendingImportCount} />
           </div>
         </header>
 

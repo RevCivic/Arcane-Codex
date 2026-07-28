@@ -48,6 +48,12 @@ enum ChatMessageRole {
   assistant
 }
 
+enum ImportQueueStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -134,6 +140,7 @@ model Character {
   rollHistory        RollHistory[]
   aiGenerations      AIGeneration[]
   chatSessions       ChatSession[]
+  importQueueItems   ImportQueueItem[]
 }
 
 model Tag {
@@ -441,4 +448,25 @@ model ChatMessage {
   role      ChatMessageRole
   content   String
   createdAt DateTime        @default(now())
+}
+
+/// A pending change from a Sheet → DB sync that requires admin approval before being applied.
+model ImportQueueItem {
+  id              Int               @id @default(autoincrement())
+  /// The character that would be updated. Null for items that are queued as new creates (reserved for future use).
+  characterId     Int?
+  character       Character?        @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  /// Display name of the character (kept for readability even if character is deleted).
+  characterName   String
+  /// The full set of incoming field values from the sheet.
+  incomingData    Json
+  /// The current field values in the DB at the time the queue item was created.
+  existingData    Json?
+  status          ImportQueueStatus @default(PENDING)
+  reviewedByEmail String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  /// Only one PENDING item per character at a time.
+  @@unique([characterId, status])
 }
