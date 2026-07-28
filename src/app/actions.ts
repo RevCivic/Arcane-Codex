@@ -25,6 +25,7 @@ import { redirect } from 'next/navigation'
 // ─── Google Sheet Sync ────────────────────────────────────────────────────────
 
 const DEFAULT_SHEET_ID = '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
+const DEFAULT_SHEET_NAME = 'Sheet1'
 
 async function requireAuthorizedUser() {
   const session = await auth()
@@ -394,17 +395,19 @@ export async function syncCharactersFromSheet(): Promise<{
     const sheets = getGoogleSheetsClient()
     const valuesResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Sheet1',
+      range: DEFAULT_SHEET_NAME,
     })
     rows = (valuesResponse.data.values ?? []) as string[][]
 
     const headerRow = rows[0] ?? []
     const col = mapHeaders(headerRow)
+    // We read hyperlink metadata from the name cells because the source sheet
+    // stores portrait links as rich links on First Name / Name.
     const linkedImageColumns = [...new Set([col.firstName, col.name].filter((value): value is number => value !== undefined))]
 
     for (const colIdx of linkedImageColumns) {
       const colLetter = colToLetter(colIdx)
-      const range = `Sheet1!${colLetter}1:${colLetter}${Math.max(rows.length, 1)}`
+      const range = `${DEFAULT_SHEET_NAME}!${colLetter}1:${colLetter}${Math.max(rows.length, 1)}`
       const response = await sheets.spreadsheets.get({
         spreadsheetId: sheetId,
         ranges: [range],
@@ -512,6 +515,8 @@ export async function syncCharactersFromSheet(): Promise<{
       currentCase: get(col.currentCase) ?? null,
       currentLocation: get(col.currentLocation) ?? null,
       homeOrigin: get(col.homeOrigin) ?? null,
+      // Explicit image URL column wins when present; otherwise fall back to
+      // hyperlink metadata attached to the name/first-name cell.
       imageUrl: explicitImageUrl ?? linkedImageUrl,
       status: (col.status !== undefined ? row[col.status]?.trim() : null) || 'Active',
     }
@@ -629,7 +634,7 @@ export async function syncCharactersToSheet(): Promise<{
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Sheet1',
+      range: DEFAULT_SHEET_NAME,
     })
     sheetValues = (response.data.values ?? []) as string[][]
   } catch (err) {
@@ -723,7 +728,7 @@ export async function syncCharactersToSheet(): Promise<{
     for (const [field, colIdx] of Object.entries(fieldToCol)) {
       if (colIdx === undefined) continue
       const letter = colToLetter(colIdx)
-      const cellRange = `Sheet1!${letter}${rowNum}`
+      const cellRange = `${DEFAULT_SHEET_NAME}!${letter}${rowNum}`
 
       let value: string
       if (field === 'age') {
