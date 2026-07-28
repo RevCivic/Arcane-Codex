@@ -26,6 +26,8 @@ import { redirect } from 'next/navigation'
 
 const DEFAULT_SHEET_ID = '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
 const DEFAULT_SHEET_NAME = 'Sheet1'
+const SHEET_HYPERLINK_FIELDS =
+  'sheets(data(rowData(values(formattedValue,hyperlink,textFormatRuns(format(link)),userEnteredValue,userEnteredFormat(textFormat(link)),effectiveFormat(textFormat(link))))))'
 
 async function requireAuthorizedUser() {
   const session = await auth()
@@ -402,23 +404,25 @@ export async function syncCharactersFromSheet(): Promise<{
     const headerRow = rows[0] ?? []
     const col = mapHeaders(headerRow)
     // We read hyperlink metadata from the name cells because the source sheet
-    // stores portrait links as rich links on First Name / Name.
-    const linkedImageColumns = [...new Set([col.firstName, col.name].filter((value): value is number => value !== undefined))]
+    // stores primary image links as rich links on First Name / Name.
+    const imageLinkedColumnIndices = [...new Set([col.firstName, col.name].filter((value): value is number => value !== undefined))]
 
-    for (const colIdx of linkedImageColumns) {
+    for (const colIdx of imageLinkedColumnIndices) {
       const colLetter = colToLetter(colIdx)
       const range = `${DEFAULT_SHEET_NAME}!${colLetter}1:${colLetter}${Math.max(rows.length, 1)}`
       const response = await sheets.spreadsheets.get({
         spreadsheetId: sheetId,
         ranges: [range],
         includeGridData: true,
-        fields: 'sheets(data(rowData(values(formattedValue,hyperlink,textFormatRuns(format(link)),userEnteredValue,userEnteredFormat(textFormat(link)),effectiveFormat(textFormat(link))))))',
+        fields: SHEET_HYPERLINK_FIELDS,
       })
 
       const rowData = response.data.sheets?.[0]?.data?.[0]?.rowData ?? []
       for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
         const cell = rowData[rowIndex]?.values?.[0] as SheetCellData | undefined
         const imageUrl = extractCellHyperlink(cell)
+        // Keep the first discovered link so "First Name" can take precedence
+        // when both name columns contain links.
         if (imageUrl && !rowImageLinks.has(rowIndex)) {
           rowImageLinks.set(rowIndex, imageUrl)
         }
