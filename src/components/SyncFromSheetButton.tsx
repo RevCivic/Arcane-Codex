@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { syncCharactersFromSheet, syncCharactersToSheet } from '@/app/actions'
 
-type FromSheetResult = { created: number; updated: number; error?: string } | null
+type FromSheetResult = { created: number; updated: number; queued: number; error?: string } | null
 type ToSheetResult = { updated: number; skipped: number; error?: string } | null
 type Direction = 'from' | 'to'
 
@@ -27,7 +27,7 @@ export function SyncFromSheetButton() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unexpected error'
       if (direction === 'from') {
-        setFromResult({ created: 0, updated: 0, error: msg })
+        setFromResult({ created: 0, updated: 0, queued: 0, error: msg })
       } else {
         setToResult({ updated: 0, skipped: 0, error: msg })
       }
@@ -41,15 +41,22 @@ export function SyncFromSheetButton() {
   const buttonStyle = { backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857', fontFamily: 'Georgia, serif' }
 
   const activeResult = fromResult ?? toResult
-  const resultMessage = fromResult
-    ? fromResult.error
-      ? `⚠ ${fromResult.error}`
-      : `✓ ${fromResult.created} created, ${fromResult.updated} updated`
-    : toResult
-      ? toResult.error
-        ? `⚠ ${toResult.error}`
-        : `✓ ${toResult.updated} updated, ${toResult.skipped} skipped`
-      : null
+  let resultMessage: string | null = null
+  if (fromResult) {
+    if (fromResult.error) {
+      resultMessage = `⚠ ${fromResult.error}`
+    } else {
+      const parts = [`${fromResult.created} created`, `${fromResult.updated} unchanged`]
+      if (fromResult.queued > 0) {
+        parts.push(`${fromResult.queued} queued for review`)
+      }
+      resultMessage = `✓ ${parts.join(', ')}`
+    }
+  } else if (toResult) {
+    resultMessage = toResult.error
+      ? `⚠ ${toResult.error}`
+      : `✓ ${toResult.updated} updated, ${toResult.skipped} skipped`
+  }
 
   return (
     <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
@@ -81,6 +88,15 @@ export function SyncFromSheetButton() {
         >
           {resultMessage}
         </p>
+      )}
+      {fromResult && !fromResult.error && fromResult.queued > 0 && (
+        <a
+          href="/admin/import-queue"
+          className="text-xs text-left sm:text-right hover:underline"
+          style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}
+        >
+          → Review {fromResult.queued} pending change{fromResult.queued !== 1 ? 's' : ''} in Import Queue
+        </a>
       )}
     </div>
   )
