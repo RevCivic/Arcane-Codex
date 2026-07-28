@@ -209,8 +209,9 @@ For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set
 
 ### Google Sheets write-back (DB → Sheet sync)
 
-Reading from the Google Sheet (Sheet → DB) works without any extra credentials — the
-sheet just needs to be publicly readable.
+Reading from the Google Sheet (Sheet → DB) works with a public sheet, but if you want
+hyperlink metadata (for example an image URL linked on a name cell) imported into the DB,
+configure a Google Service Account as below so the app can use the Sheets API.
 
 Writing back to the sheet (DB → Sheet) requires a **Google Service Account** with Editor
 access on the spreadsheet. The **⬆ DB → Sheet** button on the Characters page will only
@@ -240,4 +241,3 @@ work once this is configured.
 > **Note:** The write-back only updates cells in columns that already exist in the sheet.
 > No new columns or rows are ever added. Characters in the database that do not appear in
 > the sheet (matched by name) are silently skipped.
-

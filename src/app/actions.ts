@@ -25,6 +25,9 @@ import { redirect } from 'next/navigation'
 // ─── Google Sheet Sync ────────────────────────────────────────────────────────
 
 const DEFAULT_SHEET_ID = '1OZ2WHyECHeO3yB-7nYhVbl7jq-VagGR0zh9Td75GJi0'
+const DEFAULT_SHEET_NAME = 'Sheet1'
+const SHEET_HYPERLINK_FIELDS =
+  'sheets(data(rowData(values(formattedValue,hyperlink,textFormatRuns(format(link)),userEnteredValue,userEnteredFormat(textFormat(link)),effectiveFormat(textFormat(link))))))'
 
 async function requireAuthorizedUser() {
   const session = await auth()
@@ -105,6 +108,18 @@ function toNullableBigInt(value: unknown): bigint | null {
     }
   }
   return null
+}
+
+function normalizeHttpUrl(value: string | null | undefined): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
+    return parsed.toString()
+  } catch {
+    return null
+  }
 }
 
 const FOUNDRY_SKILL_CATEGORY_MAP: Record<string, string> = {
@@ -269,10 +284,55 @@ function parseCSV(text: string): string[][] {
   return rows
 }
 
+// Converts a 0-based column index to Excel-style A1 notation letters.
+// Examples: 0 → "A", 25 → "Z", 26 → "AA", 27 → "AB".
+function colToLetter(index: number): string {
+  let result = ''
+  let n = index + 1
+  while (n > 0) {
+    const remainder = (n - 1) % 26
+    result = String.fromCharCode(65 + remainder) + result
+    n = Math.floor((n - 1) / 26)
+  }
+  return result
+}
+
+type SheetCellData = {
+  formattedValue?: string | null
+  hyperlink?: string | null
+  textFormatRuns?: Array<{ format?: { link?: { uri?: string | null } | null } | null }> | null
+  userEnteredValue?: { formulaValue?: string | null } | null
+  userEnteredFormat?: { textFormat?: { link?: { uri?: string | null } | null } | null } | null
+  effectiveFormat?: { textFormat?: { link?: { uri?: string | null } | null } | null } | null
+}
+
+function extractCellHyperlink(cell: SheetCellData | undefined): string | null {
+  const direct =
+    normalizeHttpUrl(cell?.hyperlink) ??
+    normalizeHttpUrl(cell?.userEnteredFormat?.textFormat?.link?.uri) ??
+    normalizeHttpUrl(cell?.effectiveFormat?.textFormat?.link?.uri)
+  if (direct) return direct
+
+  for (const run of cell?.textFormatRuns ?? []) {
+    const runUrl = normalizeHttpUrl(run?.format?.link?.uri)
+    if (runUrl) return runUrl
+  }
+
+  const formula = cell?.userEnteredValue?.formulaValue
+  if (formula) {
+    // Sheets formulas escape quotes by doubling them, e.g. "".
+    const match = formula.match(/HYPERLINK\(\s*"((?:[^"]|"")+)"/i)
+    const formulaUrl = normalizeHttpUrl(match?.[1]?.replace(/""/g, '"'))
+    if (formulaUrl) return formulaUrl
+  }
+
+  return normalizeHttpUrl(cell?.formattedValue)
+}
+
 type ColMap = Partial<Record<
   'name' | 'firstName' | 'lastName' | 'race' | 'gender' | 'age' |
   'role' | 'description' | 'stats' | 'affiliation' |
-  'currentCase' | 'currentLocation' | 'homeOrigin' | 'status',
+  'currentCase' | 'currentLocation' | 'homeOrigin' | 'imageUrl' | 'status',
   number
 >>
 
@@ -307,6 +367,8 @@ function mapHeaders(headers: string[]): ColMap {
       map.currentLocation = i
     } else if (['home/origin', 'home', 'origin', 'hometown', 'home origin'].includes(h)) {
       map.homeOrigin = i
+    } else if (['image', 'image url', 'image link', 'picture', 'photo', 'portrait', 'avatar'].includes(h)) {
+      map.imageUrl = i
     } else if (['status', 'state', 'condition'].includes(h)) {
       map.status = i
     }
@@ -329,34 +391,72 @@ export async function syncCharactersFromSheet(): Promise<{
 
   const sheetId =
     process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
-  // Use the gviz/tq endpoint which reliably returns CSV without triggering
-  // Google's HTML confirm-download warning page (which the /export endpoint
-  // can return with a 200 status, silently breaking CSV parsing).
-  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0`
+  let rows: string[][] = []
+  const rowImageLinks = new Map<number, string>()
 
-  let text: string
   try {
-    const res = await fetch(csvUrl, { cache: 'no-store' })
-    if (!res.ok) {
-      return { created: 0, updated: 0, queued: 0, error: `Failed to fetch sheet (HTTP ${res.status})` }
-    }
-    const contentType = res.headers.get('content-type') ?? ''
-    if (contentType.includes('text/html')) {
-      return {
-        created: 0,
-        updated: 0,
-        queued: 0,
-        error:
-          'Google returned an HTML page instead of CSV data. ' +
-          'Make sure the sheet is shared as "Anyone with the link can view".',
+    const sheets = getGoogleSheetsClient()
+    const valuesResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: DEFAULT_SHEET_NAME,
+    })
+    rows = (valuesResponse.data.values ?? []) as string[][]
+
+    const headerRow = rows[0] ?? []
+    const col = mapHeaders(headerRow)
+    // We read hyperlink metadata from the name cells because the source sheet
+    // stores primary image links as rich links on First Name / Name.
+    const imageColumnIndices = [...new Set([col.firstName, col.name].filter((value): value is number => value !== undefined))]
+
+    for (const colIdx of imageColumnIndices) {
+      const colLetter = colToLetter(colIdx)
+      const range = `${DEFAULT_SHEET_NAME}!${colLetter}1:${colLetter}${Math.max(rows.length, 1)}`
+      const response = await sheets.spreadsheets.get({
+        spreadsheetId: sheetId,
+        ranges: [range],
+        includeGridData: true,
+        fields: SHEET_HYPERLINK_FIELDS,
+      })
+
+      const rowData = response.data.sheets?.[0]?.data?.[0]?.rowData ?? []
+      const maxRows = Math.min(rows.length, rowData.length)
+      for (let rowIndex = 1; rowIndex < maxRows; rowIndex++) {
+        const cell = rowData[rowIndex]?.values?.[0] as SheetCellData | undefined
+        const imageUrl = extractCellHyperlink(cell)
+        // Keep the first discovered link so "First Name" can take precedence
+        // when both name columns contain links.
+        if (imageUrl && !rowImageLinks.has(rowIndex)) {
+          rowImageLinks.set(rowIndex, imageUrl)
+        }
       }
     }
-    text = await res.text()
   } catch {
-    return { created: 0, updated: 0, queued: 0, error: 'Network error — could not reach Google Sheets' }
+    // Fall back to public CSV import when service-account access is unavailable.
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0`
+    let text: string
+    try {
+      const res = await fetch(csvUrl, { cache: 'no-store' })
+      if (!res.ok) {
+        return { created: 0, updated: 0, queued: 0, error: `Failed to fetch sheet (HTTP ${res.status})` }
+      }
+      const contentType = res.headers.get('content-type') ?? ''
+      if (contentType.includes('text/html')) {
+        return {
+          created: 0,
+          updated: 0,
+          queued: 0,
+          error:
+            'Google returned an HTML page instead of CSV data. ' +
+            'Make sure the sheet is shared as "Anyone with the link can view".',
+        }
+      }
+      text = await res.text()
+    } catch {
+      return { created: 0, updated: 0, queued: 0, error: 'Network error — could not reach Google Sheets' }
+    }
+    rows = parseCSV(text)
   }
 
-  const rows = parseCSV(text)
   if (rows.length < 2) {
     return { created: 0, updated: 0, queued: 0, error: 'Sheet appears empty or has no data rows' }
   }
@@ -381,12 +481,13 @@ export async function syncCharactersFromSheet(): Promise<{
     select: {
       id: true, name: true, firstName: true, lastName: true, race: true,
       gender: true, age: true, role: true, description: true, stats: true,
-      affiliation: true, currentCase: true, currentLocation: true, homeOrigin: true, status: true,
+      affiliation: true, currentCase: true, currentLocation: true, homeOrigin: true, imageUrl: true, status: true,
     },
   })
   const existingByName = new Map(existing.map((c) => [c.name, c]))
 
-  for (const row of rows.slice(1)) {
+  for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
+    const row = rows[rowIndex]
     if (row.every((c) => !c.trim())) continue // skip blank rows
 
     const get = (idx: number | undefined) => (idx !== undefined ? row[idx]?.trim() || null : undefined)
@@ -404,6 +505,8 @@ export async function syncCharactersFromSheet(): Promise<{
 
     const ageRaw = get(col.age)
     const age = toNullableBigInt(ageRaw)
+    const explicitImageUrl = normalizeHttpUrl(get(col.imageUrl))
+    const linkedImageUrl = rowImageLinks.get(rowIndex) ?? null
 
     const incomingData = {
       firstName: firstName ?? null,
@@ -418,6 +521,9 @@ export async function syncCharactersFromSheet(): Promise<{
       currentCase: get(col.currentCase) ?? null,
       currentLocation: get(col.currentLocation) ?? null,
       homeOrigin: get(col.homeOrigin) ?? null,
+      // Explicit image URL column wins when present; otherwise fall back to
+      // hyperlink metadata attached to the name/first-name cell.
+      imageUrl: explicitImageUrl ?? linkedImageUrl,
       status: (col.status !== undefined ? row[col.status]?.trim() : null) || 'Active',
     }
 
@@ -437,6 +543,7 @@ export async function syncCharactersFromSheet(): Promise<{
         currentCase: existingChar.currentCase ?? null,
         currentLocation: existingChar.currentLocation ?? null,
         homeOrigin: existingChar.homeOrigin ?? null,
+        imageUrl: existingChar.imageUrl ?? null,
         status: existingChar.status ?? 'Active',
       }
 
@@ -486,6 +593,7 @@ export async function syncCharactersFromSheet(): Promise<{
         currentCase: incomingData.currentCase,
         currentLocation: incomingData.currentLocation,
         homeOrigin: incomingData.homeOrigin,
+        imageUrl: incomingData.imageUrl,
         status: incomingData.status,
       }
       const created_ = await prisma.character.create({ data: { name, ...dbData } })
@@ -532,7 +640,7 @@ export async function syncCharactersToSheet(): Promise<{
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Sheet1',
+      range: DEFAULT_SHEET_NAME,
     })
     sheetValues = (response.data.values ?? []) as string[][]
   } catch (err) {
@@ -588,22 +696,10 @@ export async function syncCharactersToSheet(): Promise<{
       currentCase: true,
       currentLocation: true,
       homeOrigin: true,
+      imageUrl: true,
       status: true,
     },
   })
-
-  // Helper: converts a 0-based column index to Excel-style A1 notation letters.
-  // Examples: 0 → "A", 25 → "Z", 26 → "AA", 27 → "AB".
-  function colToLetter(index: number): string {
-    let result = ''
-    let n = index + 1
-    while (n > 0) {
-      const rem = (n - 1) % 26
-      result = String.fromCharCode(65 + rem) + result
-      n = Math.floor((n - 1) / 26)
-    }
-    return result
-  }
 
   // Map from Character field name → column index in the sheet.
   const fieldToCol: Partial<Record<string, number>> = {
@@ -619,6 +715,7 @@ export async function syncCharactersToSheet(): Promise<{
     currentCase: col.currentCase,
     currentLocation: col.currentLocation,
     homeOrigin: col.homeOrigin,
+    imageUrl: col.imageUrl,
     status: col.status,
   }
 
@@ -637,7 +734,7 @@ export async function syncCharactersToSheet(): Promise<{
     for (const [field, colIdx] of Object.entries(fieldToCol)) {
       if (colIdx === undefined) continue
       const letter = colToLetter(colIdx)
-      const cellRange = `Sheet1!${letter}${rowNum}`
+      const cellRange = `${DEFAULT_SHEET_NAME}!${letter}${rowNum}`
 
       let value: string
       if (field === 'age') {
@@ -689,6 +786,7 @@ function applyIncomingDataToCharacter(incoming: Record<string, string | null>) {
     currentCase: incoming.currentCase ?? undefined,
     currentLocation: incoming.currentLocation ?? undefined,
     homeOrigin: incoming.homeOrigin ?? undefined,
+    imageUrl: incoming.imageUrl ?? undefined,
     status: incoming.status ?? undefined,
   }
 }

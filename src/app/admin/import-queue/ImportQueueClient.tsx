@@ -30,6 +30,7 @@ const FIELD_LABELS: Record<string, string> = {
   currentCase: 'Current Case',
   currentLocation: 'Current Location',
   homeOrigin: 'Home / Origin',
+  imageUrl: 'Primary Image URL',
   status: 'Status',
 }
 
