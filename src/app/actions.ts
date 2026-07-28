@@ -675,6 +675,24 @@ export async function syncCharactersToSheet(): Promise<{
 
 // ─── Import Queue ─────────────────────────────────────────────────────────────
 
+function applyIncomingDataToCharacter(incoming: Record<string, string | null>) {
+  return {
+    firstName: incoming.firstName ?? undefined,
+    lastName: incoming.lastName ?? undefined,
+    race: incoming.race ?? undefined,
+    gender: incoming.gender ?? undefined,
+    age: incoming.age != null ? BigInt(incoming.age) : undefined,
+    role: incoming.role ?? undefined,
+    description: incoming.description ?? undefined,
+    stats: incoming.stats ?? undefined,
+    affiliation: incoming.affiliation ?? undefined,
+    currentCase: incoming.currentCase ?? undefined,
+    currentLocation: incoming.currentLocation ?? undefined,
+    homeOrigin: incoming.homeOrigin ?? undefined,
+    status: incoming.status ?? undefined,
+  }
+}
+
 export async function getImportQueue() {
   await requireAdminUser()
   return prisma.importQueueItem.findMany({
@@ -701,29 +719,16 @@ export async function approveImportQueueItem(id: number) {
   }
 
   const incoming = item.incomingData as Record<string, string | null>
-  await prisma.character.update({
-    where: { id: item.characterId },
-    data: {
-      firstName: incoming.firstName ?? undefined,
-      lastName: incoming.lastName ?? undefined,
-      race: incoming.race ?? undefined,
-      gender: incoming.gender ?? undefined,
-      age: incoming.age !== null && incoming.age !== undefined ? BigInt(incoming.age) : undefined,
-      role: incoming.role ?? undefined,
-      description: incoming.description ?? undefined,
-      stats: incoming.stats ?? undefined,
-      affiliation: incoming.affiliation ?? undefined,
-      currentCase: incoming.currentCase ?? undefined,
-      currentLocation: incoming.currentLocation ?? undefined,
-      homeOrigin: incoming.homeOrigin ?? undefined,
-      status: incoming.status ?? undefined,
-    },
-  })
-
-  await prisma.importQueueItem.update({
-    where: { id },
-    data: { status: ImportQueueStatus.APPROVED, reviewedByEmail: email },
-  })
+  await prisma.$transaction([
+    prisma.character.update({
+      where: { id: item.characterId },
+      data: applyIncomingDataToCharacter(incoming),
+    }),
+    prisma.importQueueItem.update({
+      where: { id },
+      data: { status: ImportQueueStatus.APPROVED, reviewedByEmail: email },
+    }),
+  ])
 
   revalidatePath('/characters')
   revalidatePath('/admin/import-queue')
@@ -752,33 +757,20 @@ export async function approveAllImportQueueItems() {
     where: { status: ImportQueueStatus.PENDING },
   })
 
-  for (const item of items) {
-    if (!item.characterId) continue
-    const incoming = item.incomingData as Record<string, string | null>
-    await prisma.character.update({
-      where: { id: item.characterId },
-      data: {
-        firstName: incoming.firstName ?? undefined,
-        lastName: incoming.lastName ?? undefined,
-        race: incoming.race ?? undefined,
-        gender: incoming.gender ?? undefined,
-        age: incoming.age !== null && incoming.age !== undefined ? BigInt(incoming.age) : undefined,
-        role: incoming.role ?? undefined,
-        description: incoming.description ?? undefined,
-        stats: incoming.stats ?? undefined,
-        affiliation: incoming.affiliation ?? undefined,
-        currentCase: incoming.currentCase ?? undefined,
-        currentLocation: incoming.currentLocation ?? undefined,
-        homeOrigin: incoming.homeOrigin ?? undefined,
-        status: incoming.status ?? undefined,
-      },
-    })
-  }
-
-  await prisma.importQueueItem.updateMany({
-    where: { status: ImportQueueStatus.PENDING },
-    data: { status: ImportQueueStatus.APPROVED, reviewedByEmail: email },
-  })
+  await prisma.$transaction([
+    ...items
+      .filter((item) => item.characterId !== null)
+      .map((item) =>
+        prisma.character.update({
+          where: { id: item.characterId! },
+          data: applyIncomingDataToCharacter(item.incomingData as Record<string, string | null>),
+        })
+      ),
+    prisma.importQueueItem.updateMany({
+      where: { status: ImportQueueStatus.PENDING },
+      data: { status: ImportQueueStatus.APPROVED, reviewedByEmail: email },
+    }),
+  ])
 
   revalidatePath('/characters')
   revalidatePath('/admin/import-queue')
