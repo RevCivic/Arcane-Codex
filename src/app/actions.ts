@@ -5,6 +5,7 @@ import { AIFeedbackStatus, AIGenerationType, AITrainingJobStatus, AccessRole, Im
 import { getD100ResultType, getLuckGainForRoll } from '@/lib/diceRules'
 import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
+import { convertGoogleDriveImageUrl } from '@/lib/imageUrl'
 import {
   generateCharacterBulkTextFromAI,
   getAIEvaluationSnapshotFromAI,
@@ -122,6 +123,14 @@ function normalizeHttpUrl(value: string | null | undefined): string | null {
   }
 }
 
+/** Normalises a URL string for image use: validates HTTP(S) and converts
+ *  Google Drive share links to direct-access URLs. */
+function normalizeImageUrl(value: string | null | undefined): string | null {
+  const base = normalizeHttpUrl(value)
+  if (!base) return null
+  return convertGoogleDriveImageUrl(base)
+}
+
 const FOUNDRY_SKILL_CATEGORY_MAP: Record<string, string> = {
   zcmbtmod: 'Combat',
   cmbtmod: 'Combat',
@@ -235,7 +244,7 @@ async function resolveImageUrlFromForm(formData: FormData, existingImageUrl?: st
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
       throw new Error('Image URL must use http or https')
     }
-    return parsedUrl.toString()
+    return convertGoogleDriveImageUrl(parsedUrl.toString())
   }
   return existingImageUrl ?? null
 }
@@ -505,8 +514,8 @@ export async function syncCharactersFromSheet(): Promise<{
 
     const ageRaw = get(col.age)
     const age = toNullableBigInt(ageRaw)
-    const explicitImageUrl = normalizeHttpUrl(get(col.imageUrl))
-    const linkedImageUrl = rowImageLinks.get(rowIndex) ?? null
+    const explicitImageUrl = normalizeImageUrl(get(col.imageUrl))
+    const linkedImageUrl = rowImageLinks.get(rowIndex) ? convertGoogleDriveImageUrl(rowImageLinks.get(rowIndex)!) : null
 
     const incomingData = {
       firstName: firstName ?? null,
