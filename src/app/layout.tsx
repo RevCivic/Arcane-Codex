@@ -34,9 +34,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isSignedIn = !!session?.user
   const isAdmin = access?.role === AccessRole.ADMIN
 
-  const pendingImportCount = isAdmin
-    ? await prisma.importQueueItem.count({ where: { status: 'PENDING' } })
-    : 0
+  let pendingImportCount = 0
+  if (isAdmin) {
+    try {
+      pendingImportCount = await prisma.importQueueItem.count({ where: { status: 'PENDING' } })
+    } catch {
+      // The ImportQueueItem table may not exist yet (migration pending). Degrade gracefully.
+    }
+  }
 
   return (
     <html lang="en" className="h-full">
