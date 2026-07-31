@@ -841,6 +841,37 @@ export async function approveImportQueueItem(id: number) {
   revalidatePath('/admin/import-queue')
 }
 
+export async function approveImportQueueItemFields(id: number, approvedFields: string[]) {
+  const { email } = await requireAdminUser()
+
+  const item = await prisma.importQueueItem.findUnique({ where: { id } })
+  if (!item || item.status !== ImportQueueStatus.PENDING) {
+    throw new Error('Queue item not found or already reviewed')
+  }
+  if (!item.characterId) {
+    throw new Error('Cannot approve a queue item with no associated character')
+  }
+
+  const incoming = item.incomingData as Record<string, string | null>
+  const filteredIncoming = Object.fromEntries(
+    Object.entries(incoming).filter(([k]) => approvedFields.includes(k))
+  )
+
+  await prisma.$transaction([
+    prisma.character.update({
+      where: { id: item.characterId },
+      data: applyIncomingDataToCharacter(filteredIncoming),
+    }),
+    prisma.importQueueItem.update({
+      where: { id },
+      data: { status: ImportQueueStatus.APPROVED, reviewedByEmail: email },
+    }),
+  ])
+
+  revalidatePath('/characters')
+  revalidatePath('/admin/import-queue')
+}
+
 export async function rejectImportQueueItem(id: number) {
   const { email } = await requireAdminUser()
 

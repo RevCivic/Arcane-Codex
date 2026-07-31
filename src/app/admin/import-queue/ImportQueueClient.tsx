@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import {
   approveImportQueueItem,
+  approveImportQueueItemFields,
   rejectImportQueueItem,
   approveAllImportQueueItems,
   rejectAllImportQueueItems,
@@ -38,17 +39,35 @@ function DiffRow({
   field,
   incoming,
   existing,
+  lineByLine,
+  checked,
+  onToggle,
 }: {
   field: string
   incoming: string | null
   existing: string | null | undefined
+  lineByLine?: boolean
+  checked?: boolean
+  onToggle?: (field: string) => void
 }) {
   const label = FIELD_LABELS[field] ?? field
   const changed = incoming !== (existing ?? null)
   if (!changed) return null
 
   return (
-    <tr style={{ borderTop: '1px solid #1f2937' }}>
+    <tr style={{ borderTop: '1px solid #1f2937', opacity: lineByLine && !checked ? 0.4 : 1 }}>
+      {lineByLine && (
+        <td className="pl-3 pr-1 py-2 align-top" style={{ width: '2rem' }}>
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={() => onToggle?.(field)}
+            className="mt-0.5 cursor-pointer"
+            style={{ accentColor: '#8b5cf6' }}
+            aria-label={`Include ${label}`}
+          />
+        </td>
+      )}
       <td className="px-3 py-2 text-xs align-top" style={{ color: '#d97706', fontFamily: 'Georgia, serif', minWidth: '8rem' }}>
         {label}
       </td>
@@ -65,6 +84,30 @@ function DiffRow({
 function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: number) => void }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [lineByLine, setLineByLine] = useState(false)
+
+  const changedFields = Object.keys(item.incomingData).filter(
+    (k) => item.incomingData[k] !== (item.existingData?.[k] ?? null)
+  )
+
+  const [checkedFields, setCheckedFields] = useState<Set<string>>(new Set(changedFields))
+
+  function toggleField(field: string) {
+    setCheckedFields((prev) => {
+      const next = new Set(prev)
+      if (next.has(field)) {
+        next.delete(field)
+      } else {
+        next.add(field)
+      }
+      return next
+    })
+  }
+
+  function handleEnterLineByLine() {
+    setCheckedFields(new Set(changedFields))
+    setLineByLine(true)
+  }
 
   function handle(action: () => Promise<void>) {
     setError(null)
@@ -78,9 +121,16 @@ function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: num
     })
   }
 
-  const changedFields = Object.keys(item.incomingData).filter(
-    (k) => item.incomingData[k] !== (item.existingData?.[k] ?? null)
-  )
+  function handleApplySelected() {
+    const selected = Array.from(checkedFields)
+    if (selected.length === 0) {
+      handle(() => rejectImportQueueItem(item.id))
+    } else if (selected.length === changedFields.length) {
+      handle(() => approveImportQueueItem(item.id))
+    } else {
+      handle(() => approveImportQueueItemFields(item.id, selected))
+    }
+  }
 
   const buttonBase = 'rounded px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 disabled:opacity-50'
 
@@ -100,22 +150,61 @@ function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: num
           </span>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => handle(() => approveImportQueueItem(item.id))}
-            disabled={isPending}
-            className={buttonBase}
-            style={{ backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857' }}
-          >
-            ✓ Approve
-          </button>
-          <button
-            onClick={() => handle(() => rejectImportQueueItem(item.id))}
-            disabled={isPending}
-            className={buttonBase}
-            style={{ backgroundColor: '#450a0a', color: '#f87171', border: '1px solid #7f1d1d' }}
-          >
-            ✗ Reject
-          </button>
+          {lineByLine ? (
+            <>
+              <button
+                onClick={handleApplySelected}
+                disabled={isPending}
+                className={buttonBase}
+                style={{ backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857' }}
+              >
+                ✓ Apply Selected ({checkedFields.size})
+              </button>
+              <button
+                onClick={() => handle(() => rejectImportQueueItem(item.id))}
+                disabled={isPending}
+                className={buttonBase}
+                style={{ backgroundColor: '#450a0a', color: '#f87171', border: '1px solid #7f1d1d' }}
+              >
+                ✗ Reject
+              </button>
+              <button
+                onClick={() => setLineByLine(false)}
+                disabled={isPending}
+                className={buttonBase}
+                style={{ backgroundColor: '#1f2937', color: '#9ca3af', border: '1px solid #374151' }}
+              >
+                ← All Fields
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => handle(() => approveImportQueueItem(item.id))}
+                disabled={isPending}
+                className={buttonBase}
+                style={{ backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857' }}
+              >
+                ✓ Approve All
+              </button>
+              <button
+                onClick={() => handle(() => rejectImportQueueItem(item.id))}
+                disabled={isPending}
+                className={buttonBase}
+                style={{ backgroundColor: '#450a0a', color: '#f87171', border: '1px solid #7f1d1d' }}
+              >
+                ✗ Reject
+              </button>
+              <button
+                onClick={handleEnterLineByLine}
+                disabled={isPending}
+                className={buttonBase}
+                style={{ backgroundColor: '#1e1b4b', color: '#a78bfa', border: '1px solid #4c1d95' }}
+              >
+                ≡ Line by Line
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -123,6 +212,7 @@ function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: num
         <table className="w-full text-sm">
           <thead>
             <tr style={{ backgroundColor: '#0d0d14' }}>
+              {lineByLine && <th className="pl-3 pr-1 py-2" style={{ width: '2rem' }} />}
               <th className="px-3 py-2 text-left text-xs uppercase tracking-wider" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>Field</th>
               <th className="px-3 py-2 text-left text-xs uppercase tracking-wider" style={{ color: '#f87171' }}>Current (DB)</th>
               <th className="px-3 py-2 text-left text-xs uppercase tracking-wider" style={{ color: '#4ade80' }}>Incoming (Sheet)</th>
@@ -135,6 +225,9 @@ function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: num
                 field={field}
                 incoming={item.incomingData[field]}
                 existing={item.existingData?.[field]}
+                lineByLine={lineByLine}
+                checked={checkedFields.has(field)}
+                onToggle={toggleField}
               />
             ))}
           </tbody>
