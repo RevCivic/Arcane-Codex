@@ -566,26 +566,38 @@ export async function syncCharactersFromSheet(): Promise<{
         continue
       }
 
-      // Upsert a PENDING queue item: replace any existing PENDING entry for this character.
-      await prisma.importQueueItem.upsert({
-        where: {
-          characterId_status: {
+      // Replace any existing PENDING entry for this character while preserving
+      // reviewed history rows.
+      await prisma.$transaction(async (tx) => {
+        const existingPending = await tx.importQueueItem.findFirst({
+          where: {
             characterId: existingChar.id,
             status: ImportQueueStatus.PENDING,
           },
-        },
-        update: {
-          incomingData,
-          existingData,
-          updatedAt: new Date(),
-        },
-        create: {
-          characterId: existingChar.id,
-          characterName: name,
-          incomingData,
-          existingData,
-          status: ImportQueueStatus.PENDING,
-        },
+          select: { id: true },
+        })
+
+        if (existingPending) {
+          await tx.importQueueItem.update({
+            where: { id: existingPending.id },
+            data: {
+              incomingData,
+              existingData,
+              updatedAt: new Date(),
+            },
+          })
+          return
+        }
+
+        await tx.importQueueItem.create({
+          data: {
+            characterId: existingChar.id,
+            characterName: name,
+            incomingData,
+            existingData,
+            status: ImportQueueStatus.PENDING,
+          },
+        })
       })
       queued++
     } else {
