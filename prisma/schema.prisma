@@ -468,5 +468,6 @@ model ImportQueueItem {
   updatedAt       DateTime          @updatedAt
 
   /// Only one PENDING item per character at a time.
-  @@unique([characterId, status])
+  /// Enforced with a partial unique index in SQL because reviewed items may
+  /// legitimately share the same character/status pair over time.
 }
