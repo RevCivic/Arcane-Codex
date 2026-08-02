@@ -379,3 +379,88 @@ export async function chatWithAI(input: {
     response: asString(result.response),
   }
 }
+
+// ─── Server Action Input / Result Types ──────────────────────────────────────
+// These types describe the shapes passed to and returned from the AI-related
+// server actions in src/app/actions/ai.ts.
+
+export type CharacterTextSuggestionInput = {
+  characterId?: number | null
+  name?: string
+  firstName?: string
+  lastName?: string
+  race?: string
+  gender?: string
+  role?: string
+  affiliation?: string
+  currentCase?: string
+  currentLocation?: string
+  homeOrigin?: string
+  description?: string
+  additionalPrompt?: string
+  promptContext?: Partial<AIPromptContext>
+}
+
+export type CharacterTextSuggestionResult = {
+  ok: boolean
+  generationId?: string
+  suggestion?: CharacterTextSuggestion
+  error?: string
+}
+
+export type CharacterStatsSkillsSuggestionInput = {
+  characterId?: number | null
+  name?: string
+  role?: string
+  race?: string
+  description?: string
+  additionalPrompt?: string
+  promptContext?: Partial<AIPromptContext>
+}
+
+export type CharacterStatsSkillsSuggestionResult = {
+  ok: boolean
+  generationId?: string
+  suggestion?: {
+    stats: CharacterStatsSuggestion
+    skills: Array<{ skillId: number; value: number }>
+  }
+  error?: string
+}
+
+export type CharacterBulkSuggestionInput = {
+  additionalPrompt?: string
+  promptContext?: Partial<AIPromptContext>
+  rows: Array<{
+    rowIndex: number
+    name?: string
+    firstName?: string
+    lastName?: string
+    role?: string
+    status?: string
+  }>
+}
+
+export type CharacterBulkSuggestionResult = {
+  ok: boolean
+  generationId?: string
+  suggestions?: Array<{
+    rowIndex: number
+    role: string
+    status: string
+    description: string
+  }>
+  error?: string
+}
+
+export type AIFeedbackInput = {
+  generationId: string
+  status: 'ACCEPTED' | 'EDITED' | 'REJECTED'
+  finalValues?: Record<string, unknown>
+  note?: string
+}
+
+export type AITrainingRequestInput = {
+  mode?: 'cpu' | 'gpu'
+  baseModel?: string
+}

@@ -11,8 +11,8 @@ import { SyncFromSheetButton } from '@/components/SyncFromSheetButton'
 import { ViewToggle } from '@/components/ViewToggle'
 import { SearchBar } from '@/components/SearchBar'
 import { TagFilter } from '@/components/TagFilter'
+import { parseSortField, SortOrder } from '@/lib/sortParams'
 
-type SortOrder = 'asc' | 'desc'
 const VALID_SORT_FIELDS = ['name', 'role', 'status', 'race', 'age', 'affiliation'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
 
@@ -43,7 +43,7 @@ export default async function CharactersPage({
   searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string; search?: string; tags?: string }>
 }) {
   const { view = 'card', sortBy: rawSortBy = 'name', sortOrder: rawSortOrder = 'asc', search = '', tags = '' } = await searchParams
-  const sortBy: SortField = VALID_SORT_FIELDS.includes(rawSortBy as SortField) ? (rawSortBy as SortField) : 'name'
+  const sortBy: SortField = parseSortField(VALID_SORT_FIELDS, rawSortBy, 'name')
   const sortOrder: SortOrder = rawSortOrder === 'desc' ? 'desc' : 'asc'
   const selectedTags = tags
     .split(',')

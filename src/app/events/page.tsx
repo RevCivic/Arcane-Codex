@@ -7,8 +7,8 @@ import { deleteEvent } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
 import { ViewToggle } from '@/components/ViewToggle'
 import { SearchBar } from '@/components/SearchBar'
+import { parseSortField, SortOrder } from '@/lib/sortParams'
 
-type SortOrder = 'asc' | 'desc'
 const VALID_SORT_FIELDS = ['name', 'date', 'significance', 'createdAt'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
 
@@ -29,7 +29,7 @@ export default async function EventsPage({
   searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string; search?: string }>
 }) {
   const { view = 'card', sortBy: rawSortBy = 'createdAt', sortOrder: rawSortOrder = 'desc', search = '' } = await searchParams
-  const sortBy: SortField = VALID_SORT_FIELDS.includes(rawSortBy as SortField) ? (rawSortBy as SortField) : 'createdAt'
+  const sortBy: SortField = parseSortField(VALID_SORT_FIELDS, rawSortBy, 'createdAt')
   const sortOrder: SortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc'
 
   const where = search
