@@ -212,6 +212,15 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, pendingImportCoun
                         )}
                       </span>
                     </Link>
+                    <Link
+                      href="/admin/images"
+                      onClick={() => setMobileOpen(false)}
+                      className={mobileNavItemClass}
+                      style={navItemStyle}
+                    >
+                      <span>🖼️</span>
+                      <span className="whitespace-normal break-words">Admin Images</span>
+                    </Link>
                   </>
                 )}
 
