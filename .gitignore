@@ -13,5 +13,10 @@ prisma/dev.db-journal
 *.db
 *.db-journal
 
+# Uploaded images (runtime files — persisted via Docker volume in production)
+/public/uploads/**
+!/public/uploads/.gitkeep
+!/public/uploads/characters/.gitkeep
+
 # Dev tools
 .DS_Store
