@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { auth } from '@/auth'
-import { localizeCharacterImages } from '@/app/actions'
+import { generateCharacterThumbnails, localizeCharacterImages } from '@/app/actions'
 import { AccessRole } from '@/generated/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
@@ -14,6 +14,11 @@ type AdminImagesPageProps = {
     converted?: string
     skipped?: string
     failed?: string
+    thumbnailScanned?: string
+    thumbnailGenerated?: string
+    thumbnailRefreshed?: string
+    thumbnailSkipped?: string
+    thumbnailFailed?: string
   }>
 }
 
@@ -61,6 +66,11 @@ export default async function AdminImagesPage({ searchParams }: AdminImagesPageP
           Scanned {result.scanned} images · Converted {result.converted ?? '0'} · Skipped {result.skipped ?? '0'} · Failed {result.failed ?? '0'}
         </div>
       )}
+      {typeof result.thumbnailScanned === 'string' && (
+        <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: '#111118', border: '1px solid #164e63', color: '#e2e8f0', fontFamily: 'Georgia, serif' }}>
+          Scanned {result.thumbnailScanned} images · Generated {result.thumbnailGenerated ?? '0'} · Refreshed {result.thumbnailRefreshed ?? '0'} · Skipped {result.thumbnailSkipped ?? '0'} · Failed {result.thumbnailFailed ?? '0'}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="rounded-lg p-5" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
@@ -87,6 +97,19 @@ export default async function AdminImagesPage({ searchParams }: AdminImagesPageP
           style={{ backgroundColor: '#7c3aed', color: '#fff' }}
         >
           Localize Remote Character Images
+        </button>
+      </form>
+
+      <form action={generateCharacterThumbnails} className="mt-4 rounded-lg p-6 space-y-4" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
+        <p className="text-sm" style={{ color: '#9ca3af' }}>
+          This scans locally hosted character images, creates missing thumbnails, and refreshes existing ones for the character grid.
+        </p>
+        <button
+          type="submit"
+          className="px-5 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
+          style={{ backgroundColor: '#0891b2', color: '#fff' }}
+        >
+          Generate Character Thumbnails
         </button>
       </form>
     </div>

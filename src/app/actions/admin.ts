@@ -10,6 +10,7 @@ import {
   requireAdminUser,
   requireAuthorizedUser,
   downloadCharacterImageToLocal,
+  ensureCharacterThumbnailForImageUrl,
   isLocalHostedImageUrl,
   isRemoteHttpImageUrl,
 } from './_shared'
@@ -305,6 +306,56 @@ export async function localizeCharacterImages() {
   revalidatePath('/characters')
   revalidatePath('/admin/images')
   redirect(`/admin/images?scanned=${scanned}&converted=${converted}&skipped=${skipped}&failed=${failed}`)
+}
+
+export async function generateCharacterThumbnails() {
+  await requireAdminUser()
+
+  const characters = await prisma.character.findMany({
+    where: {
+      imageUrl: { not: null, notIn: [''] },
+    },
+    select: { imageUrl: true },
+  })
+
+  let scanned = 0
+  let generated = 0
+  let refreshed = 0
+  let skipped = 0
+  let failed = 0
+
+  for (const character of characters) {
+    const currentImage = character.imageUrl?.trim() || ''
+    if (!currentImage) continue
+
+    scanned++
+
+    if (!isLocalHostedImageUrl(currentImage)) {
+      skipped++
+      continue
+    }
+
+    try {
+      const result = await ensureCharacterThumbnailForImageUrl(currentImage)
+      if (!result.thumbnailUrl) {
+        skipped++
+        continue
+      }
+      if (result.existed) {
+        refreshed++
+      } else {
+        generated++
+      }
+    } catch {
+      failed++
+    }
+  }
+
+  revalidatePath('/characters')
+  revalidatePath('/admin/images')
+  redirect(
+    `/admin/images?thumbnailScanned=${scanned}&thumbnailGenerated=${generated}&thumbnailRefreshed=${refreshed}&thumbnailSkipped=${skipped}&thumbnailFailed=${failed}`,
+  )
 }
 
 // ─── Access Control ───────────────────────────────────────────────────────────

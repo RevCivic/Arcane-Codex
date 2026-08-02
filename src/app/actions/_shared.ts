@@ -5,12 +5,13 @@
 
 import { auth } from '@/auth'
 import { AccessRole, Prisma } from '@/generated/prisma'
+import { getLocalCharacterThumbnailUrl } from '@/lib/characterImage'
 import { parseReferenceLinksText } from '@/lib/referenceLinks'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { convertGoogleDriveImageUrl } from '@/lib/imageUrl'
 import { prisma } from '@/lib/prisma'
 import { randomUUID } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { access, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 
@@ -168,6 +169,40 @@ export const IMAGE_MIME_TO_EXTENSION: Record<string, string> = {
 export const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
 export const MAX_IMAGE_DOWNLOAD_BYTES = 10 * 1024 * 1024
 export const LOCAL_IMAGE_PREFIX = '/uploads/'
+const CHARACTER_IMAGES_DIR = path.join(process.cwd(), 'public', 'uploads', 'characters')
+
+function getPublicFilePath(publicUrl: string): string {
+  return path.join(process.cwd(), 'public', publicUrl.replace(/^\/+/, ''))
+}
+
+async function createThumbnailFromBuffer(bytes: Buffer, thumbnailPath: string) {
+  await sharp(bytes)
+    .resize(320, 320, {
+      fit: 'contain',
+      position: 'center',
+      background: '#07070d',
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 80 })
+    .toFile(thumbnailPath)
+}
+
+async function storeCharacterImageBuffer(bytes: Buffer, extension: string) {
+  const baseName = randomUUID()
+  const imageFileName = `${baseName}${extension}`
+  const thumbnailFileName = `${baseName}-thumb.webp`
+  const imagePath = path.join(CHARACTER_IMAGES_DIR, imageFileName)
+  const thumbnailPath = path.join(CHARACTER_IMAGES_DIR, thumbnailFileName)
+
+  await mkdir(CHARACTER_IMAGES_DIR, { recursive: true })
+  await writeFile(imagePath, bytes)
+  await createThumbnailFromBuffer(bytes, thumbnailPath)
+
+  return {
+    imageUrl: `/uploads/characters/${imageFileName}`,
+    thumbnailUrl: `/uploads/characters/${thumbnailFileName}`,
+  }
+}
 
 export function isLocalHostedImageUrl(value: string | null | undefined): boolean {
   if (!value) return false
@@ -223,24 +258,37 @@ export async function downloadCharacterImageToLocal(url: string): Promise<{ imag
     throw new Error('File is larger than 10 MB')
   }
 
-  const baseName = randomUUID()
-  const imageFileName = `${baseName}${extension}`
-  const thumbnailFileName = `${baseName}-thumb.webp`
-  const imagesDir = path.join(process.cwd(), 'public', 'uploads', 'characters')
-  const imagePath = path.join(imagesDir, imageFileName)
-  const thumbnailPath = path.join(imagesDir, thumbnailFileName)
+  return storeCharacterImageBuffer(bytes, extension)
+}
 
-  await mkdir(imagesDir, { recursive: true })
-  await writeFile(imagePath, bytes)
-  await sharp(bytes)
-    .resize(240, 240, { fit: 'cover', position: 'center' })
+export async function ensureCharacterThumbnailForImageUrl(imageUrl: string): Promise<{ thumbnailUrl: string | null; existed: boolean }> {
+  const thumbnailUrl = getLocalCharacterThumbnailUrl(imageUrl)
+  if (!thumbnailUrl) return { thumbnailUrl: null, existed: false }
+
+  const sourcePath = getPublicFilePath(imageUrl)
+  const thumbnailPath = getPublicFilePath(thumbnailUrl)
+
+  await access(sourcePath)
+
+  let existed = true
+  try {
+    await access(thumbnailPath)
+  } catch {
+    existed = false
+  }
+
+  await mkdir(path.dirname(thumbnailPath), { recursive: true })
+  await sharp(sourcePath)
+    .resize(320, 320, {
+      fit: 'contain',
+      position: 'center',
+      background: '#07070d',
+      withoutEnlargement: true,
+    })
     .webp({ quality: 80 })
     .toFile(thumbnailPath)
 
-  return {
-    imageUrl: `/uploads/characters/${imageFileName}`,
-    thumbnailUrl: `/uploads/characters/${thumbnailFileName}`,
-  }
+  return { thumbnailUrl, existed }
 }
 
 export async function resolveImageUrlFromForm(formData: FormData, existingImageUrl?: string | null) {
@@ -278,6 +326,40 @@ export async function resolveImageUrlFromForm(formData: FormData, existingImageU
     }
     return convertGoogleDriveImageUrl(parsedUrl.toString())
   }
+  return existingImageUrl ?? null
+}
+
+export async function resolveCharacterImageUrlFromForm(formData: FormData, existingImageUrl?: string | null) {
+  const directImageUrl = (formData.get('imageUrl') as string | null)?.trim() || ''
+  const maybeFile = formData.get('imageFile')
+
+  if (maybeFile instanceof File && maybeFile.size > 0) {
+    if (maybeFile.size > MAX_IMAGE_UPLOAD_BYTES) {
+      throw new Error('Image upload must be 5 MB or less')
+    }
+    const extension = IMAGE_MIME_TO_EXTENSION[maybeFile.type]
+    if (!extension) {
+      throw new Error('Unsupported image format')
+    }
+
+    const bytes = Buffer.from(await maybeFile.arrayBuffer())
+    const { imageUrl } = await storeCharacterImageBuffer(bytes, extension)
+    return imageUrl
+  }
+
+  if (directImageUrl) {
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(directImageUrl)
+    } catch {
+      throw new Error('Image URL must be a valid URL')
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      throw new Error('Image URL must use http or https')
+    }
+    return convertGoogleDriveImageUrl(parsedUrl.toString())
+  }
+
   return existingImageUrl ?? null
 }
 
