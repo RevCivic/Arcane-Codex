@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 import { normalizeReferenceLinks } from '@/lib/referenceLinks'
 import { convertGoogleDriveImageUrl } from '@/lib/imageUrl'
 import Link from 'next/link'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { deletePlace } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
@@ -41,7 +40,14 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
             <div className="sm:col-span-2">
               <dt className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>Image</dt>
               <dd>
-                <Image src={convertGoogleDriveImageUrl(place.imageUrl)} alt={place.name} width={960} height={540} unoptimized className="w-full max-w-xl rounded border" style={{ borderColor: '#1f2937' }} />
+                <img
+                  src={convertGoogleDriveImageUrl(place.imageUrl)}
+                  alt={place.name}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  className="w-full max-w-xl rounded border"
+                  style={{ borderColor: '#1f2937' }}
+                />
               </dd>
             </div>
           )}
