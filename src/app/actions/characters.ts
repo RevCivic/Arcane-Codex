@@ -13,7 +13,7 @@ import {
   parseTagsFromForm,
   toNullableBigInt,
   getReferenceLinksFromForm,
-  resolveImageUrlFromForm,
+  resolveCharacterImageUrlFromForm,
 } from './_shared'
 
 export async function createCharacter(formData: FormData) {
@@ -33,7 +33,7 @@ export async function createCharacter(formData: FormData) {
   const currentLocation = formData.get('currentLocation') as string
   const homeOrigin = formData.get('homeOrigin') as string
   const status = formData.get('status') as string
-  const imageUrl = await resolveImageUrlFromForm(formData)
+  const imageUrl = await resolveCharacterImageUrlFromForm(formData)
   const referenceLinks = getReferenceLinksFromForm(formData)
   const tags = parseTagsFromForm(formData)
 
@@ -119,7 +119,7 @@ export async function updateCharacter(id: number, formData: FormData) {
   const homeOrigin = formData.get('homeOrigin') as string
   const status = formData.get('status') as string
   const existingCharacter = await prisma.character.findUnique({ where: { id }, select: { imageUrl: true } })
-  const imageUrl = await resolveImageUrlFromForm(formData, existingCharacter?.imageUrl)
+  const imageUrl = await resolveCharacterImageUrlFromForm(formData, existingCharacter?.imageUrl)
   const referenceLinks = getReferenceLinksFromForm(formData)
   const tags = parseTagsFromForm(formData)
 

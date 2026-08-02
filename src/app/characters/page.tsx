@@ -1,9 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import { Prisma } from '@/generated/prisma'
+import { getLocalCharacterThumbnailUrl, getPreferredCharacterImageUrl } from '@/lib/characterImage'
 import { prisma } from '@/lib/prisma'
-import { convertGoogleDriveImageUrl } from '@/lib/imageUrl'
 import Link from 'next/link'
+import { access } from 'node:fs/promises'
+import path from 'node:path'
 import { Suspense } from 'react'
 import { deleteCharacter } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
@@ -28,13 +30,16 @@ function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: st
   return <span style={{ color: '#a78bfa', marginLeft: '3px' }}>{sortOrder === 'asc' ? '↑' : '↓'}</span>
 }
 
-function getCharacterThumbnailUrl(imageUrl: string): string {
-  if (!imageUrl.startsWith('/uploads/characters/')) return convertGoogleDriveImageUrl(imageUrl)
-  const queryIndex = imageUrl.indexOf('?')
-  const pathOnly = queryIndex === -1 ? imageUrl : imageUrl.slice(0, queryIndex)
-  const lastDotIndex = pathOnly.lastIndexOf('.')
-  if (lastDotIndex === -1) return pathOnly
-  return `${pathOnly.slice(0, lastDotIndex)}-thumb.webp`
+async function hasLocalThumbnail(imageUrl: string): Promise<boolean> {
+  const thumbnailUrl = getLocalCharacterThumbnailUrl(imageUrl)
+  if (!thumbnailUrl) return false
+
+  try {
+    await access(path.join(process.cwd(), 'public', thumbnailUrl.replace(/^\/+/, '')))
+    return true
+  } catch {
+    return false
+  }
 }
 
 export default async function CharactersPage({
@@ -87,6 +92,14 @@ export default async function CharactersPage({
     }),
     prisma.tag.findMany({ orderBy: { name: 'asc' }, select: { name: true } }),
   ])
+  const charactersWithDisplayImages = await Promise.all(
+    characters.map(async (character) => ({
+      ...character,
+      displayImageUrl: character.imageUrl
+        ? getPreferredCharacterImageUrl(character.imageUrl, await hasLocalThumbnail(character.imageUrl))
+        : null,
+    })),
+  )
 
   const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
@@ -187,7 +200,7 @@ export default async function CharactersPage({
               </tr>
             </thead>
             <tbody>
-              {characters.map((character) => (
+              {charactersWithDisplayImages.map((character) => (
                 <tr key={character.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
                   <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '14px' }}>
                     <div>{character.name}</div>
@@ -205,11 +218,11 @@ export default async function CharactersPage({
                     {character.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={getCharacterThumbnailUrl(character.imageUrl)}
+                        src={character.displayImageUrl ?? character.imageUrl}
                         alt={`${character.name} thumbnail`}
                         loading="lazy"
-                        className="h-12 w-12 rounded object-cover"
-                        style={{ border: '1px solid #1f2937' }}
+                        className="h-12 w-12 rounded object-contain"
+                        style={{ border: '1px solid #1f2937', backgroundColor: '#07070d' }}
                       />
                     ) : (
                       <span style={{ color: '#374151' }}>—</span>
@@ -251,7 +264,7 @@ export default async function CharactersPage({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {characters.map((character) => (
+          {charactersWithDisplayImages.map((character) => (
             <div key={character.id} className="card-arcane rounded-lg p-5" style={{ fontFamily: 'Georgia, serif' }}>
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -279,14 +292,15 @@ export default async function CharactersPage({
               </div>
               {character.imageUrl && (
                 <div className="mb-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={getCharacterThumbnailUrl(character.imageUrl)}
-                    alt={`${character.name} thumbnail`}
-                    loading="lazy"
-                    className="h-32 w-full rounded object-cover"
-                    style={{ border: '1px solid #1f2937' }}
-                  />
+                  <div className="aspect-[4/3] w-full overflow-hidden rounded" style={{ border: '1px solid #1f2937', backgroundColor: '#07070d' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={character.displayImageUrl ?? character.imageUrl}
+                      alt={`${character.name} thumbnail`}
+                      loading="lazy"
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
                 </div>
               )}
               {character.description && (
