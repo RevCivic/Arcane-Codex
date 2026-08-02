@@ -298,7 +298,8 @@ export async function localizeCharacterImages() {
         data: { imageUrl },
       })
       converted++
-    } catch {
+    } catch (err) {
+      console.error(`[localizeCharacterImages] Failed to download character ${character.id} (${currentImage}):`, err)
       failed++
     }
   }
@@ -346,7 +347,8 @@ export async function generateCharacterThumbnails() {
       } else {
         generated++
       }
-    } catch {
+    } catch (err) {
+      console.error(`[generateCharacterThumbnails] Failed to generate thumbnail for (${currentImage}):`, err)
       failed++
     }
   }
