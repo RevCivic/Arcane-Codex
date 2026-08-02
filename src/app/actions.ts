@@ -20,6 +20,7 @@ import { getGoogleSheetsClient } from '@/lib/googleSheets'
 import { randomUUID } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import sharp from 'sharp'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -204,6 +205,82 @@ const IMAGE_MIME_TO_EXTENSION: Record<string, string> = {
   'image/avif': '.avif',
 }
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
+const MAX_IMAGE_DOWNLOAD_BYTES = 10 * 1024 * 1024
+const LOCAL_IMAGE_PREFIX = '/uploads/'
+
+function isLocalHostedImageUrl(value: string | null | undefined): boolean {
+  if (!value) return false
+  return value.startsWith(LOCAL_IMAGE_PREFIX)
+}
+
+function isRemoteHttpImageUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function getImageExtensionFromPathname(pathname: string): string | null {
+  const extension = path.extname(pathname).toLowerCase()
+  const allowed = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'])
+  if (!allowed.has(extension)) return null
+  return extension === '.jpeg' ? '.jpg' : extension
+}
+
+function getImageExtension(contentType: string | null, sourceUrl: string): string | null {
+  const mimeType = contentType?.split(';')[0].trim().toLowerCase() ?? ''
+  const mimeExtension = IMAGE_MIME_TO_EXTENSION[mimeType]
+  if (mimeExtension) return mimeExtension
+
+  try {
+    const parsed = new URL(sourceUrl)
+    return getImageExtensionFromPathname(parsed.pathname)
+  } catch {
+    return null
+  }
+}
+
+async function downloadCharacterImageToLocal(url: string): Promise<{ imageUrl: string; thumbnailUrl: string }> {
+  const response = await fetch(url, { cache: 'no-store', redirect: 'follow' })
+  if (!response.ok) throw new Error(`Failed to download (${response.status})`)
+
+  const contentLength = response.headers.get('content-length')
+  if (contentLength) {
+    const length = Number.parseInt(contentLength, 10)
+    if (Number.isFinite(length) && length > MAX_IMAGE_DOWNLOAD_BYTES) {
+      throw new Error('File is larger than 10 MB')
+    }
+  }
+
+  const extension = getImageExtension(response.headers.get('content-type'), url)
+  if (!extension) throw new Error('Unsupported image type')
+
+  const bytes = Buffer.from(await response.arrayBuffer())
+  if (bytes.byteLength > MAX_IMAGE_DOWNLOAD_BYTES) {
+    throw new Error('File is larger than 10 MB')
+  }
+
+  const baseName = randomUUID()
+  const imageFileName = `${baseName}${extension}`
+  const thumbnailFileName = `${baseName}-thumb.webp`
+  const imagesDir = path.join(process.cwd(), 'public', 'uploads', 'characters')
+  const imagePath = path.join(imagesDir, imageFileName)
+  const thumbnailPath = path.join(imagesDir, thumbnailFileName)
+
+  await mkdir(imagesDir, { recursive: true })
+  await writeFile(imagePath, bytes)
+  await sharp(bytes)
+    .resize(240, 240, { fit: 'cover', position: 'center' })
+    .webp({ quality: 80 })
+    .toFile(thumbnailPath)
+
+  return {
+    imageUrl: `/uploads/characters/${imageFileName}`,
+    thumbnailUrl: `/uploads/characters/${thumbnailFileName}`,
+  }
+}
 
 function getReferenceLinksFromForm(formData: FormData) {
   const raw = (formData.get('referenceLinks') as string | null)?.trim() || ''
@@ -3005,6 +3082,52 @@ export async function pruneUnusedTags() {
   revalidatePath('/admin/tags')
   revalidatePath('/characters')
   redirect(`/admin/tags?pruned=${deleted.count}`)
+}
+
+export async function localizeCharacterImages() {
+  await requireAdminUser()
+
+  const characters = await prisma.character.findMany({
+    where: { imageUrl: { not: null } },
+    select: { id: true, imageUrl: true },
+    orderBy: { id: 'asc' },
+  })
+
+  let scanned = 0
+  let converted = 0
+  let failed = 0
+  let skipped = 0
+
+  for (const character of characters) {
+    const currentImage = character.imageUrl?.trim() || ''
+    if (!currentImage) continue
+
+    scanned++
+
+    if (isLocalHostedImageUrl(currentImage)) {
+      skipped++
+      continue
+    }
+    if (!isRemoteHttpImageUrl(currentImage)) {
+      skipped++
+      continue
+    }
+
+    try {
+      const { imageUrl } = await downloadCharacterImageToLocal(convertGoogleDriveImageUrl(currentImage))
+      await prisma.character.update({
+        where: { id: character.id },
+        data: { imageUrl },
+      })
+      converted++
+    } catch {
+      failed++
+    }
+  }
+
+  revalidatePath('/characters')
+  revalidatePath('/admin/images')
+  redirect(`/admin/images?scanned=${scanned}&converted=${converted}&skipped=${skipped}&failed=${failed}`)
 }
 
 // ─── Access Control ───────────────────────────────────────────────────────────

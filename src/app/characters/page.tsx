@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { Prisma } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
+import { convertGoogleDriveImageUrl } from '@/lib/imageUrl'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { deleteCharacter } from '@/app/actions'
@@ -25,6 +26,15 @@ function sortLink(view: string, currentSortBy: string, currentSortOrder: string,
 function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: string; column: string }) {
   if (sortBy !== column) return <span style={{ color: '#374151', marginLeft: '3px' }}>↕</span>
   return <span style={{ color: '#a78bfa', marginLeft: '3px' }}>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+}
+
+function getCharacterThumbnailUrl(imageUrl: string): string {
+  if (!imageUrl.startsWith('/uploads/characters/')) return convertGoogleDriveImageUrl(imageUrl)
+  const queryIndex = imageUrl.indexOf('?')
+  const pathOnly = queryIndex === -1 ? imageUrl : imageUrl.slice(0, queryIndex)
+  const lastDotIndex = pathOnly.lastIndexOf('.')
+  if (lastDotIndex === -1) return pathOnly
+  return `${pathOnly.slice(0, lastDotIndex)}-thumb.webp`
 }
 
 export default async function CharactersPage({
@@ -142,6 +152,11 @@ export default async function CharactersPage({
                   </Link>
                 </th>
                 <th style={thStyle}>
+                  <span style={{ color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Photo
+                  </span>
+                </th>
+                <th style={thStyle}>
                   <Link href={sortLink(view, sortBy, sortOrder, 'role', search, tags)} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Role<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="role" />
                   </Link>
@@ -184,6 +199,20 @@ export default async function CharactersPage({
                           </span>
                         ))}
                       </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>
+                    {character.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={getCharacterThumbnailUrl(character.imageUrl)}
+                        alt={`${character.name} thumbnail`}
+                        loading="lazy"
+                        className="h-12 w-12 rounded object-cover"
+                        style={{ border: '1px solid #1f2937' }}
+                      />
+                    ) : (
+                      <span style={{ color: '#374151' }}>—</span>
                     )}
                   </td>
                   <td style={{ padding: '10px 12px', fontSize: '12px' }}>
@@ -248,6 +277,18 @@ export default async function CharactersPage({
                   {character.status ?? 'Unknown'}
                 </span>
               </div>
+              {character.imageUrl && (
+                <div className="mb-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={getCharacterThumbnailUrl(character.imageUrl)}
+                    alt={`${character.name} thumbnail`}
+                    loading="lazy"
+                    className="h-32 w-full rounded object-cover"
+                    style={{ border: '1px solid #1f2937' }}
+                  />
+                </div>
+              )}
               {character.description && (
                 <p className="text-sm mb-3 line-clamp-2" style={{ color: '#9ca3af' }}>
                   {character.description}
