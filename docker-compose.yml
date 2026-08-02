@@ -88,8 +88,11 @@ services:
       - AI_MODEL_GPU=${AI_MODEL_GPU:-mistral:7b-instruct}
       - AI_MAX_TOKENS=${AI_MAX_TOKENS:-700}
       - AI_TEMPERATURE=${AI_TEMPERATURE:-0.4}
+    volumes:
+      - uploads_data:/app/public/uploads
     restart: unless-stopped
 
 volumes:
   postgres_data:
   ai_data:
+  uploads_data:
