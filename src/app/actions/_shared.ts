@@ -161,6 +161,8 @@ export function normalizeImageUrl(value: string | null | undefined): string | nu
 
 export const IMAGE_MIME_TO_EXTENSION: Record<string, string> = {
   'image/jpeg': '.jpg',
+  // Non-standard alias occasionally returned by Google Drive and some CDNs.
+  'image/jpg': '.jpg',
   'image/png': '.png',
   'image/webp': '.webp',
   'image/gif': '.gif',
@@ -239,8 +241,27 @@ export function getImageExtension(contentType: string | null, sourceUrl: string)
 }
 
 export async function downloadCharacterImageToLocal(url: string): Promise<{ imageUrl: string; thumbnailUrl: string }> {
-  const response = await fetch(url, { cache: 'no-store', redirect: 'follow' })
+  const response = await fetch(url, {
+    cache: 'no-store',
+    redirect: 'follow',
+    headers: {
+      // A browser-like User-Agent is required; Google Drive blocks server-side
+      // requests that omit this header or send a bot-like UA.
+      'User-Agent':
+        'Mozilla/5.0 (compatible; ArcaneCodex/1.0; +https://github.com/RevCivic/Arcane-Codex)',
+      // Hint to the server that we only want image data, not an HTML page.
+      Accept: 'image/webp,image/jpeg,image/png,image/*,*/*;q=0.8',
+    },
+  })
   if (!response.ok) throw new Error(`Failed to download (${response.status})`)
+
+  const contentType = response.headers.get('content-type') ?? ''
+
+  // Guard against Google returning an HTML login/confirmation page (HTTP 200
+  // with text/html) instead of the actual image.
+  if (contentType.toLowerCase().startsWith('text/')) {
+    throw new Error(`Expected an image but received content-type "${contentType}" — the file may not be publicly accessible`)
+  }
 
   const contentLength = response.headers.get('content-length')
   if (contentLength) {
@@ -250,8 +271,8 @@ export async function downloadCharacterImageToLocal(url: string): Promise<{ imag
     }
   }
 
-  const extension = getImageExtension(response.headers.get('content-type'), url)
-  if (!extension) throw new Error('Unsupported image type')
+  const extension = getImageExtension(contentType, url)
+  if (!extension) throw new Error(`Unsupported image type (content-type: "${contentType}")`)
 
   const bytes = Buffer.from(await response.arrayBuffer())
   if (bytes.byteLength > MAX_IMAGE_DOWNLOAD_BYTES) {
