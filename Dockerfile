@@ -57,6 +57,11 @@ COPY --from=builder /app/src/generated ./src/generated
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh && chown nextjs:nodejs docker-entrypoint.sh
 
+# Ensure the uploads directory exists and is writable by the non-root user.
+# Character images and thumbnails are stored here at runtime.
+RUN mkdir -p public/uploads/characters && \
+    chown -R nextjs:nodejs public/uploads
+
 USER nextjs
 
 # The internal container port (always 3000; host mapping is handled by Compose)
