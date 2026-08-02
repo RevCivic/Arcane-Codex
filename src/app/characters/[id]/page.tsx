@@ -236,6 +236,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
             <div className="sm:col-span-2">
               <dt className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>Image</dt>
               <dd>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={convertGoogleDriveImageUrl(character.imageUrl)}
                   alt={character.name}

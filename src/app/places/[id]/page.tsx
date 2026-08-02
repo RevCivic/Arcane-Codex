@@ -40,6 +40,7 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
             <div className="sm:col-span-2">
               <dt className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>Image</dt>
               <dd>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={convertGoogleDriveImageUrl(place.imageUrl)}
                   alt={place.name}
