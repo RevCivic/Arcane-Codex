@@ -1,5 +1,4 @@
 declare module 'sharp' {
-  type SharpModule = typeof import('sharp')
-  const sharp: SharpModule
+  const sharp: typeof import('sharp')['default']
   export default sharp
 }
