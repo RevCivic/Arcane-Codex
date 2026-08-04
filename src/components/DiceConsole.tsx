@@ -307,7 +307,6 @@ export function DiceConsole({
   const tempIdRef = useRef(-1)
 
   // Roll animation key — increments on each new roll to ensure a single reveal animation
-  const rollAnimKeyRef   = useRef(0)
   const scrambleTimer    = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scrambleInterval = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -357,7 +356,6 @@ export function DiceConsole({
     rawRoll: number,
     effectiveTarget: number | null
   ) {
-    rollAnimKeyRef.current++
     startScramble(entry.resultType as ResultType | null)
     const tempId = tempIdRef.current--
     setHistory((prev) => [{ ...entry, id: tempId, createdAt: new Date().toISOString() }, ...prev].slice(0, 20))
@@ -814,7 +812,7 @@ export function DiceConsole({
 
               {/* Current result */}
               {latest ? (
-                <div key={latest.rollHistoryId ?? `${latest.label}-${latest.roll}-${latest.createdAt ?? ''}`} className="dice-result-reveal">
+                <div key={latest.id} className="dice-result-reveal">
                   <div
                     className={`rounded-lg p-5 text-center${!isScrambling && latestRT ? ` result-pulse-${latestRT}` : ''}`}
                     style={
