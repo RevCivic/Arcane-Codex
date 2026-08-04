@@ -91,10 +91,12 @@ function useStoredOrder(
 // ── Custom hook: detects touch-primary devices ────────────────────────────────
 
 function useIsTouchDevice(): boolean {
-  const [isTouch, setIsTouch] = useState(false)
+  const getMatches = () =>
+    typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse)').matches : false
+
+  const [isTouch, setIsTouch] = useState(getMatches)
   useEffect(() => {
     const mq = window.matchMedia('(pointer: coarse)')
-    setIsTouch(mq.matches)
     const handler = (e: MediaQueryListEvent) => setIsTouch(e.matches)
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)

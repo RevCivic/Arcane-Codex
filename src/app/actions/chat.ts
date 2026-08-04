@@ -1,9 +1,8 @@
 'use server'
 
-import { AccessRole } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAuthorizedUser } from './_shared'
+import { requireAdminUser } from './_shared'
 
 export type ChatSessionRow = {
   id: number
@@ -23,7 +22,7 @@ export type ChatMessageRow = {
 }
 
 export async function getChatSessions(characterId?: number): Promise<ChatSessionRow[]> {
-  const user = await requireAuthorizedUser()
+  const user = await requireAdminUser()
 
   const sessions = await prisma.chatSession.findMany({
     where: {
@@ -56,7 +55,7 @@ export async function getChatSessions(characterId?: number): Promise<ChatSession
 export async function getChatSessionWithMessages(
   sessionId: number,
 ): Promise<{ session: ChatSessionRow; messages: ChatMessageRow[] } | null> {
-  const user = await requireAuthorizedUser()
+  await requireAdminUser()
 
   const session = await prisma.chatSession.findUnique({
     where: { id: sessionId },
@@ -68,7 +67,6 @@ export async function getChatSessionWithMessages(
   })
 
   if (!session) return null
-  if (session.createdByEmail !== user.email && user.role !== AccessRole.ADMIN) return null
 
   return {
     session: {
@@ -90,12 +88,9 @@ export async function getChatSessionWithMessages(
 }
 
 export async function renameChatSession(sessionId: number, title: string) {
-  const user = await requireAuthorizedUser()
+  await requireAdminUser()
   const session = await prisma.chatSession.findUnique({ where: { id: sessionId } })
   if (!session) throw new Error('Session not found')
-  if (session.createdByEmail !== user.email && user.role !== AccessRole.ADMIN) {
-    throw new Error('Access denied')
-  }
 
   await prisma.chatSession.update({
     where: { id: sessionId },
@@ -106,12 +101,9 @@ export async function renameChatSession(sessionId: number, title: string) {
 }
 
 export async function deleteChatSession(sessionId: number) {
-  const user = await requireAuthorizedUser()
+  await requireAdminUser()
   const session = await prisma.chatSession.findUnique({ where: { id: sessionId } })
   if (!session) throw new Error('Session not found')
-  if (session.createdByEmail !== user.email && user.role !== AccessRole.ADMIN) {
-    throw new Error('Access denied')
-  }
 
   await prisma.chatSession.delete({ where: { id: sessionId } })
   revalidatePath('/chat')
