@@ -1,4 +1,59 @@
 services:
+  # ── Ollama (CPU default) ────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  # ── Ollama (GPU profile) ─────────────────────────────────────────────────
+  ollama-gpu:
+    image: ollama/ollama:latest
+    profiles: ["gpu"]
+    environment:
+      - OLLAMA_FLASH_ATTENTION=1
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  # ── Pull the model once on first start ─────────────────────────────────────
+  # This service exits immediately after pulling; subsequent starts are no-ops
+  # because the model is already in the ollama_models volume.
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b-instruct-q4_K_M}
+    entrypoint: ["/bin/sh", "-c", "ollama pull $OLLAMA_MODEL"]
+    restart: "no"
+
   db:
     image: postgres:16-alpine
     environment:
@@ -18,6 +73,9 @@ services:
     build:
       context: ./ai-service
       dockerfile: Dockerfile
+    depends_on:
+      ollama:
+        condition: service_healthy
     environment:
       - AI_MODE=cpu
       - AI_PROVIDER=${AI_PROVIDER:-local}
@@ -28,6 +86,9 @@ services:
       - AI_RETRAIN_TOKEN=${AI_RETRAIN_TOKEN}
       - AI_TRAINING_DATA_PATH=/data/feedback.jsonl
       - AI_MODEL_REGISTRY_PATH=/data/models.json
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b-instruct-q4_K_M}
+      - OLLAMA_NUM_GPU_LAYERS=${OLLAMA_NUM_GPU_LAYERS:-0}
     volumes:
       - ai_data:/data
     restart: unless-stopped
@@ -37,6 +98,9 @@ services:
       context: ./ai-service
       dockerfile: Dockerfile
     profiles: ["gpu"]
+    depends_on:
+      ollama-gpu:
+        condition: service_healthy
     environment:
       - AI_MODE=gpu
       - AI_PROVIDER=${AI_PROVIDER:-local}
@@ -46,6 +110,9 @@ services:
       - AI_TEMPERATURE=${AI_TEMPERATURE:-0.4}
       - AI_TRAINING_DATA_PATH=/data/feedback.jsonl
       - AI_MODEL_REGISTRY_PATH=/data/models.json
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama-gpu:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b-instruct-q4_K_M}
+      - OLLAMA_NUM_GPU_LAYERS=${OLLAMA_NUM_GPU_LAYERS:--1}
     volumes:
       - ai_data:/data
     deploy:
@@ -96,3 +163,4 @@ volumes:
   postgres_data:
   ai_data:
   uploads_data:
+  ollama_models:

@@ -18,7 +18,8 @@
 | Styling | Tailwind CSS v4 |
 | ORM | Prisma 7 (PostgreSQL) |
 | Auth | Auth.js / next-auth v5 — Google OAuth, email allowlist |
-| AI service | Python (Flask) microservice (`ai-service/`) |
+| AI service | Python (FastAPI) microservice (`ai-service/`) backed by Ollama |
+| LLM runtime | Ollama (`ollama/ollama`) — self-hosted, CPU or GPU |
 | Runtime | Node 20+ / Docker Compose |
 
 ---
@@ -117,13 +118,24 @@ npm run dev                   # Start Next.js dev server on :3000
 
 ```bash
 cp .env.example .env
-docker compose up -d          # Starts app + db + ai (CPU) containers
+docker compose up -d          # Starts app + db + ai + ollama containers
 ```
 
-For GPU-accelerated AI:
+> **First run:** The `ollama-init` container will automatically pull the configured
+> model (default: `llama3.1:8b-instruct-q4_K_M`, ~5 GB download). The `ai` service
+> starts after the model is ready. Subsequent starts are fast — the model is cached in
+> the `ollama_models` Docker volume.
+>
+> **To switch models** (e.g. to the 70B version for higher quality): set
+> `OLLAMA_MODEL=llama3.1:70b-instruct-q4_K_M` in your `.env`, then run
+> `docker compose run --rm ollama-init` to pull the new model, and
+> `docker compose restart ai` to pick it up.
+
+For GPU-accelerated AI (requires NVIDIA drivers + nvidia-container-toolkit):
 ```bash
-docker compose --profile gpu up -d ai-gpu app db
-# Set AI_MODE=gpu and AI_SERVICE_URL=http://ai-gpu:8000 in .env
+docker compose --profile gpu up -d ollama-gpu ollama-init ai-gpu app db
+# Set AI_MODE=gpu, AI_SERVICE_URL=http://ai-gpu:8000,
+# OLLAMA_BASE_URL=http://ollama-gpu:11434, and OLLAMA_NUM_GPU_LAYERS=-1 in .env
 ```
 
 ---
@@ -151,20 +163,26 @@ See `.env.example` for the full list. Key variables:
 | `AUTH_SECRET` | Auth.js JWT secret (must be stable across restarts) |
 | `AUTH_URL` | Public origin of the app (e.g. `http://localhost:3000`) — **must match Google's authorized redirect URI** |
 | `AUTH_TRUST_HOST` | Set `true` behind Docker / reverse proxies |
-| `AI_SERVICE_URL` | URL of the Flask AI microservice (default `http://ai:8000`) |
+| `AI_SERVICE_URL` | URL of the FastAPI AI microservice (default `http://ai:8000`) |
 | `AI_MODE` | `cpu` or `gpu` |
-| `AI_RETRAIN_TOKEN` | ****** for the `/api/admin/ai/retrain` endpoint |
+| `OLLAMA_BASE_URL` | URL of the Ollama service (default `http://ollama:11434`) |
+| `OLLAMA_MODEL` | Ollama model tag to use (default `llama3.1:8b-instruct-q4_K_M`) |
+| `OLLAMA_NUM_GPU_LAYERS` | GPU layer offload count: `-1` = auto, `0` = CPU-only |
+| `AI_RETRAIN_TOKEN` | Secret for the `/api/admin/ai/retrain` endpoint |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Google Service Account JSON for Sheets write-back (optional) |
 
 ---
 
 ## AI Service (`ai-service/app.py`)
 
-A Python Flask microservice that handles all AI generation. It is **not** used for image generation.
+A Python FastAPI microservice that handles all AI generation, backed by a local **Ollama** instance. It is **not** used for image generation.
 
-- **Character text generation** — backstory, personality, description
-- **BRP stat/skill suggestions** — full CharacterSheet suggestions
-- **Bulk text generation** — batch NPC creation
+- **Chat** — multi-turn conversation assistant grounded in active lore documents, campaign context, and optional per-character context. Uses Ollama (`/v1/chat`) with a full system prompt.
+- **Character text generation** — backstory, personality, description (uses Ollama JSON mode, falls back to pattern engine if Ollama is unavailable)
+- **BRP stat/skill suggestions** — full CharacterSheet suggestions (uses Ollama JSON mode, falls back to deterministic template engine)
+- **Bulk text generation** — batch NPC creation (pattern engine; Ollama integration can be added later)
+
+When `OLLAMA_BASE_URL` is set, all endpoints call Ollama first and fall back to the built-in pattern-matching engine only on error. This means the service remains functional even if Ollama is temporarily unavailable or the model is still being pulled.
 
 Prompts are assembled from:
 1. Active `LoreDocument` summaries (world-building context)
