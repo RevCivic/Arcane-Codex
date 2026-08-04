@@ -1,4 +1,5 @@
 import { auth } from '@/auth'
+import { AccessRole } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { NextResponse } from 'next/server'
@@ -15,6 +16,11 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
+  if (!allowed || allowed.role !== AccessRole.ADMIN) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { id: idStr } = await params
   const id = parseInt(idStr, 10)
   if (isNaN(id)) {
@@ -28,7 +34,7 @@ export async function GET(
     },
   })
 
-  if (!chatSession || chatSession.createdByEmail !== email) {
+  if (!chatSession) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 

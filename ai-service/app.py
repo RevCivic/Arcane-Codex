@@ -8,6 +8,7 @@ import random
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from textwrap import dedent
 from typing import Any, Literal
 
 import httpx
@@ -30,9 +31,10 @@ TRAINING_DATA_PATH = Path(os.getenv("AI_TRAINING_DATA_PATH", "/data/feedback.jso
 # Ollama connection settings
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b-instruct-q4_K_M")
-OLLAMA_NUM_GPU_LAYERS = int(os.getenv("OLLAMA_NUM_GPU_LAYERS", "0"))
+OLLAMA_NUM_GPU_LAYERS = int(os.getenv("OLLAMA_NUM_GPU_LAYERS", "0" if AI_MODE == "cpu" else "-1"))
 # Generous timeout — speed is not a priority on this deployment
 OLLAMA_TIMEOUT_SECONDS = 180
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 ENTITY_TYPES = (
     "player_investigator",
@@ -1281,6 +1283,7 @@ def _build_chat_system_prompt(context: ChatContextInput) -> str:
 
     # Character context (when chatting from a character page)
     char = context.character
+    campaign_context = None
     if char:
         char_lines: list[str] = []
         if name := clean(str(char.get("name", ""))):
@@ -1304,6 +1307,96 @@ def _build_chat_system_prompt(context: ChatContextInput) -> str:
                 "The conversation is focused on the following character:\n"
                 + "\n".join(char_lines)
             )
+        maybe_campaign_context = char.get("campaignContext")
+        if isinstance(maybe_campaign_context, dict):
+            campaign_context = maybe_campaign_context
+
+    if campaign_context:
+        context_lines: list[str] = []
+
+        characters = campaign_context.get("characters")
+        if isinstance(characters, list) and characters:
+            formatted: list[str] = []
+            for item in characters[:12]:
+                if not isinstance(item, dict):
+                    continue
+                name = clean(item.get("name"))
+                if not name:
+                    continue
+                extras = [
+                    clean(item.get("role")),
+                    clean(item.get("affiliation")),
+                    clean(item.get("currentLocation")),
+                    clean(item.get("currentCase")),
+                    clean(item.get("status")),
+                ]
+                formatted.append(f"- {name}" + (f" ({'; '.join(value for value in extras if value)})" if any(extras) else ""))
+            if formatted:
+                context_lines.append("Recent characters:\n" + "\n".join(formatted))
+
+        events = campaign_context.get("events")
+        if isinstance(events, list) and events:
+            formatted = []
+            for item in events[:10]:
+                if not isinstance(item, dict):
+                    continue
+                name = clean(item.get("name"))
+                if not name:
+                    continue
+                extras = [clean(item.get("date")), clean(item.get("significance")), clean(item.get("outcome"))]
+                formatted.append(f"- {name}" + (f" ({'; '.join(value for value in extras if value)})" if any(extras) else ""))
+            if formatted:
+                context_lines.append("Recent events:\n" + "\n".join(formatted))
+
+        places = campaign_context.get("places")
+        if isinstance(places, list) and places:
+            formatted = []
+            for item in places[:10]:
+                if not isinstance(item, dict):
+                    continue
+                name = clean(item.get("name"))
+                if not name:
+                    continue
+                extras = [clean(item.get("type")), clean(item.get("region")), clean(item.get("notes"))[:120]]
+                formatted.append(f"- {name}" + (f" ({'; '.join(value for value in extras if value)})" if any(extras) else ""))
+            if formatted:
+                context_lines.append("Recent places:\n" + "\n".join(formatted))
+
+        inventory_items = campaign_context.get("inventoryItems")
+        if isinstance(inventory_items, list) and inventory_items:
+            formatted = []
+            for item in inventory_items[:10]:
+                if not isinstance(item, dict):
+                    continue
+                name = clean(item.get("name"))
+                if not name:
+                    continue
+                extras = [
+                    clean(item.get("category")),
+                    clean(item.get("location")),
+                    clean(item.get("carrierName")),
+                    clean(item.get("effect"))[:120],
+                ]
+                formatted.append(f"- {name}" + (f" ({'; '.join(value for value in extras if value)})" if any(extras) else ""))
+            if formatted:
+                context_lines.append("Recent inventory:\n" + "\n".join(formatted))
+
+        if context_lines:
+            parts.append(
+                "The application also provided recent database-backed campaign context. "
+                "Use it as reference material, but do not invent facts beyond it:\n\n"
+                + "\n\n".join(context_lines)
+            )
+
+    parts.append(
+        dedent(
+            """
+            This chat is admin-only because campaign data may contain private or spoiler-sensitive information.
+            You may reference the supplied campaign context, but do not claim direct database access or hidden tools.
+            If asked for facts not present in the provided lore or campaign context, say that the current context does not confirm them.
+            """
+        ).strip()
+    )
 
     return "\n\n".join(parts)
 

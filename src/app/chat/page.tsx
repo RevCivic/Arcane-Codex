@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { auth } from '@/auth'
+import { AccessRole } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { redirect } from 'next/navigation'
@@ -14,6 +15,7 @@ export default async function ChatPage() {
 
   const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
   if (!allowed) redirect('/login')
+  if (allowed.role !== AccessRole.ADMIN) redirect('/')
 
   const sessions = await getChatSessions()
 
@@ -36,7 +38,7 @@ export default async function ChatPage() {
           🔮 Arcanist Chat
         </h1>
         <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
-          Talk through your characters, lore, and campaign ideas with your AI assistant
+          Admin-only AI chat grounded in campaign lore and database context
         </p>
       </div>
 

@@ -1,9 +1,9 @@
 import { auth } from '@/auth'
+import { AccessRole, ChatMessageRole } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { chatWithAI } from '@/lib/aiClient'
 import { NextResponse } from 'next/server'
-import { ChatMessageRole } from '@/generated/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   }
 
   const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
-  if (!allowed) {
+  if (!allowed || allowed.role !== AccessRole.ADMIN) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
   if (sessionId) {
     const existing = await prisma.chatSession.findUnique({ where: { id: sessionId } })
-    if (!existing || existing.createdByEmail !== email) {
+    if (!existing) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     }
     characterId = existing.characterId
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   }))
 
   // Build context
-  const [primaryPromptConfig, loreDocs, character] = await Promise.all([
+  const [primaryPromptConfig, loreDocs, character, recentCharacters, recentEvents, recentPlaces, recentInventory] = await Promise.all([
     prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } }),
     prisma.loreDocument.findMany({
       where: { isActive: true },
@@ -100,6 +100,53 @@ export async function POST(request: Request) {
           },
         })
       : Promise.resolve(null),
+    prisma.character.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: 12,
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        affiliation: true,
+        currentLocation: true,
+        currentCase: true,
+        status: true,
+      },
+    }),
+    prisma.event.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        date: true,
+        significance: true,
+        outcome: true,
+      },
+    }),
+    prisma.place.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        region: true,
+        notes: true,
+      },
+    }),
+    prisma.inventoryItem.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        location: true,
+        effect: true,
+        carrier: { select: { name: true } },
+      },
+    }),
   ])
 
   let aiResponse: string
@@ -114,7 +161,30 @@ export async function POST(request: Request) {
           summary: d.summary ?? '',
           content: d.content,
         })),
-        character: character ? (character as Record<string, unknown>) : undefined,
+        character: character
+          ? ({
+              ...character,
+              campaignContext: {
+                characters: recentCharacters,
+                events: recentEvents,
+                places: recentPlaces,
+                inventoryItems: recentInventory.map((item) => ({
+                  ...item,
+                  carrierName: item.carrier?.name ?? null,
+                })),
+              },
+            } as Record<string, unknown>)
+          : ({
+              campaignContext: {
+                characters: recentCharacters,
+                events: recentEvents,
+                places: recentPlaces,
+                inventoryItems: recentInventory.map((item) => ({
+                  ...item,
+                  carrierName: item.carrier?.name ?? null,
+                })),
+              },
+            } as Record<string, unknown>),
       },
     })
     aiResponse = result.response || 'I was unable to generate a response. Please try again.'

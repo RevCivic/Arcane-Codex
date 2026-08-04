@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic'
 
 import { auth } from '@/auth'
+import { AccessRole } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
-import { AccessRole } from '@/generated/prisma'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getChatSessions } from '@/app/actions'
@@ -16,6 +16,7 @@ export default async function CharacterChatPage({ params }: { params: Promise<{ 
 
   const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
   if (!allowed) redirect('/login')
+  if (allowed.role !== AccessRole.ADMIN) redirect('/')
 
   const { id: idStr } = await params
   const characterId = parseInt(idStr, 10)
@@ -26,11 +27,6 @@ export default async function CharacterChatPage({ params }: { params: Promise<{ 
     select: { id: true, name: true, claimedByEmail: true },
   })
   if (!character) notFound()
-
-  // Only the claimed user or admins can access
-  if (allowed.role !== AccessRole.ADMIN && character.claimedByEmail !== email) {
-    redirect('/')
-  }
 
   const sessions = await getChatSessions(characterId)
   const sessionItems = sessions.map((s) => ({
@@ -62,7 +58,7 @@ export default async function CharacterChatPage({ params }: { params: Promise<{ 
           🔮 Chat — {character.name}
         </h1>
         <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
-          Discuss and develop {character.name}&apos;s story with your AI assistant
+          Admin-only character chat with lore and campaign context
         </p>
       </div>
 

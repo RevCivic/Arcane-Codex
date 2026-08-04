@@ -221,6 +221,15 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, pendingImportCoun
                       <span>🖼️</span>
                       <span className="whitespace-normal break-words">Admin Images</span>
                     </Link>
+                    <Link
+                      href="/chat"
+                      onClick={() => setMobileOpen(false)}
+                      className={mobileNavItemClass}
+                      style={navItemStyle}
+                    >
+                      <span>🔮</span>
+                      <span className="whitespace-normal break-words">Admin Chat</span>
+                    </Link>
                   </>
                 )}
 
