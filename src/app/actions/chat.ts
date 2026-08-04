@@ -55,7 +55,7 @@ export async function getChatSessions(characterId?: number): Promise<ChatSession
 export async function getChatSessionWithMessages(
   sessionId: number,
 ): Promise<{ session: ChatSessionRow; messages: ChatMessageRow[] } | null> {
-  const user = await requireAuthorizedUser()
+  await requireAdminUser()
 
   const session = await prisma.chatSession.findUnique({
     where: { id: sessionId },
