@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import random
 import re
@@ -9,17 +10,29 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
+import httpx
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="Arcane Codex AI Service", version="0.2.0")
+app = FastAPI(title="Arcane Codex AI Service", version="0.3.0")
+
+logger = logging.getLogger(__name__)
 
 AI_MODE = os.getenv("AI_MODE", "cpu").lower()
 AI_MODEL_CPU = os.getenv("AI_MODEL_CPU", "codellama:7b-instruct-q4")
 AI_MODEL_GPU = os.getenv("AI_MODEL_GPU", "mistral:7b-instruct")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "local")
+AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "700"))
+AI_TEMPERATURE = float(os.getenv("AI_TEMPERATURE", "0.4"))
 REGISTRY_PATH = Path(os.getenv("AI_MODEL_REGISTRY_PATH", "/data/models.json"))
 TRAINING_DATA_PATH = Path(os.getenv("AI_TRAINING_DATA_PATH", "/data/feedback.jsonl"))
+
+# Ollama connection settings
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "").rstrip("/")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b-instruct-q4_K_M")
+OLLAMA_NUM_GPU_LAYERS = int(os.getenv("OLLAMA_NUM_GPU_LAYERS", "0"))
+# Generous timeout — speed is not a priority on this deployment
+OLLAMA_TIMEOUT_SECONDS = 180
 
 ENTITY_TYPES = (
     "player_investigator",
@@ -379,6 +392,61 @@ def save_registry(registry: dict[str, Any]) -> None:
     ensure_parent(REGISTRY_PATH)
     with REGISTRY_PATH.open("w", encoding="utf-8") as f:
         json.dump(registry, f)
+
+
+# ── Ollama client ─────────────────────────────────────────────────────────────
+
+def _call_ollama(
+    messages: list[dict[str, str]],
+    *,
+    response_format: str | None = None,
+) -> str:
+    """
+    Send a chat-completion request to the local Ollama instance.
+
+    Args:
+        messages: List of {"role": ..., "content": ...} dicts.
+        response_format: Pass "json" to request structured JSON output.
+
+    Returns:
+        The assistant's response text.
+
+    Raises:
+        RuntimeError: If Ollama is unreachable, returns a non-2xx status, or
+                      the response cannot be parsed.
+    """
+    if not OLLAMA_BASE_URL:
+        raise RuntimeError("OLLAMA_BASE_URL is not configured")
+
+    payload: dict[str, Any] = {
+        "model": OLLAMA_MODEL,
+        "messages": messages,
+        "stream": False,
+        "options": {
+            "num_predict": AI_MAX_TOKENS,
+            "temperature": AI_TEMPERATURE,
+            "num_gpu": OLLAMA_NUM_GPU_LAYERS,
+        },
+    }
+    if response_format == "json":
+        payload["format"] = "json"
+
+    try:
+        with httpx.Client(timeout=OLLAMA_TIMEOUT_SECONDS) as client:
+            response = client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
+            response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise RuntimeError(
+            f"Ollama returned HTTP {exc.response.status_code}"
+        ) from exc
+    except httpx.RequestError as exc:
+        raise RuntimeError(f"Ollama request failed: {exc}") from exc
+
+    data = response.json()
+    content = data.get("message", {}).get("content", "")
+    if not content:
+        raise RuntimeError("Ollama returned an empty response")
+    return content
 
 
 def clean(value: Any) -> str:
@@ -842,36 +910,260 @@ def health() -> dict[str, str]:
         "status": "ok",
         "provider": AI_PROVIDER,
         "mode": AI_MODE,
-        "model": str(registry.get("active_model", active_model_name())),
+        "model": OLLAMA_MODEL if OLLAMA_BASE_URL else str(registry.get("active_model", active_model_name())),
         "version": str(registry.get("active_version", "bootstrap-v1")),
+        "ollama": "configured" if OLLAMA_BASE_URL else "disabled",
     }
+
+
+# ── Ollama-backed character generation helpers ────────────────────────────────
+
+_CHARACTER_TEXT_SCHEMA = """{
+  "description": "<rich paragraph describing this character>",
+  "affiliation": "<organisation or group>",
+  "currentCase": "<the active case or mission>",
+  "currentLocation": "<current city or place>",
+  "homeOrigin": "<birthplace or origin region>",
+  "role": "<job title or role>",
+  "entityType": "<one of: Player Investigator, Ally Npc, Hostile Npc, Neutral Contact, Creature Entity, Deity Cosmic Power, Other>",
+  "narrativeRole": "<narrative function in the campaign>",
+  "motivations": "<what drives this character>",
+  "demeanor": "<how they present themselves>",
+  "mechanicalFocus": "<BRP mechanical emphasis, e.g. Knowledge, Combat, Social>"
+}"""
+
+_CHARACTER_STATS_SCHEMA = """{
+  "stats": {
+    "str": <1-30>, "con": <1-30>, "siz": <1-30>, "dex": <1-30>,
+    "intelligence": <1-30>, "pow": <1-30>, "cha": <1-30>, "app": <1-30>, "edu": <1-30>,
+    "maxHp": <1-99>, "currentHp": <1-99>,
+    "maxSanity": <1-99>, "currentSanity": <1-99>,
+    "maxMp": <1-99>, "currentMp": <1-99>,
+    "luck": <1-99>, "build": <-2 to 4>
+  },
+  "skills": [
+    {"skillId": <id>, "value": <0-100>}
+  ]
+}"""
+
+
+def _ollama_generate_character_text(payload: CharacterTextInput) -> dict[str, Any] | None:
+    """
+    Ask Ollama to generate character text fields.
+    Returns a dict matching the CharacterTextSuggestion shape, or None on failure.
+    """
+    name = extract_name(payload.name, payload.firstName, payload.lastName, "Unnamed Figure")
+
+    lines = [
+        f"You are a creative writer for the 'Arcane P.I.' tabletop RPG campaign.",
+        f"Generate vivid, setting-appropriate text fields for the following character.",
+        f"The setting is a noir-gothic modern world where the supernatural is real and hidden.",
+        f"Return ONLY a valid JSON object matching this schema:\n{_CHARACTER_TEXT_SCHEMA}",
+        "",
+        f"Character name: {name}",
+    ]
+    if payload.race:
+        lines.append(f"Race: {payload.race}")
+    if payload.gender:
+        lines.append(f"Gender: {payload.gender}")
+    if payload.role:
+        lines.append(f"Role hint: {payload.role}")
+    if payload.affiliation:
+        lines.append(f"Affiliation hint: {payload.affiliation}")
+    if payload.currentCase:
+        lines.append(f"Current case hint: {payload.currentCase}")
+    if payload.currentLocation:
+        lines.append(f"Location hint: {payload.currentLocation}")
+    if payload.homeOrigin:
+        lines.append(f"Home origin hint: {payload.homeOrigin}")
+    if payload.baseDescription:
+        lines.append(f"Base description: {payload.baseDescription}")
+    ctx = payload.promptContext
+    if ctx.entityType:
+        lines.append(f"Entity type: {ctx.entityType}")
+    if ctx.tone:
+        lines.append(f"Tone: {ctx.tone}")
+    if ctx.playerRelationship:
+        lines.append(f"Player relationship: {ctx.playerRelationship}")
+    if ctx.threatLevel:
+        lines.append(f"Threat level: {ctx.threatLevel}")
+    if ctx.mechanicalFocus:
+        lines.append(f"Mechanical focus: {ctx.mechanicalFocus}")
+    if payload.additionalPrompt:
+        lines.append(f"Additional instructions: {payload.additionalPrompt}")
+
+    prompt = "\n".join(lines)
+    messages = [{"role": "user", "content": prompt}]
+
+    try:
+        raw = _call_ollama(messages, response_format="json")
+        data = json.loads(raw)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Ollama character-text generation failed: %s", exc)
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    def _str(key: str) -> str:
+        return clean(data.get(key, ""))
+
+    return {
+        "description": _str("description"),
+        "affiliation": _str("affiliation"),
+        "currentCase": _str("currentCase"),
+        "currentLocation": _str("currentLocation"),
+        "homeOrigin": _str("homeOrigin"),
+        "role": _str("role"),
+        "entityType": _str("entityType"),
+        "narrativeRole": _str("narrativeRole"),
+        "motivations": _str("motivations"),
+        "demeanor": _str("demeanor"),
+        "mechanicalFocus": _str("mechanicalFocus"),
+    }
+
+
+def _ollama_generate_stats_skills(
+    payload: CharacterStatsInput,
+) -> dict[str, Any] | None:
+    """
+    Ask Ollama to generate BRP stats and skill values.
+    Returns a dict with 'stats' and 'skills' keys, or None on failure.
+    """
+    name = extract_name(payload.name, "", "", "Unnamed Figure")
+    skill_list = "\n".join(
+        f'  {{"skillId": {s.id}, "name": "{s.name}", "category": "{s.category}", "baseValue": {s.baseValue}}}'
+        for s in payload.skills
+    )
+
+    lines = [
+        "You are a BRP (Basic Roleplaying) game assistant for the 'Arcane P.I.' campaign.",
+        "Generate appropriate BRP stats and skill values for the following character.",
+        "Stats are on a 1–30 scale. Skills are percentile (0–100).",
+        "maxHp = round((CON + SIZ) / 2). maxSanity = POW * 5 (max 99). maxMp = POW.",
+        "build = floor((STR + SIZ - 24) / 8), clamped to -2..4.",
+        "Reflect the character's role, race, and description in your stat choices.",
+        f"Return ONLY a valid JSON object matching this schema:\n{_CHARACTER_STATS_SCHEMA}",
+        f"Only include skillId values from the provided skill list.",
+        "",
+        f"Character name: {name}",
+    ]
+    if payload.role:
+        lines.append(f"Role: {payload.role}")
+    if payload.race:
+        lines.append(f"Race: {payload.race}")
+    if payload.description:
+        lines.append(f"Description: {payload.description[:300]}")
+    ctx = payload.promptContext
+    if ctx.entityType:
+        lines.append(f"Entity type: {ctx.entityType}")
+    if ctx.mechanicalFocus:
+        lines.append(f"Mechanical focus: {ctx.mechanicalFocus}")
+    if ctx.threatLevel:
+        lines.append(f"Threat level: {ctx.threatLevel}")
+    if payload.additionalPrompt:
+        lines.append(f"Additional instructions: {payload.additionalPrompt}")
+    if skill_list:
+        lines.append(f"\nAvailable skills (assign values to as many as are relevant):\n[\n{skill_list}\n]")
+
+    prompt = "\n".join(lines)
+    messages = [{"role": "user", "content": prompt}]
+
+    try:
+        raw = _call_ollama(messages, response_format="json")
+        data = json.loads(raw)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Ollama stats-skills generation failed: %s", exc)
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    # Validate and sanitize using clamp helpers
+    try:
+        stats_raw = data.get("stats", {})
+        skills_raw = data.get("skills", [])
+        valid_ids = {s.id for s in payload.skills}
+
+        def _clamp_stat(v: Any, lo: int = 1, hi: int = 30) -> int:
+            try:
+                return max(lo, min(hi, int(v)))
+            except (TypeError, ValueError):
+                return lo
+
+        stats = {
+            "str": _clamp_stat(stats_raw.get("str", 10)),
+            "con": _clamp_stat(stats_raw.get("con", 10)),
+            "siz": _clamp_stat(stats_raw.get("siz", 10)),
+            "dex": _clamp_stat(stats_raw.get("dex", 10)),
+            "intelligence": _clamp_stat(stats_raw.get("intelligence", 10)),
+            "pow": _clamp_stat(stats_raw.get("pow", 10)),
+            "cha": _clamp_stat(stats_raw.get("cha", 10)),
+            "app": _clamp_stat(stats_raw.get("app", 10)),
+            "edu": _clamp_stat(stats_raw.get("edu", 10)),
+            "maxHp": _clamp_stat(stats_raw.get("maxHp", 10), 1, 99),
+            "currentHp": _clamp_stat(stats_raw.get("currentHp", 10), 1, 99),
+            "maxSanity": _clamp_stat(stats_raw.get("maxSanity", 50), 1, 99),
+            "currentSanity": _clamp_stat(stats_raw.get("currentSanity", 50), 1, 99),
+            "maxMp": _clamp_stat(stats_raw.get("maxMp", 10), 1, 99),
+            "currentMp": _clamp_stat(stats_raw.get("currentMp", 10), 1, 99),
+            "luck": _clamp_stat(stats_raw.get("luck", 50), 1, 99),
+            "build": _clamp_stat(stats_raw.get("build", 0), -2, 4),
+        }
+
+        skills = []
+        for item in (skills_raw if isinstance(skills_raw, list) else []):
+            try:
+                sid = int(item.get("skillId", -1))
+                val = max(0, min(100, int(item.get("value", 0))))
+                if sid in valid_ids:
+                    skills.append({"skillId": sid, "value": val})
+            except (TypeError, ValueError):
+                continue
+
+        return {"stats": stats, "skills": skills}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Ollama stats response validation failed: %s", exc)
+        return None
 
 
 @app.post("/v1/generate/character-text")
 def generate_character_text(payload: CharacterTextInput) -> dict[str, Any]:
     registry = load_registry()
-    model = str(registry.get("active_model", active_model_name()))
+    model = OLLAMA_MODEL if OLLAMA_BASE_URL else str(registry.get("active_model", active_model_name()))
     version = str(registry.get("active_version", "bootstrap-v1"))
+
+    suggestion: dict[str, Any] | None = None
+    if OLLAMA_BASE_URL:
+        suggestion = _ollama_generate_character_text(payload)
+    if suggestion is None:
+        suggestion = build_character_text_suggestion(payload)
 
     return {
         "modelName": model,
         "modelVersion": version,
         "mode": AI_MODE,
-        "suggestion": build_character_text_suggestion(payload),
+        "suggestion": suggestion,
     }
 
 
 @app.post("/v1/generate/character-stats-skills")
 def generate_character_stats(payload: CharacterStatsInput) -> dict[str, Any]:
     registry = load_registry()
-    model = str(registry.get("active_model", active_model_name()))
+    model = OLLAMA_MODEL if OLLAMA_BASE_URL else str(registry.get("active_model", active_model_name()))
     version = str(registry.get("active_version", "bootstrap-v1"))
+
+    suggestion: dict[str, Any] | None = None
+    if OLLAMA_BASE_URL:
+        suggestion = _ollama_generate_stats_skills(payload)
+    if suggestion is None:
+        suggestion = build_stats_suggestion(payload)
 
     return {
         "modelName": model,
         "modelVersion": version,
         "mode": AI_MODE,
-        "suggestion": build_stats_suggestion(payload),
+        "suggestion": suggestion,
     }
 
 
@@ -951,9 +1243,74 @@ class ChatRequest(BaseModel):
     context: ChatContextInput = Field(default_factory=ChatContextInput)
 
 
-def _build_chat_response(request: ChatRequest) -> str:
+def _build_chat_system_prompt(context: ChatContextInput) -> str:
+    """Assemble the system prompt from primary prompt, lore documents, and character context."""
+    parts: list[str] = []
+
+    # Campaign framing — always included
+    parts.append(
+        "You are the Arcanist, an AI assistant for the 'Arcane P.I.' tabletop RPG campaign. "
+        "The setting is a modern world where the supernatural is real but hidden. "
+        "Players are investigators working for (or alongside) the Bureau of Supernatural Investigation. "
+        "You help the Dungeon Master and players with character development, campaign plotting, "
+        "world-building, BRP mechanics, and creative storytelling. "
+        "Keep responses focused, atmospheric, and grounded in the established lore. "
+        "Do not break character or reference yourself as an AI."
+    )
+
+    # Admin-configured primary prompt (may override or supplement the above)
+    primary = clean(context.primaryPrompt)
+    if primary:
+        parts.append(primary)
+
+    # Active lore documents
+    lore_sections: list[str] = []
+    for doc in context.loreDocuments:
+        doc_type = doc.type.replace("_", " ").title() if doc.type else "Lore"
+        title = clean(doc.title) or "Untitled"
+        # Prefer summary; fall back to first 500 chars of content
+        body = clean(doc.summary) or clean(doc.content)[:500]
+        if body:
+            lore_sections.append(f"## [{doc_type}] {title}\n{body}")
+    if lore_sections:
+        parts.append(
+            "The following lore documents are active for this campaign. "
+            "Use them to ground your responses in the established world:\n\n"
+            + "\n\n".join(lore_sections)
+        )
+
+    # Character context (when chatting from a character page)
+    char = context.character
+    if char:
+        char_lines: list[str] = []
+        if name := clean(str(char.get("name", ""))):
+            char_lines.append(f"Name: {name}")
+        if race := clean(str(char.get("race", ""))):
+            char_lines.append(f"Race: {race}")
+        if role := clean(str(char.get("role", ""))):
+            char_lines.append(f"Role: {role}")
+        if affiliation := clean(str(char.get("affiliation", ""))):
+            char_lines.append(f"Affiliation: {affiliation}")
+        if case := clean(str(char.get("currentCase", ""))):
+            char_lines.append(f"Current case: {case}")
+        if location := clean(str(char.get("currentLocation", ""))):
+            char_lines.append(f"Current location: {location}")
+        if status := clean(str(char.get("status", ""))):
+            char_lines.append(f"Status: {status}")
+        if desc := clean(str(char.get("description", ""))):
+            char_lines.append(f"Description: {desc[:300]}")
+        if char_lines:
+            parts.append(
+                "The conversation is focused on the following character:\n"
+                + "\n".join(char_lines)
+            )
+
+    return "\n\n".join(parts)
+
+
+def _build_chat_response_pattern(request: ChatRequest) -> str:
     """
-    Pattern-based conversational response grounded in lore and character context.
+    Pattern-based fallback response used when Ollama is unavailable.
     Generates a structured, helpful reply based on the most recent user message.
     """
     messages = request.messages
@@ -1174,10 +1531,36 @@ def _build_chat_response(request: ChatRequest) -> str:
     return " ".join(p for p in parts if p)
 
 
+def _build_chat_response(request: ChatRequest) -> str:
+    """
+    Generate a chat response.
+
+    Primary path: call Ollama with a structured system prompt that incorporates
+    lore documents, character context, and the full conversation history.
+
+    Fallback path: if OLLAMA_BASE_URL is not configured or the Ollama request
+    fails for any reason, use the pattern-based template engine so the service
+    remains functional even without a running LLM.
+    """
+    if OLLAMA_BASE_URL:
+        try:
+            system_prompt = _build_chat_system_prompt(request.context)
+            ollama_messages: list[dict[str, str]] = [
+                {"role": "system", "content": system_prompt}
+            ]
+            for m in request.messages:
+                ollama_messages.append({"role": m.role, "content": m.content})
+            return _call_ollama(ollama_messages)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Ollama chat failed, falling back to pattern engine: %s", exc)
+
+    return _build_chat_response_pattern(request)
+
+
 @app.post("/v1/chat")
 def chat(request: ChatRequest) -> dict[str, Any]:
     registry = load_registry()
-    model = str(registry.get("active_model", active_model_name()))
+    model = OLLAMA_MODEL if OLLAMA_BASE_URL else str(registry.get("active_model", active_model_name()))
     version = str(registry.get("active_version", "bootstrap-v1"))
 
     response_text = _build_chat_response(request)
