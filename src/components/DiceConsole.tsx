@@ -814,7 +814,7 @@ export function DiceConsole({
 
               {/* Current result */}
               {latest ? (
-                <div key={rollAnimKeyRef.current} className="dice-result-reveal">
+                <div key={latest.rollHistoryId ?? `${latest.label}-${latest.roll}-${latest.createdAt ?? ''}`} className="dice-result-reveal">
                   <div
                     className={`rounded-lg p-5 text-center${!isScrambling && latestRT ? ` result-pulse-${latestRT}` : ''}`}
                     style={
