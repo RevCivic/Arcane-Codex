@@ -6,6 +6,7 @@ import { chatWithAI } from '@/lib/aiClient'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 200
 
 export async function POST(request: Request) {
   const session = await auth()
