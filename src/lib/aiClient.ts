@@ -2,7 +2,7 @@ import type { AIPromptContext } from '@/lib/aiPromptContext'
 
 const AI_SERVICE_URL = (process.env.AI_SERVICE_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 const AI_MODE = process.env.AI_MODE === 'gpu' ? 'gpu' : 'cpu'
-const REQUEST_TIMEOUT_MS = 15_000
+const REQUEST_TIMEOUT_MS = 200_000
 
 export type CharacterTextSuggestion = {
   description: string
