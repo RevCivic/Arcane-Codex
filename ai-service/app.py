@@ -32,8 +32,12 @@ TRAINING_DATA_PATH = Path(os.getenv("AI_TRAINING_DATA_PATH", "/data/feedback.jso
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b-instruct-q4_K_M")
 OLLAMA_NUM_GPU_LAYERS = int(os.getenv("OLLAMA_NUM_GPU_LAYERS", "0" if AI_MODE == "cpu" else "-1"))
-# Generous timeout — speed is not a priority on this deployment
-OLLAMA_TIMEOUT_SECONDS = 180
+# Thread and parallelism controls
+OLLAMA_NUM_THREAD = int(os.getenv("OLLAMA_NUM_THREAD", "0"))
+OLLAMA_NUM_PARALLEL = int(os.getenv("OLLAMA_NUM_PARALLEL", "1"))
+# Configurable request timeout and context char budget
+OLLAMA_REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "180"))
+AI_CONTEXT_CHAR_LIMIT = int(os.getenv("AI_CONTEXT_CHAR_LIMIT", "2000"))
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 ENTITY_TYPES = (
@@ -293,6 +297,14 @@ class PromptContext(BaseModel):
     mechanicalFocus: str = ""
 
 
+class CampaignContextInput(BaseModel):
+    """Optional campaign database context to ground generation in existing lore."""
+    characters: list[dict[str, Any]] = Field(default_factory=list)
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    places: list[dict[str, Any]] = Field(default_factory=list)
+    inventoryItems: list[dict[str, Any]] = Field(default_factory=list)
+
+
 class CharacterTextInput(BaseModel):
     name: str = ""
     firstName: str = ""
@@ -308,6 +320,7 @@ class CharacterTextInput(BaseModel):
     additionalPrompt: str = ""
     systemPrompt: str = ""
     promptContext: PromptContext = Field(default_factory=PromptContext)
+    campaignContext: CampaignContextInput = Field(default_factory=CampaignContextInput)
 
 
 class SkillInput(BaseModel):
@@ -326,6 +339,7 @@ class CharacterStatsInput(BaseModel):
     systemPrompt: str = ""
     promptContext: PromptContext = Field(default_factory=PromptContext)
     skills: list[SkillInput] = Field(default_factory=list)
+    campaignContext: CampaignContextInput = Field(default_factory=CampaignContextInput)
 
 
 class CharacterBulkRowInput(BaseModel):
@@ -420,21 +434,25 @@ def _call_ollama(
     if not OLLAMA_BASE_URL:
         raise RuntimeError("OLLAMA_BASE_URL is not configured")
 
+    options: dict[str, Any] = {
+        "num_predict": AI_MAX_TOKENS,
+        "temperature": AI_TEMPERATURE,
+        "num_gpu": OLLAMA_NUM_GPU_LAYERS,
+    }
+    if OLLAMA_NUM_THREAD > 0:
+        options["num_thread"] = OLLAMA_NUM_THREAD
+
     payload: dict[str, Any] = {
         "model": OLLAMA_MODEL,
         "messages": messages,
         "stream": False,
-        "options": {
-            "num_predict": AI_MAX_TOKENS,
-            "temperature": AI_TEMPERATURE,
-            "num_gpu": OLLAMA_NUM_GPU_LAYERS,
-        },
+        "options": options,
     }
     if response_format == "json":
         payload["format"] = "json"
 
     try:
-        with httpx.Client(timeout=OLLAMA_TIMEOUT_SECONDS) as client:
+        with httpx.Client(timeout=OLLAMA_REQUEST_TIMEOUT) as client:
             response = client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
             response.raise_for_status()
     except httpx.HTTPStatusError as exc:
@@ -483,6 +501,64 @@ def build_ollama_messages(
             "content": "\n".join(line for line in user_lines if clean(line)),
         },
     ]
+
+
+def build_campaign_context_lines(ctx: CampaignContextInput) -> list[str]:
+    """
+    Convert an optional CampaignContextInput into prompt lines capped by
+    AI_CONTEXT_CHAR_LIMIT so existing campaign data grounds the generation
+    without blowing up the context window.
+    """
+    sections: list[str] = []
+
+    if ctx.characters:
+        char_lines = []
+        for item in ctx.characters[:10]:
+            name = clean(item.get("name", ""))
+            if not name:
+                continue
+            extras = [
+                clean(item.get("role", "")),
+                clean(item.get("affiliation", "")),
+                clean(item.get("status", "")),
+            ]
+            char_lines.append("- " + name + (f" ({'; '.join(v for v in extras if v)})" if any(extras) else ""))
+        if char_lines:
+            sections.append("Existing characters:\n" + "\n".join(char_lines))
+
+    if ctx.events:
+        event_lines = []
+        for item in ctx.events[:8]:
+            name = clean(item.get("name", ""))
+            if not name:
+                continue
+            extras = [clean(item.get("date", "")), clean(item.get("significance", ""))]
+            event_lines.append("- " + name + (f" ({'; '.join(v for v in extras if v)})" if any(extras) else ""))
+        if event_lines:
+            sections.append("Recent events:\n" + "\n".join(event_lines))
+
+    if ctx.places:
+        place_lines = []
+        for item in ctx.places[:8]:
+            name = clean(item.get("name", ""))
+            if not name:
+                continue
+            extras = [clean(item.get("type", "")), clean(item.get("region", ""))]
+            place_lines.append("- " + name + (f" ({'; '.join(v for v in extras if v)})" if any(extras) else ""))
+        if place_lines:
+            sections.append("Known places:\n" + "\n".join(place_lines))
+
+    if not sections:
+        return []
+
+    combined = "\n\n".join(sections)
+    # Enforce character budget to keep prompts predictable.
+    # Truncate at the last newline within the limit to avoid splitting mid-line.
+    if len(combined) > AI_CONTEXT_CHAR_LIMIT:
+        truncated = combined[:AI_CONTEXT_CHAR_LIMIT]
+        last_newline = truncated.rfind("\n")
+        combined = (truncated[:last_newline] if last_newline > 0 else truncated) + "…"
+    return [f"Campaign context (use to stay consistent with the established world):\n{combined}"]
 
 
 def normalized_key(value: str) -> str:
@@ -1008,6 +1084,7 @@ def _ollama_generate_character_text(payload: CharacterTextInput) -> dict[str, An
     append_if_value(lines, "Metaphysical nature", ctx.metaphysicalNature)
     append_if_value(lines, "Mechanical focus", ctx.mechanicalFocus)
     append_if_value(lines, "Additional instructions", payload.additionalPrompt)
+    lines.extend(build_campaign_context_lines(payload.campaignContext))
 
     messages = build_ollama_messages(
         base_system_prompt=(
@@ -1085,6 +1162,7 @@ def _ollama_generate_stats_skills(
     append_if_value(lines, "Additional instructions", payload.additionalPrompt)
     if skill_list:
         lines.append(f"\nAvailable skills (assign values to as many as are relevant):\n[\n{skill_list}\n]")
+    lines.extend(build_campaign_context_lines(payload.campaignContext))
 
     messages = build_ollama_messages(
         base_system_prompt=(
@@ -1293,11 +1371,13 @@ def _build_chat_system_prompt(context: ChatContextInput) -> str:
 
     # Active lore documents
     lore_sections: list[str] = []
+    num_docs = len(context.loreDocuments)
+    per_doc_limit = max(200, AI_CONTEXT_CHAR_LIMIT // max(1, num_docs))
     for doc in context.loreDocuments:
         doc_type = doc.type.replace("_", " ").title() if doc.type else "Lore"
         title = clean(doc.title) or "Untitled"
-        # Prefer summary; fall back to first 500 chars of content
-        body = clean(doc.summary) or clean(doc.content)[:500]
+        # Prefer summary; fall back to truncated content using the dynamic per-doc budget
+        body = clean(doc.summary) or clean(doc.content)[:per_doc_limit]
         if body:
             lore_sections.append(f"## [{doc_type}] {title}\n{body}")
     if lore_sections:
