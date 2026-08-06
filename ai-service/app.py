@@ -441,8 +441,6 @@ def _call_ollama(
     }
     if OLLAMA_NUM_THREAD > 0:
         options["num_thread"] = OLLAMA_NUM_THREAD
-    if OLLAMA_NUM_PARALLEL > 1:
-        options["num_parallel"] = OLLAMA_NUM_PARALLEL
 
     payload: dict[str, Any] = {
         "model": OLLAMA_MODEL,
@@ -554,9 +552,12 @@ def build_campaign_context_lines(ctx: CampaignContextInput) -> list[str]:
         return []
 
     combined = "\n\n".join(sections)
-    # Enforce character budget to keep prompts predictable
+    # Enforce character budget to keep prompts predictable.
+    # Truncate at the last newline within the limit to avoid splitting mid-line.
     if len(combined) > AI_CONTEXT_CHAR_LIMIT:
-        combined = combined[:AI_CONTEXT_CHAR_LIMIT] + "…"
+        truncated = combined[:AI_CONTEXT_CHAR_LIMIT]
+        last_newline = truncated.rfind("\n")
+        combined = (truncated[:last_newline] if last_newline > 0 else truncated) + "…"
     return [f"Campaign context (use to stay consistent with the established world):\n{combined}"]
 
 
