@@ -50,6 +50,7 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     environment:
+      - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b-instruct-q4_K_M}
     entrypoint: ["/bin/sh", "-c", "ollama pull $OLLAMA_MODEL"]
     restart: "no"

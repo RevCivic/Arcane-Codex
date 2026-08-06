@@ -23,6 +23,7 @@ It does **not** generate images.
 The current generator is prompt-driven: admins can define a global campaign prompt, and users can steer suggestions with structured intent such as ally, enemy, entity, deity, tone, threat, and mechanical focus.
 
 - Default CPU profile (smaller/quantized model): started automatically as `ai`.
+- On first start, `ollama-init` pulls the configured model by connecting to the `ollama` service over Docker networking.
 - Optional GPU profile (larger/faster model): start with:
 
 ```bash
