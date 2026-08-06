@@ -455,6 +455,36 @@ def clean(value: Any) -> str:
     return str(value or "").strip()
 
 
+def append_if_value(lines: list[str], label: str, value: Any) -> None:
+    cleaned = clean(value)
+    if cleaned:
+        lines.append(f"{label}: {cleaned}")
+
+
+def build_ollama_messages(
+    *,
+    base_system_prompt: str,
+    requested_schema: str,
+    user_lines: list[str],
+    system_prompt: str = "",
+) -> list[dict[str, str]]:
+    system_parts = [
+        clean(base_system_prompt),
+        clean(system_prompt),
+        f"Return ONLY a valid JSON object matching this schema:\n{requested_schema}",
+    ]
+    return [
+        {
+            "role": "system",
+            "content": "\n\n".join(part for part in system_parts if part),
+        },
+        {
+            "role": "user",
+            "content": "\n".join(line for line in user_lines if clean(line)),
+        },
+    ]
+
+
 def normalized_key(value: str) -> str:
     lowered = re.sub(r"[^a-z0-9]+", "_", clean(value).lower()).strip("_")
     return lowered
@@ -957,45 +987,38 @@ def _ollama_generate_character_text(payload: CharacterTextInput) -> dict[str, An
     name = extract_name(payload.name, payload.firstName, payload.lastName, "Unnamed Figure")
 
     lines = [
-        f"You are a creative writer for the 'Arcane P.I.' tabletop RPG campaign.",
-        f"Generate vivid, setting-appropriate text fields for the following character.",
-        f"The setting is a noir-gothic modern world where the supernatural is real and hidden.",
-        f"Return ONLY a valid JSON object matching this schema:\n{_CHARACTER_TEXT_SCHEMA}",
-        "",
+        "Generate vivid, setting-appropriate text fields for this character.",
         f"Character name: {name}",
     ]
-    if payload.race:
-        lines.append(f"Race: {payload.race}")
-    if payload.gender:
-        lines.append(f"Gender: {payload.gender}")
-    if payload.role:
-        lines.append(f"Role hint: {payload.role}")
-    if payload.affiliation:
-        lines.append(f"Affiliation hint: {payload.affiliation}")
-    if payload.currentCase:
-        lines.append(f"Current case hint: {payload.currentCase}")
-    if payload.currentLocation:
-        lines.append(f"Location hint: {payload.currentLocation}")
-    if payload.homeOrigin:
-        lines.append(f"Home origin hint: {payload.homeOrigin}")
-    if payload.baseDescription:
-        lines.append(f"Base description: {payload.baseDescription}")
+    append_if_value(lines, "Race", payload.race)
+    append_if_value(lines, "Gender", payload.gender)
+    append_if_value(lines, "Role hint", payload.role)
+    append_if_value(lines, "Affiliation hint", payload.affiliation)
+    append_if_value(lines, "Current case hint", payload.currentCase)
+    append_if_value(lines, "Location hint", payload.currentLocation)
+    append_if_value(lines, "Home origin hint", payload.homeOrigin)
+    append_if_value(lines, "Base description", payload.baseDescription)
     ctx = payload.promptContext
-    if ctx.entityType:
-        lines.append(f"Entity type: {ctx.entityType}")
-    if ctx.tone:
-        lines.append(f"Tone: {ctx.tone}")
-    if ctx.playerRelationship:
-        lines.append(f"Player relationship: {ctx.playerRelationship}")
-    if ctx.threatLevel:
-        lines.append(f"Threat level: {ctx.threatLevel}")
-    if ctx.mechanicalFocus:
-        lines.append(f"Mechanical focus: {ctx.mechanicalFocus}")
-    if payload.additionalPrompt:
-        lines.append(f"Additional instructions: {payload.additionalPrompt}")
+    append_if_value(lines, "Entity type", ctx.entityType)
+    append_if_value(lines, "Narrative role", ctx.narrativeRole)
+    append_if_value(lines, "Tone", ctx.tone)
+    append_if_value(lines, "Player relationship", ctx.playerRelationship)
+    append_if_value(lines, "Threat level", ctx.threatLevel)
+    append_if_value(lines, "Faction alignment", ctx.factionAlignment)
+    append_if_value(lines, "Metaphysical nature", ctx.metaphysicalNature)
+    append_if_value(lines, "Mechanical focus", ctx.mechanicalFocus)
+    append_if_value(lines, "Additional instructions", payload.additionalPrompt)
 
-    prompt = "\n".join(lines)
-    messages = [{"role": "user", "content": prompt}]
+    messages = build_ollama_messages(
+        base_system_prompt=(
+            "You are a creative writer for the 'Arcane P.I.' tabletop RPG campaign. "
+            "The setting is a noir-gothic modern world where the supernatural is real and hidden. "
+            "Ground the response in the supplied campaign lore and prompt guidance."
+        ),
+        requested_schema=_CHARACTER_TEXT_SCHEMA,
+        user_lines=lines,
+        system_prompt=payload.systemPrompt,
+    )
 
     try:
         raw = _call_ollama(messages, response_format="json")
@@ -1039,37 +1062,40 @@ def _ollama_generate_stats_skills(
     )
 
     lines = [
-        "You are a BRP (Basic Roleplaying) game assistant for the 'Arcane P.I.' campaign.",
-        "Generate appropriate BRP stats and skill values for the following character.",
+        "Generate appropriate BRP stats and skill values for this character.",
         "Stats are on a 1–30 scale. Skills are percentile (0–100).",
         "maxHp = round((CON + SIZ) / 2). maxSanity = POW * 5 (max 99). maxMp = POW.",
         "build = floor((STR + SIZ - 24) / 8), clamped to -2..4.",
         "Reflect the character's role, race, and description in your stat choices.",
-        f"Return ONLY a valid JSON object matching this schema:\n{_CHARACTER_STATS_SCHEMA}",
         f"Only include skillId values from the provided skill list.",
-        "",
         f"Character name: {name}",
     ]
-    if payload.role:
-        lines.append(f"Role: {payload.role}")
-    if payload.race:
-        lines.append(f"Race: {payload.race}")
-    if payload.description:
-        lines.append(f"Description: {payload.description[:300]}")
+    append_if_value(lines, "Role", payload.role)
+    append_if_value(lines, "Race", payload.race)
+    append_if_value(lines, "Description", payload.description[:300])
     ctx = payload.promptContext
-    if ctx.entityType:
-        lines.append(f"Entity type: {ctx.entityType}")
-    if ctx.mechanicalFocus:
-        lines.append(f"Mechanical focus: {ctx.mechanicalFocus}")
-    if ctx.threatLevel:
-        lines.append(f"Threat level: {ctx.threatLevel}")
-    if payload.additionalPrompt:
-        lines.append(f"Additional instructions: {payload.additionalPrompt}")
+    append_if_value(lines, "Entity type", ctx.entityType)
+    append_if_value(lines, "Narrative role", ctx.narrativeRole)
+    append_if_value(lines, "Tone", ctx.tone)
+    append_if_value(lines, "Player relationship", ctx.playerRelationship)
+    append_if_value(lines, "Threat level", ctx.threatLevel)
+    append_if_value(lines, "Faction alignment", ctx.factionAlignment)
+    append_if_value(lines, "Metaphysical nature", ctx.metaphysicalNature)
+    append_if_value(lines, "Mechanical focus", ctx.mechanicalFocus)
+    append_if_value(lines, "Additional instructions", payload.additionalPrompt)
     if skill_list:
         lines.append(f"\nAvailable skills (assign values to as many as are relevant):\n[\n{skill_list}\n]")
 
-    prompt = "\n".join(lines)
-    messages = [{"role": "user", "content": prompt}]
+    messages = build_ollama_messages(
+        base_system_prompt=(
+            "You are a BRP (Basic Roleplaying) game assistant for the 'Arcane P.I.' campaign. "
+            "Ground your stat choices in the supplied campaign lore and prompt guidance. "
+            "Keep the numbers internally consistent with the stated BRP formulas."
+        ),
+        requested_schema=_CHARACTER_STATS_SCHEMA,
+        user_lines=lines,
+        system_prompt=payload.systemPrompt,
+    )
 
     try:
         raw = _call_ollama(messages, response_format="json")
