@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "compose:check": "node scripts/check-compose-services.mjs",
     "db:migrate:sqlite-to-postgres": "tsx scripts/migrate-sqlite-to-postgres.ts",
     "ai:retrain": "tsx scripts/trigger-ai-retrain.ts"
   },
