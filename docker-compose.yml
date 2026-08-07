@@ -110,6 +110,23 @@ services:
         done
     restart: "no"
 
+  # GPU deployments need a separate initializer. Reusing ollama-init would
+  # start the CPU Ollama dependency and make both runtimes compete for port
+  # 11434 instead of pulling the model into ollama-gpu.
+  ollama-init-gpu:
+    image: ollama/ollama:latest
+    profiles: ["gpu"]
+    depends_on:
+      ollama-gpu:
+        condition: service_healthy
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama-gpu:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b-instruct-q4_K_M}
+    entrypoint: ["/bin/sh", "-c", "ollama pull $OLLAMA_MODEL"]
+    restart: "no"
+
   db:
     image: postgres:16-alpine
     environment:
