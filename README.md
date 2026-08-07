@@ -27,10 +27,66 @@ The current generator is prompt-driven: admins can define a global campaign prom
 - Optional GPU profile (larger/faster model): start with:
 
 ```bash
-docker compose --profile gpu up -d ai-gpu app db
+COMPOSE_PROFILES=gpu AI_MODE=gpu \
+AI_SERVICE_URL=http://ai-gpu:8000 \
+OLLAMA_BASE_URL=http://ollama-gpu:11434 \
+OLLAMA_NUM_GPU_LAYERS=-1 \
+  docker compose up -d
 ```
 
-When using GPU mode, set `AI_MODE=gpu` and `AI_SERVICE_URL=http://ai-gpu:8000`.
+Put those five settings in `.env` if they should persist across restarts.
+`COMPOSE_PROFILES=gpu` is required: `AI_MODE=gpu` configures the application but
+does not activate Docker Compose's `gpu` profile. The CPU and GPU stacks use
+mutually exclusive profiles so only the selected initializer, AI endpoint, and
+Ollama endpoint start. The AI service waits for its initializer to finish before
+starting.
+
+### Switching between CPU and GPU profiles
+
+Only one profile should run at a time. Changing `COMPOSE_PROFILES` does not stop
+containers that were created by the previously active profile. Before switching
+an existing installation, remove both profile sets and then recreate the stack:
+
+```bash
+docker compose --profile cpu --profile gpu down --remove-orphans
+docker compose up -d
+```
+
+In Portainer, stop/remove the existing stack before redeploying it with exactly
+one `COMPOSE_PROFILES` value (`cpu` or `gpu`). Seeing both `ollama` and
+`ollama-gpu`, or both `ai` and `ai-gpu`, means containers from both profiles are
+present and is not the intended steady state. They share the model volume and
+publish the same Ollama host port, so do not run both stacks concurrently.
+
+The selected `ollama-init` container is a one-shot job. **Exited (0)** after the
+model download is normal; **Exited (1)** means the pull failed. The initializer
+retries transient pull failures five times, but its logs should be inspected if
+it still exits unsuccessfully. The dependent AI container remains in Created
+state when initialization fails.
+
+If Portainer reports that a mapping key such as `ollama-init-gpu` is already
+defined, the stack editor contains a duplicated service block. Replace the
+editor contents with the complete current `docker-compose.yml` (do not append a
+patch to the existing YAML), or redeploy the stack directly from the Git
+repository. The repository file defines each initializer once. You can check a
+downloaded copy before deployment with:
+
+```bash
+npm run compose:check
+rg -n '^  ollama-init-gpu:' docker-compose.yml
+```
+
+The second command must return exactly one result. A parse error that cites a
+second `ollama-init-gpu` at a line occupied by another service in the repository
+means Portainer is deploying a different or locally edited Compose document.
+
+If the app reports `getaddrinfo ENOTFOUND ai-gpu`, verify that the service is
+running before debugging the Next.js request itself:
+
+```bash
+docker compose ps -a ai-gpu ollama-init-gpu ollama-gpu
+docker compose logs ai-gpu ollama-init-gpu ollama-gpu
+```
 
 ### Changing the host port
 

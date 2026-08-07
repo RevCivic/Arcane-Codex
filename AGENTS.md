@@ -133,9 +133,11 @@ docker compose up -d          # Starts app + db + ai + ollama containers
 
 For GPU-accelerated AI (requires NVIDIA drivers + nvidia-container-toolkit):
 ```bash
-docker compose --profile gpu up -d ollama-gpu ollama-init ai-gpu app db
-# Set AI_MODE=gpu, AI_SERVICE_URL=http://ai-gpu:8000,
+# Set COMPOSE_PROFILES=gpu, AI_MODE=gpu, AI_SERVICE_URL=http://ai-gpu:8000,
 # OLLAMA_BASE_URL=http://ollama-gpu:11434, and OLLAMA_NUM_GPU_LAYERS=-1 in .env
+# When switching an existing stack, first run:
+# docker compose --profile cpu --profile gpu down --remove-orphans
+docker compose up -d
 ```
 
 ---
@@ -147,6 +149,7 @@ docker compose --profile gpu up -d ollama-gpu ollama-init ai-gpu app db
 | `npm run dev` | Next.js development server |
 | `npm run build` | Production build (run `npx prisma generate` first) |
 | `npm run lint` | ESLint |
+| `npm run compose:check` | Check Compose service names for duplicate keys |
 | `npm run ai:retrain` | Trigger AI model retraining via the admin API |
 | `npm run db:migrate:sqlite-to-postgres` | One-time SQLite → PostgreSQL migration |
 
