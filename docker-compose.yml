@@ -2,6 +2,7 @@ services:
   # ── Ollama (CPU default) ────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
+    profiles: ["cpu"]
     environment:
       - OLLAMA_FLASH_ATTENTION=1
       - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-1}
@@ -54,6 +55,7 @@ services:
   # because the model is already in the ollama_models volume.
   ollama-init:
     image: ollama/ollama:latest
+    profiles: ["cpu"]
     depends_on:
       ollama:
         condition: service_healthy
@@ -61,6 +63,23 @@ services:
       - ollama_models:/root/.ollama
     environment:
       - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b-instruct-q4_K_M}
+    entrypoint: ["/bin/sh", "-c", "ollama pull $OLLAMA_MODEL"]
+    restart: "no"
+
+  # GPU deployments need a separate initializer. Reusing ollama-init would
+  # start the CPU Ollama dependency and make both runtimes compete for port
+  # 11434 instead of pulling the model into ollama-gpu.
+  ollama-init-gpu:
+    image: ollama/ollama:latest
+    profiles: ["gpu"]
+    depends_on:
+      ollama-gpu:
+        condition: service_healthy
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama-gpu:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b-instruct-q4_K_M}
     entrypoint: ["/bin/sh", "-c", "ollama pull $OLLAMA_MODEL"]
     restart: "no"
@@ -84,9 +103,10 @@ services:
     build:
       context: ./ai-service
       dockerfile: Dockerfile
+    profiles: ["cpu"]
     depends_on:
-      ollama:
-        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
     environment:
       - AI_MODE=cpu
       - AI_PROVIDER=${AI_PROVIDER:-local}
@@ -116,8 +136,8 @@ services:
       dockerfile: Dockerfile
     profiles: ["gpu"]
     depends_on:
-      ollama-gpu:
-        condition: service_healthy
+      ollama-init-gpu:
+        condition: service_completed_successfully
     environment:
       - AI_MODE=gpu
       - AI_PROVIDER=${AI_PROVIDER:-local}
@@ -127,6 +147,7 @@ services:
       - AI_TEMPERATURE=${AI_TEMPERATURE:-0.4}
       - AI_WORKERS=${AI_WORKERS:-2}
       - AI_CONTEXT_CHAR_LIMIT=${AI_CONTEXT_CHAR_LIMIT:-2000}
+      - AI_RETRAIN_TOKEN=${AI_RETRAIN_TOKEN}
       - AI_TRAINING_DATA_PATH=/data/feedback.jsonl
       - AI_MODEL_REGISTRY_PATH=/data/models.json
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-arcane_codex}?schema=public
@@ -138,13 +159,9 @@ services:
       - OLLAMA_REQUEST_TIMEOUT=${OLLAMA_REQUEST_TIMEOUT:-180}
     volumes:
       - ai_data:/data
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # This container only calls Ollama over HTTP; the GPU is reserved by
+    # ollama-gpu, so requiring the NVIDIA runtime here can prevent ai-gpu from
+    # starting and leave its Docker hostname unresolvable from the app.
     restart: unless-stopped
 
   app:
