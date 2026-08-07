@@ -149,6 +149,7 @@ docker compose up -d
 | `npm run dev` | Next.js development server |
 | `npm run build` | Production build (run `npx prisma generate` first) |
 | `npm run lint` | ESLint |
+| `npm run compose:check` | Check Compose service names for duplicate keys |
 | `npm run ai:retrain` | Trigger AI model retraining via the admin API |
 | `npm run db:migrate:sqlite-to-postgres` | One-time SQLite → PostgreSQL migration |
 

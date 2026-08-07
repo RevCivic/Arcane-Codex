@@ -64,6 +64,22 @@ retries transient pull failures five times, but its logs should be inspected if
 it still exits unsuccessfully. The dependent AI container remains in Created
 state when initialization fails.
 
+If Portainer reports that a mapping key such as `ollama-init-gpu` is already
+defined, the stack editor contains a duplicated service block. Replace the
+editor contents with the complete current `docker-compose.yml` (do not append a
+patch to the existing YAML), or redeploy the stack directly from the Git
+repository. The repository file defines each initializer once. You can check a
+downloaded copy before deployment with:
+
+```bash
+npm run compose:check
+rg -n '^  ollama-init-gpu:' docker-compose.yml
+```
+
+The second command must return exactly one result. A parse error that cites a
+second `ollama-init-gpu` at a line occupied by another service in the repository
+means Portainer is deploying a different or locally edited Compose document.
+
 If the app reports `getaddrinfo ENOTFOUND ai-gpu`, verify that the service is
 running before debugging the Next.js request itself:
 
