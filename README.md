@@ -27,25 +27,26 @@ The current generator is prompt-driven: admins can define a global campaign prom
 - Optional GPU profile (larger/faster model): start with:
 
 ```bash
-AI_MODE=gpu \
+COMPOSE_PROFILES=gpu AI_MODE=gpu \
 AI_SERVICE_URL=http://ai-gpu:8000 \
 OLLAMA_BASE_URL=http://ollama-gpu:11434 \
 OLLAMA_NUM_GPU_LAYERS=-1 \
-  docker compose --profile gpu up -d ollama-init-gpu ai-gpu app db
+  docker compose up -d
 ```
 
-The command starts the GPU-specific model initializer and routes the app to the
-`ai-gpu` service. Put those four settings in `.env` instead if they should
-persist across restarts. Do not start `ollama-init` in GPU mode: that initializer
-depends on the CPU `ollama` service, and both Ollama services publish host port
-`11434`.
+Put those five settings in `.env` if they should persist across restarts.
+`COMPOSE_PROFILES=gpu` is required: `AI_MODE=gpu` configures the application but
+does not activate Docker Compose's `gpu` profile. The CPU and GPU stacks use
+mutually exclusive profiles so only the selected initializer, AI endpoint, and
+Ollama endpoint start. The AI service waits for its initializer to finish before
+starting.
 
 If the app reports `getaddrinfo ENOTFOUND ai-gpu`, verify that the service is
 running before debugging the Next.js request itself:
 
 ```bash
-docker compose --profile gpu ps ai-gpu ollama-gpu
-docker compose --profile gpu logs ai-gpu ollama-gpu
+docker compose ps -a ai-gpu ollama-init-gpu ollama-gpu
+docker compose logs ai-gpu ollama-init-gpu ollama-gpu
 ```
 
 ### Changing the host port
