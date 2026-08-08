@@ -35,6 +35,11 @@ OLLAMA_NUM_GPU_LAYERS = int(os.getenv("OLLAMA_NUM_GPU_LAYERS", "0" if AI_MODE ==
 # Thread and parallelism controls
 OLLAMA_NUM_THREAD = int(os.getenv("OLLAMA_NUM_THREAD", "0"))
 OLLAMA_NUM_PARALLEL = int(os.getenv("OLLAMA_NUM_PARALLEL", "1"))
+OLLAMA_NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "8192"))
+# Thinking models can spend the entire prediction budget on hidden reasoning and
+# consequently return an empty message. Chat and JSON generation need an answer,
+# so thinking is opt-in for this service.
+OLLAMA_THINK = os.getenv("OLLAMA_THINK", "false").strip().lower() in {"1", "true", "yes", "on"}
 # Configurable request timeout and context char budget
 OLLAMA_REQUEST_TIMEOUT = int(os.getenv("OLLAMA_REQUEST_TIMEOUT", "180"))
 AI_CONTEXT_CHAR_LIMIT = int(os.getenv("AI_CONTEXT_CHAR_LIMIT", "2000"))
@@ -438,6 +443,7 @@ def _call_ollama(
         "num_predict": AI_MAX_TOKENS,
         "temperature": AI_TEMPERATURE,
         "num_gpu": OLLAMA_NUM_GPU_LAYERS,
+        "num_ctx": OLLAMA_NUM_CTX,
     }
     if OLLAMA_NUM_THREAD > 0:
         options["num_thread"] = OLLAMA_NUM_THREAD
@@ -446,6 +452,11 @@ def _call_ollama(
         "model": OLLAMA_MODEL,
         "messages": messages,
         "stream": False,
+        # Qwen 3/3.5 and other reasoning models put reasoning in a separate
+        # `thinking` field. With a modest num_predict budget they can reach the
+        # token limit before producing message.content. Disable that mode unless
+        # the operator has explicitly opted in.
+        "think": OLLAMA_THINK,
         "options": options,
     }
     if response_format == "json":
@@ -463,9 +474,21 @@ def _call_ollama(
         raise RuntimeError(f"Ollama request failed: {exc}") from exc
 
     data = response.json()
-    content = data.get("message", {}).get("content", "")
+    message = data.get("message") or {}
+    content = message.get("content", "")
     if not content:
-        raise RuntimeError("Ollama returned an empty response")
+        diagnostics = ", ".join(
+            f"{key}={data[key]!r}"
+            for key in ("done", "done_reason", "prompt_eval_count", "eval_count")
+            if key in data
+        )
+        thinking_tokens_present = bool(message.get("thinking"))
+        detail = diagnostics or "no completion diagnostics"
+        raise RuntimeError(
+            "Ollama returned empty message.content "
+            f"({detail}, thinking_present={thinking_tokens_present}). "
+            "For reasoning models, keep OLLAMA_THINK=false or increase AI_MAX_TOKENS."
+        )
     return content
 
 
