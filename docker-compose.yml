@@ -1,6 +1,6 @@
 services:
-#db first for infrastructure
-db:
+  # db first for infrastructure
+  db:
     image: postgres:16-alpine
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-arcane_codex}
@@ -14,8 +14,9 @@ db:
       timeout: 5s
       retries: 10
     restart: unless-stopped
-#app depends on db
-app:
+
+  # app depends only on db so the main app can start before AI is ready
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -23,9 +24,6 @@ app:
       db:
         condition: service_healthy
     ports:
-      # HOST_PORT controls which port on the host machine maps to the app.
-      # Set HOST_PORT in a .env file or export it before running `docker compose up`.
-      # Defaults to 3000 if not set.
       - "${HOST_PORT:-3000}:3000"
     environment:
       - NODE_ENV=production
@@ -42,14 +40,15 @@ app:
       - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ai:8000}
       - AI_MODE=${AI_MODE:-cpu}
       - AI_PROVIDER=${AI_PROVIDER:-local}
-      - AI_MODEL_CPU=${AI_MODEL_CPU:-codellama:7b-instruct-q4}
-      - AI_MODEL_GPU=${AI_MODEL_GPU:-mistral:7b-instruct}
+      - AI_MODEL_CPU=${AI_MODEL_CPU:-qwen3.5:35b}
+      - AI_MODEL_GPU=${AI_MODEL_GPU:-qwen2.5:7b-instruct-q4_K_M}
       - AI_MAX_TOKENS=${AI_MAX_TOKENS:-700}
       - AI_TEMPERATURE=${AI_TEMPERATURE:-0.4}
     volumes:
       - uploads_data:/app/public/uploads
     restart: unless-stopped
-  # ── Ollama (CPU default) ────────────────────────────────────────────────────
+
+  # Ollama runtime
   ollama:
     image: ollama/ollama:latest
     environment:
@@ -71,9 +70,7 @@ app:
       retries: 12
       start_period: 30s
 
-  # ── Pull the model once on first start ─────────────────────────────────────
-  # This service exits immediately after pulling; subsequent starts are no-ops
-  # because the model is already in the ollama_models volume.
+  # Pull the configured model into the shared Ollama model volume
   ollama-init:
     image: ollama/ollama:latest
     depends_on:
@@ -87,14 +84,15 @@ app:
     entrypoint: ["/bin/sh", "-c", "ollama pull \"$OLLAMA_MODEL\""]
     restart: "no"
 
+  # AI service depends on db + Ollama, but app does not depend on AI
   ai:
     build:
       context: ./ai-service
       dockerfile: Dockerfile
     depends_on:
-      ollama:
-        condition: service_healthy
       db:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     environment:
       - AI_MODE=${AI_MODE:-cpu}
