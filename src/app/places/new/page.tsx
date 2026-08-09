@@ -41,7 +41,7 @@ export default function NewPlacePage() {
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL (Google Drive or hosted image)</label>
-          <input name="imageUrl" type="url" className="arcane-input" placeholder="https://drive.google.com/..." />
+          <input name="imageUrl" type="text" className="arcane-input" placeholder="https://example.com/image.png or /uploads/image.png" />
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Or Upload Image</label>
