@@ -336,6 +336,9 @@ export async function resolveImageUrlFromForm(formData: FormData, existingImageU
   }
 
   if (directImageUrl) {
+    if (directImageUrl.startsWith(LOCAL_IMAGE_PREFIX)) {
+      return validateLocalImageReference(directImageUrl)
+    }
     let parsedUrl: URL
     try {
       parsedUrl = new URL(directImageUrl)
@@ -369,6 +372,9 @@ export async function resolveCharacterImageUrlFromForm(formData: FormData, exist
   }
 
   if (directImageUrl) {
+    if (directImageUrl.startsWith(LOCAL_IMAGE_PREFIX)) {
+      return validateLocalImageReference(directImageUrl)
+    }
     let parsedUrl: URL
     try {
       parsedUrl = new URL(directImageUrl)
@@ -382,6 +388,26 @@ export async function resolveCharacterImageUrlFromForm(formData: FormData, exist
   }
 
   return existingImageUrl ?? null
+}
+
+function validateLocalImageReference(imageReference: string): string {
+  const pathOnly = imageReference.split(/[?#]/, 1)[0]
+  let decodedPath: string
+
+  try {
+    decodedPath = decodeURIComponent(pathOnly)
+  } catch {
+    throw new Error('Local image path contains invalid encoding')
+  }
+
+  if (
+    decodedPath.includes('\\') ||
+    decodedPath.split('/').some((segment) => segment === '.' || segment === '..')
+  ) {
+    throw new Error('Local image path must stay within /uploads/')
+  }
+
+  return imageReference
 }
 
 // ─── Improvement Roll Helper ──────────────────────────────────────────────────

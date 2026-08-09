@@ -83,12 +83,14 @@ export default async function NewCharacterPage() {
           <textarea name="stats" rows={3} className="arcane-input" placeholder="STR 12, CON 11, SIZ 10, DEX 14, INT 16, POW 15, CHA 13 | HP: 11 | Sanity: 75" />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL (Google Drive or hosted image)</label>
-          <input name="imageUrl" type="url" className="arcane-input" placeholder="https://drive.google.com/..." />
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL or Local Path</label>
+          <input name="imageUrl" type="text" className="arcane-input" placeholder="https://example.com/image.png or /uploads/characters/image.png" />
+          <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>Enter an http(s) URL or a path under /uploads/.</p>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Or Upload Image</label>
           <input name="imageFile" type="file" accept="image/*" className="arcane-input" />
+          <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>A selected file takes precedence over the URL or local path above (maximum 5 MB).</p>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>

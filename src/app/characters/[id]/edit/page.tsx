@@ -98,12 +98,14 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
           <textarea name="stats" rows={3} defaultValue={character.stats ?? ''} className="arcane-input" />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL (Google Drive or hosted image)</label>
-          <input name="imageUrl" type="url" defaultValue={character.imageUrl ?? ''} className="arcane-input" />
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL or Local Path</label>
+          <input name="imageUrl" type="text" defaultValue={character.imageUrl ?? ''} className="arcane-input" placeholder="https://example.com/image.png or /uploads/characters/image.png" />
+          <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>Enter an http(s) URL or a path under /uploads/.</p>
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Or Upload Image</label>
+          <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Upload Replacement Image</label>
           <input name="imageFile" type="file" accept="image/*" className="arcane-input" />
+          <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>A selected file replaces the URL or local path above when you save (maximum 5 MB).</p>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
