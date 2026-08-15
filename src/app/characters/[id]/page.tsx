@@ -10,9 +10,12 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { deleteCharacter, claimCharacter, unclaimCharacter, adminAssignCharacter, assignPower, updateCharacterPower, removeCharacterPower, createCharacterAbility, updateCharacterAbility, deleteCharacterAbility } from '@/app/actions'
 import { DeleteButton } from '@/components/DeleteButton'
+import { entityDestination, getListReturnPath } from '@/lib/listNavigation'
 
-export default async function CharacterDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CharacterDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string }> }) {
   const { id } = await params
+  const { returnTo: rawReturnTo } = await searchParams
+  const returnTo = getListReturnPath(rawReturnTo, '/characters')
   const characterId = parseInt(id)
 
   const session = await auth()
@@ -74,7 +77,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/characters" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href={returnTo} className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← Characters
         </Link>
       </div>
@@ -120,7 +123,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
             {/* Sheet link — owner or admin */}
             {(isOwner || isAdmin) && (
               <Link
-                href={`/characters/${characterId}/sheet`}
+                href={entityDestination(`/characters/${characterId}/sheet`, returnTo)}
                 className="text-xs px-3 py-1.5 rounded transition-colors hover:text-blue-300"
                 style={{ color: '#60a5fa', border: '1px solid #1e3a5f' }}
               >
@@ -130,7 +133,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
             {/* Chat link — owner or admin */}
             {(isOwner || isAdmin) && (
               <Link
-                href={`/characters/${characterId}/chat`}
+                href={entityDestination(`/characters/${characterId}/chat`, returnTo)}
                 className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
                 style={{ color: '#a78bfa', border: '1px solid #3b1f7a' }}
               >
@@ -140,7 +143,7 @@ export default async function CharacterDetailPage({ params }: { params: Promise<
             {isAdmin && (
               <>
                 <Link
-                  href={`/characters/${character.id}/edit`}
+                  href={entityDestination(`/characters/${character.id}/edit`, returnTo)}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-amber-300"
                   style={{ color: '#d97706', border: '1px solid #451a03' }}
                 >

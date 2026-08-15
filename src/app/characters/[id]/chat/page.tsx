@@ -8,8 +8,11 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getChatSessions } from '@/app/actions'
 import { ChatPanel } from '@/components/ChatPanel'
+import { entityDestination, getListReturnPath } from '@/lib/listNavigation'
 
-export default async function CharacterChatPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CharacterChatPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string }> }) {
+  const { returnTo: rawReturnTo } = await searchParams
+  const returnTo = getListReturnPath(rawReturnTo, '/characters')
   const session = await auth()
   const email = normalizeEmail(session?.user?.email)
   if (!email) redirect('/login')
@@ -42,7 +45,7 @@ export default async function CharacterChatPage({ params }: { params: Promise<{ 
     <div className="max-w-6xl">
       <div className="mb-6">
         <Link
-          href={`/characters/${character.id}`}
+          href={entityDestination(`/characters/${character.id}`, returnTo)}
           className="text-sm transition-colors hover:text-purple-300"
           style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}
         >
