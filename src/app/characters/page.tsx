@@ -14,15 +14,18 @@ import { ViewToggle } from '@/components/ViewToggle'
 import { SearchBar } from '@/components/SearchBar'
 import { TagFilter } from '@/components/TagFilter'
 import { parseSortField, SortOrder } from '@/lib/sortParams'
+import { EntityFilterPanel } from '@/components/EntityFilterPanel'
+import { entityDestination } from '@/lib/listNavigation'
 
 const VALID_SORT_FIELDS = ['name', 'role', 'status', 'race', 'age', 'affiliation'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
 
-function sortLink(view: string, currentSortBy: string, currentSortOrder: string, col: string, search: string, tags: string) {
+function sortLink(params: URLSearchParams, currentSortBy: string, currentSortOrder: string, col: string) {
   const order = currentSortBy === col ? (currentSortOrder === 'asc' ? 'desc' : 'asc') : 'asc'
-  const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
-  const tagsParam = tags ? `&tags=${encodeURIComponent(tags)}` : ''
-  return `?view=${view}&sortBy=${col}&sortOrder=${order}${searchParam}${tagsParam}`
+  const next = new URLSearchParams(params)
+  next.set('sortBy', col)
+  next.set('sortOrder', order)
+  return `?${next.toString()}`
 }
 
 function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: string; column: string }) {
@@ -45,9 +48,15 @@ async function hasLocalThumbnail(imageUrl: string): Promise<boolean> {
 export default async function CharactersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; sortBy?: string; sortOrder?: string; search?: string; tags?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { view = 'card', sortBy: rawSortBy = 'name', sortOrder: rawSortOrder = 'asc', search = '', tags = '' } = await searchParams
+  const rawParams = await searchParams
+  const value = (name: string) => typeof rawParams[name] === 'string' ? rawParams[name] : ''
+  const view = value('view') || 'card'
+  const rawSortBy = value('sortBy') || 'name'
+  const rawSortOrder = value('sortOrder') || 'asc'
+  const search = value('search')
+  const tags = value('tags')
   const sortBy: SortField = parseSortField(VALID_SORT_FIELDS, rawSortBy, 'name')
   const sortOrder: SortOrder = rawSortOrder === 'desc' ? 'desc' : 'asc'
   const selectedTags = tags
@@ -82,16 +91,45 @@ export default async function CharactersPage({
     })
   }
 
+  const exactFilters = ['status', 'affiliation', 'race', 'gender', 'role', 'currentCase', 'currentLocation'] as const
+  for (const field of exactFilters) {
+    const filterValue = value(field)
+    if (filterValue) whereClauses.push({ [field]: filterValue })
+  }
+
+  const minimumAge = /^\d+$/.test(value('ageMin')) ? BigInt(value('ageMin')) : null
+  const maximumAge = /^\d+$/.test(value('ageMax')) ? BigInt(value('ageMax')) : null
+  if (minimumAge !== null || maximumAge !== null) {
+    whereClauses.push({ age: { gte: minimumAge ?? undefined, lte: maximumAge ?? undefined } })
+  }
+
+  if (value('hasImage') === 'yes') {
+    whereClauses.push({ imageUrl: { not: null } }, { NOT: { imageUrl: '' } })
+  } else if (value('hasImage') === 'no') {
+    whereClauses.push({ OR: [{ imageUrl: null }, { imageUrl: '' }] })
+  }
+
   const where = whereClauses.length > 0 ? ({ AND: whereClauses } satisfies Prisma.CharacterWhereInput) : undefined
 
-  const [characters, allTags] = await Promise.all([
+  const [characters, allTags, filterCharacters] = await Promise.all([
     prisma.character.findMany({
       where,
       orderBy: { [sortBy]: sortOrder },
       include: { tags: { orderBy: { name: 'asc' } } },
     }),
     prisma.tag.findMany({ orderBy: { name: 'asc' }, select: { name: true } }),
+    prisma.character.findMany({
+      select: { status: true, affiliation: true, race: true, gender: true, role: true, currentCase: true, currentLocation: true },
+    }),
   ])
+  const optionsFor = (field: keyof (typeof filterCharacters)[number]) =>
+    [...new Set(filterCharacters.map((character) => character[field]).filter((item): item is string => Boolean(item)))].sort((a, b) => a.localeCompare(b))
+  const queryParams = new URLSearchParams()
+  for (const [name, paramValue] of Object.entries(rawParams)) {
+    if (typeof paramValue === 'string' && paramValue) queryParams.set(name, paramValue)
+  }
+  const listPath = `/characters${queryParams.size ? `?${queryParams.toString()}` : ''}`
+  const destinationFor = (characterId: number, suffix = '') => entityDestination(`/characters/${characterId}${suffix}`, `${listPath}#character-${characterId}`)
   const charactersWithDisplayImages = await Promise.all(
     characters.map(async (character) => ({
       ...character,
@@ -146,6 +184,24 @@ export default async function CharactersPage({
       <Suspense fallback={null}>
         <TagFilter tags={allTags.map((tag) => tag.name)} />
       </Suspense>
+      <Suspense fallback={null}>
+        <EntityFilterPanel
+          storageKey="arcane-codex:default-filter:characters"
+          managedParams={['status', 'affiliation', 'race', 'gender', 'role', 'currentCase', 'currentLocation', 'ageMin', 'ageMax', 'hasImage', 'tags']}
+          fields={[
+            { name: 'status', label: 'Status', options: optionsFor('status') },
+            { name: 'affiliation', label: 'Affiliation', options: optionsFor('affiliation') },
+            { name: 'race', label: 'Race', options: optionsFor('race') },
+            { name: 'gender', label: 'Gender', options: optionsFor('gender') },
+            { name: 'role', label: 'Role', options: optionsFor('role') },
+            { name: 'currentCase', label: 'Case', options: optionsFor('currentCase') },
+            { name: 'currentLocation', label: 'Location', options: optionsFor('currentLocation') },
+            { name: 'ageMin', label: 'Minimum age', type: 'number', placeholder: 'From' },
+            { name: 'ageMax', label: 'Maximum age', type: 'number', placeholder: 'To' },
+            { name: 'hasImage', label: 'Has image', options: ['yes', 'no'] },
+          ]}
+        />
+      </Suspense>
 
       {characters.length === 0 ? (
         <div
@@ -160,7 +216,7 @@ export default async function CharactersPage({
             <thead>
               <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search, tags)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'name')} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
                   </Link>
                 </th>
@@ -170,27 +226,27 @@ export default async function CharactersPage({
                   </span>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'role', search, tags)} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'role')} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Role<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="role" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'status', search, tags)} style={{ color: sortBy === 'status' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'status')} style={{ color: sortBy === 'status' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Status<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="status" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'race', search, tags)} style={{ color: sortBy === 'race' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'race')} style={{ color: sortBy === 'race' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Race<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="race" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'age', search, tags)} style={{ color: sortBy === 'age' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'age')} style={{ color: sortBy === 'age' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Age<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="age" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'affiliation', search, tags)} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'affiliation')} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Affiliation<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="affiliation" />
                   </Link>
                 </th>
@@ -201,7 +257,7 @@ export default async function CharactersPage({
             </thead>
             <tbody>
               {charactersWithDisplayImages.map((character) => (
-                <tr key={character.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
+                <tr id={`character-${character.id}`} key={character.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
                   <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '14px' }}>
                     <div>{character.name}</div>
                     {character.tags.length > 0 && (
@@ -251,9 +307,9 @@ export default async function CharactersPage({
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link href={`/characters/${character.id}`} className="text-xs px-3 py-1 rounded transition-colors hover:text-purple-300" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
-                      <Link href={`/characters/${character.id}/sheet`} className="text-xs px-3 py-1 rounded transition-colors hover:text-cyan-300" style={{ color: '#06b6d4', border: '1px solid #164e63' }}>Sheet</Link>
-                      <Link href={`/characters/${character.id}/edit`} className="text-xs px-3 py-1 rounded transition-colors hover:text-amber-300" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
+                      <Link href={destinationFor(character.id)} className="text-xs px-3 py-1 rounded transition-colors hover:text-purple-300" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
+                      <Link href={destinationFor(character.id, '/sheet')} className="text-xs px-3 py-1 rounded transition-colors hover:text-cyan-300" style={{ color: '#06b6d4', border: '1px solid #164e63' }}>Sheet</Link>
+                      <Link href={destinationFor(character.id, '/edit')} className="text-xs px-3 py-1 rounded transition-colors hover:text-amber-300" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                       <DeleteButton action={deleteCharacter.bind(null, character.id)} label={character.name} />
                     </div>
                   </td>
@@ -265,7 +321,7 @@ export default async function CharactersPage({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {charactersWithDisplayImages.map((character) => (
-            <div key={character.id} className="card-arcane rounded-lg p-5" style={{ fontFamily: 'Georgia, serif' }}>
+            <div id={`character-${character.id}`} key={character.id} className="card-arcane rounded-lg p-5" style={{ fontFamily: 'Georgia, serif' }}>
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h2 className="text-lg font-semibold" style={{ color: '#e2e8f0' }}>
@@ -334,21 +390,21 @@ export default async function CharactersPage({
               )}
               <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link
-                  href={`/characters/${character.id}`}
+                  href={destinationFor(character.id)}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
                   style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}
                 >
                   View
                 </Link>
                 <Link
-                  href={`/characters/${character.id}/sheet`}
+                  href={destinationFor(character.id, '/sheet')}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-cyan-300"
                   style={{ color: '#06b6d4', border: '1px solid #164e63' }}
                 >
                   Sheet
                 </Link>
                 <Link
-                  href={`/characters/${character.id}/edit`}
+                  href={destinationFor(character.id, '/edit')}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-amber-300"
                   style={{ color: '#d97706', border: '1px solid #451a03' }}
                 >

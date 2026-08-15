@@ -7,11 +7,14 @@ import { getAllTags, updateCharacter } from '@/app/actions'
 import { CharacterTextSuggestionPanel } from '@/components/CharacterTextSuggestionPanel'
 import { TagInput } from '@/components/TagInput'
 import Link from 'next/link'
+import { entityDestination, getListReturnPath } from '@/lib/listNavigation'
 
 const statusOptions = ['Active', 'Inactive', 'Deceased', 'Unknown', 'Missing']
 
-export default async function EditCharacterPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditCharacterPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string }> }) {
   const { id } = await params
+  const { returnTo: rawReturnTo } = await searchParams
+  const returnTo = getListReturnPath(rawReturnTo, '/characters')
   const [character, allTags] = await Promise.all([
     prisma.character.findUnique({
       where: { id: parseInt(id) },
@@ -26,7 +29,7 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href={`/characters/${character.id}`} className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href={entityDestination(`/characters/${character.id}`, returnTo)} className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← {character.name}
         </Link>
       </div>
@@ -36,6 +39,7 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
       </h1>
 
       <form action={action} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+        <input type="hidden" name="returnTo" value={returnTo} />
         <CharacterTextSuggestionPanel characterId={character.id} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -129,7 +133,7 @@ export default async function EditCharacterPage({ params }: { params: Promise<{ 
             Save Changes
           </button>
           <Link
-            href={`/characters/${character.id}`}
+            href={entityDestination(`/characters/${character.id}`, returnTo)}
             className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider"
             style={{ border: '1px solid #374151', color: '#9ca3af' }}
           >

@@ -15,6 +15,7 @@ import {
   getReferenceLinksFromForm,
   resolveCharacterImageUrlFromForm,
 } from './_shared'
+import { entityDestination, getListReturnPath } from '@/lib/listNavigation'
 
 export async function createCharacter(formData: FormData) {
   await requireAuthorizedUser()
@@ -122,6 +123,7 @@ export async function updateCharacter(id: number, formData: FormData) {
   const imageUrl = await resolveCharacterImageUrlFromForm(formData, existingCharacter?.imageUrl)
   const referenceLinks = getReferenceLinksFromForm(formData)
   const tags = parseTagsFromForm(formData)
+  const returnTo = getListReturnPath(formData.get('returnTo') as string | null, '/characters')
 
   await prisma.character.update({
     where: { id },
@@ -155,7 +157,7 @@ export async function updateCharacter(id: number, formData: FormData) {
   })
   revalidatePath('/characters')
   revalidatePath(`/characters/${id}`)
-  redirect(`/characters/${id}`)
+  redirect(entityDestination(`/characters/${id}`, returnTo))
 }
 
 export async function deleteCharacter(id: number) {

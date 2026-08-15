@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getD100ResultType, getLuckGainForRoll } from '@/lib/diceRules'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { entityDestination, getListReturnPath } from '@/lib/listNavigation'
 import {
   requireAuthorizedUser,
   requireCharacterOwner,
@@ -80,7 +81,8 @@ export async function updateCharacterSheet(characterId: number, formData: FormDa
   revalidatePath(`/characters/${characterId}`)
   revalidatePath(`/characters/${characterId}/sheet`)
   revalidatePath('/my-character')
-  redirect(`/characters/${characterId}/sheet`)
+  const returnTo = getListReturnPath(formData.get('returnTo') as string | null, '/characters')
+  redirect(entityDestination(`/characters/${characterId}/sheet`, returnTo))
 }
 
 /** Owner or admin can import FoundryVTT exported stats/skills JSON into the character sheet. */

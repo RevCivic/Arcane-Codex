@@ -17,6 +17,7 @@ import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { CharacterSheetSuggestionPanel } from '@/components/CharacterSheetSuggestionPanel'
 import { SheetLayoutManager } from '@/components/SheetLayoutManager'
 import type { SheetModule } from '@/components/SheetLayoutManager'
+import { entityDestination, getListReturnPath } from '@/lib/listNavigation'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -150,8 +151,10 @@ function DerivedBox({
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
-export default async function CharacterSheetPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CharacterSheetPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string }> }) {
   const { id } = await params
+  const { returnTo: rawReturnTo } = await searchParams
+  const returnTo = getListReturnPath(rawReturnTo, '/characters')
   const characterId = parseInt(id)
 
   const session = await auth()
@@ -309,11 +312,11 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
     <div className="max-w-5xl">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm" style={{ fontFamily: 'Georgia, serif' }}>
-        <Link href="/characters" className="transition-colors hover:text-purple-300" style={{ color: '#6b7280' }}>
+        <Link href={returnTo} className="transition-colors hover:text-purple-300" style={{ color: '#6b7280' }}>
           Characters
         </Link>
         <span style={{ color: '#374151' }}>›</span>
-        <Link href={`/characters/${characterId}`} className="transition-colors hover:text-purple-300" style={{ color: '#6b7280' }}>
+        <Link href={entityDestination(`/characters/${characterId}`, returnTo)} className="transition-colors hover:text-purple-300" style={{ color: '#6b7280' }}>
           {character.name}
         </Link>
         <span style={{ color: '#374151' }}>›</span>
@@ -398,6 +401,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
             label: '📊 Character Stats',
             content: (
               <form action={action} className="space-y-8">
+                <input type="hidden" name="returnTo" value={returnTo} />
                 <input type="hidden" name="characterName" value={character.name} />
                 <input type="hidden" name="characterRole" value={character.role ?? ''} />
                 <input type="hidden" name="characterRace" value={character.race ?? ''} />
@@ -548,7 +552,7 @@ export default async function CharacterSheetPage({ params }: { params: Promise<{
                     💾 Save Sheet
                   </button>
                   <Link
-                    href={`/characters/${characterId}`}
+                    href={entityDestination(`/characters/${characterId}`, returnTo)}
                     className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider"
                     style={{ border: '1px solid #374151', color: '#9ca3af', fontFamily: 'Georgia, serif' }}
                   >
