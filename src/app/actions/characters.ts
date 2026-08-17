@@ -160,6 +160,29 @@ export async function updateCharacter(id: number, formData: FormData) {
   redirect(entityDestination(`/characters/${id}`, returnTo))
 }
 
+/** Admin-only update for the short, operational fields shown on the character index. */
+export async function quickUpdateCharacter(id: number, formData: FormData) {
+  await requireAdminUser()
+
+  await prisma.character.update({
+    where: { id },
+    data: {
+      name: getNullableString(String(formData.get('name') ?? '').trim()) ?? 'Unnamed Character',
+      role: getNullableString(String(formData.get('role') ?? '').trim()),
+      status: getNullableString(String(formData.get('status') ?? '').trim()) ?? 'Active',
+      affiliation: getNullableString(String(formData.get('affiliation') ?? '').trim()),
+      currentCase: getNullableString(String(formData.get('currentCase') ?? '').trim()),
+      currentLocation: getNullableString(String(formData.get('currentLocation') ?? '').trim()),
+      race: getNullableString(String(formData.get('race') ?? '').trim()),
+      gender: getNullableString(String(formData.get('gender') ?? '').trim()),
+      age: toNullableBigInt(formData.get('age')),
+    },
+  })
+
+  revalidatePath('/characters')
+  revalidatePath(`/characters/${id}`)
+}
+
 export async function deleteCharacter(id: number) {
   await requireAuthorizedUser()
 

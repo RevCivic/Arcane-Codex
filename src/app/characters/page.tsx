@@ -7,7 +7,11 @@ import Link from 'next/link'
 import { access } from 'node:fs/promises'
 import path from 'node:path'
 import { Suspense } from 'react'
-import { deleteCharacter } from '@/app/actions'
+import { deleteCharacter, quickUpdateCharacter } from '@/app/actions'
+import { auth } from '@/auth'
+import { AccessRole } from '@/generated/prisma'
+import { normalizeEmail } from '@/lib/normalizeEmail'
+import { CharacterQuickEdit, CharacterQuickEditProvider } from '@/components/CharacterQuickEdit'
 import { DeleteButton } from '@/components/DeleteButton'
 import { SyncFromSheetButton } from '@/components/SyncFromSheetButton'
 import { ViewToggle } from '@/components/ViewToggle'
@@ -51,6 +55,10 @@ export default async function CharactersPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const rawParams = await searchParams
+  const session = await auth()
+  const email = normalizeEmail(session?.user?.email)
+  const accessRecord = email ? await prisma.allowedEmail.findUnique({ where: { email }, select: { role: true } }) : null
+  const isAdmin = accessRecord?.role === AccessRole.ADMIN
   const value = (name: string) => typeof rawParams[name] === 'string' ? rawParams[name] : ''
   const view = value('view') || 'card'
   const rawSortBy = value('sortBy') || 'name'
@@ -141,7 +149,14 @@ export default async function CharactersPage({
 
   const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
-  return (
+  const quickCharacter = (character: (typeof charactersWithDisplayImages)[number]) => ({
+    name: character.name, role: character.role, status: character.status,
+    affiliation: character.affiliation, currentCase: character.currentCase,
+    currentLocation: character.currentLocation, race: character.race, gender: character.gender,
+    age: character.age?.toString() ?? null,
+  })
+
+  const content = (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
@@ -312,6 +327,7 @@ export default async function CharactersPage({
                       <Link href={destinationFor(character.id, '/edit')} className="text-xs px-3 py-1 rounded transition-colors hover:text-amber-300" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                       <DeleteButton action={deleteCharacter.bind(null, character.id)} label={character.name} />
                     </div>
+                    {isAdmin && <CharacterQuickEdit character={quickCharacter(character)} action={quickUpdateCharacter.bind(null, character.id)} />}
                   </td>
                 </tr>
               ))}
@@ -417,10 +433,13 @@ export default async function CharactersPage({
                   />
                 </div>
               </div>
+              {isAdmin && <CharacterQuickEdit character={quickCharacter(character)} action={quickUpdateCharacter.bind(null, character.id)} />}
             </div>
           ))}
         </div>
       )}
     </div>
   )
+
+  return isAdmin ? <CharacterQuickEditProvider>{content}</CharacterQuickEditProvider> : content
 }
