@@ -33,6 +33,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isSignedIn = !!session?.user
   const isAdmin = access?.role === AccessRole.ADMIN
 
+  const playerCharacters = email && !isAdmin
+    ? await prisma.character.findMany({
+        where: { claimedByEmail: email },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true },
+      })
+    : []
+
   let pendingImportCount = 0
   if (isAdmin) {
     try {
@@ -65,7 +73,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               </div>
             </Link>
-            <ResponsiveNav navLinks={navLinks} isSignedIn={isSignedIn} isAdmin={isAdmin} pendingImportCount={pendingImportCount} />
+            <ResponsiveNav
+              navLinks={navLinks}
+              isSignedIn={isSignedIn}
+              isAdmin={isAdmin}
+              playerCharacters={playerCharacters}
+              pendingImportCount={pendingImportCount}
+            />
           </div>
         </header>
 

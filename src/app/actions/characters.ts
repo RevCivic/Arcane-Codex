@@ -191,14 +191,9 @@ export async function deleteCharacter(id: number) {
   redirect('/characters')
 }
 
-/** Any signed-in USER can claim an unclaimed character (max one claim per user). */
+/** Any signed-in USER can claim an unclaimed character. */
 export async function claimCharacter(characterId: number) {
   const user = await requireAuthorizedUser()
-
-  const existingClaim = await prisma.character.findFirst({
-    where: { claimedByEmail: user.email },
-  })
-  if (existingClaim) throw new Error('You already have a claimed character')
 
   const character = await prisma.character.findUnique({ where: { id: characterId } })
   if (!character) throw new Error('Character not found')
@@ -236,11 +231,6 @@ export async function adminAssignCharacter(characterId: number, formData: FormDa
   if (targetEmail) {
     const allowed = await prisma.allowedEmail.findUnique({ where: { email: targetEmail } })
     if (!allowed) throw new Error('Email is not on the allowlist')
-
-    const existingClaim = await prisma.character.findFirst({
-      where: { claimedByEmail: targetEmail, NOT: { id: characterId } },
-    })
-    if (existingClaim) throw new Error(`${targetEmail} already claims "${existingClaim.name}"`)
   }
 
   await prisma.character.update({ where: { id: characterId }, data: { claimedByEmail: targetEmail } })

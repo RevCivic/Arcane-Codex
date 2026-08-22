@@ -15,6 +15,7 @@ type ResponsiveNavProps = {
   navLinks: NavLinkItem[]
   isSignedIn: boolean
   isAdmin: boolean
+  playerCharacters?: Array<{ id: number; name: string }>
   pendingImportCount?: number
 }
 
@@ -24,7 +25,7 @@ const mobileNavItemClass =
   'flex min-h-11 items-center gap-2 rounded px-3 py-2 text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400'
 const navItemStyle = { color: '#9ca3af', fontFamily: 'Georgia, serif' }
 
-export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, pendingImportCount = 0 }: ResponsiveNavProps) {
+export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, playerCharacters = [], pendingImportCount = 0 }: ResponsiveNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -77,11 +78,35 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, pendingImportCoun
           </Link>
         ))}
         {isAdmin && <AdminMenu pendingImportCount={pendingImportCount} />}
-        {isSignedIn && !isAdmin && (
+        {isSignedIn && !isAdmin && playerCharacters.length <= 1 && (
           <Link href="/my-character" className={navItemClass} style={navItemStyle}>
             <span>📋</span>
             <span>My Character</span>
           </Link>
+        )}
+        {isSignedIn && !isAdmin && playerCharacters.length > 1 && (
+          <details className="group relative">
+            <summary className={`${navItemClass} cursor-pointer list-none`} style={navItemStyle}>
+              <span>📋</span>
+              <span>My Characters</span>
+              <span aria-hidden="true" className="text-xs transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <div
+              className="absolute right-0 z-50 mt-1 min-w-56 overflow-hidden rounded border py-1 shadow-2xl"
+              style={{ backgroundColor: '#07070d', borderColor: '#2d1b69' }}
+            >
+              {playerCharacters.map((character) => (
+                <Link
+                  key={character.id}
+                  href={`/characters/${character.id}/sheet`}
+                  className="block px-4 py-2 text-sm whitespace-nowrap transition-colors hover:bg-purple-950 hover:text-purple-300"
+                  style={navItemStyle}
+                >
+                  {character.name}
+                </Link>
+              ))}
+            </div>
+          </details>
         )}
         {isSignedIn ? (
           <button
@@ -233,7 +258,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, pendingImportCoun
                   </>
                 )}
 
-                {isSignedIn && !isAdmin && (
+                {isSignedIn && !isAdmin && playerCharacters.length <= 1 && (
                   <Link
                     href="/my-character"
                     onClick={() => setMobileOpen(false)}
@@ -243,6 +268,25 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, pendingImportCoun
                     <span>📋</span>
                     <span className="whitespace-normal break-words">My Character</span>
                   </Link>
+                )}
+                {isSignedIn && !isAdmin && playerCharacters.length > 1 && (
+                  <div className="border-y py-1" style={{ borderColor: '#1a1a2e' }}>
+                    <div className={mobileNavItemClass} style={{ ...navItemStyle, color: '#a78bfa' }}>
+                      <span>📋</span>
+                      <span>My Characters</span>
+                    </div>
+                    {playerCharacters.map((character) => (
+                      <Link
+                        key={character.id}
+                        href={`/characters/${character.id}/sheet`}
+                        onClick={() => setMobileOpen(false)}
+                        className={`${mobileNavItemClass} pl-10`}
+                        style={navItemStyle}
+                      >
+                        <span className="whitespace-normal break-words">{character.name}</span>
+                      </Link>
+                    ))}
+                  </div>
                 )}
 
                 {isSignedIn ? (

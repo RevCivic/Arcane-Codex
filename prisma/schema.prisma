@@ -102,7 +102,7 @@ model AllowedEmail {
   role           AccessRole      @default(USER)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  character      Character?
+  characters     Character[]
   aiGenerations  AIGeneration[]
   aiFeedback     AIFeedback[]
   aiTrainingJobs AITrainingJob[]
@@ -127,7 +127,7 @@ model Character {
   imageUrl           String?
   referenceLinks     Json?
   status             String?            @default("Active")
-  claimedByEmail     String?            @unique
+  claimedByEmail     String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   claimedBy          AllowedEmail?      @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
@@ -141,6 +141,8 @@ model Character {
   aiGenerations      AIGeneration[]
   chatSessions       ChatSession[]
   importQueueItems   ImportQueueItem[]
+
+  @@index([claimedByEmail])
 }
 
 model Tag {
