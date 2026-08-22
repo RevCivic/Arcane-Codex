@@ -69,7 +69,7 @@
 ## Data Model (Key Entities)
 
 ### Characters (`Character`)
-Central entity. Fields include name, race, gender, age, role, description, affiliation, currentCase, currentLocation, imageUrl, status, and an optional `claimedByEmail` (one user → one character, 1:1).
+Central entity. Fields include name, race, gender, age, role, description, affiliation, currentCase, currentLocation, imageUrl, status, and an optional `claimedByEmail` (one player can have multiple characters; each character has at most one player).
 
 ### Character Sheet (`CharacterSheet`)
 BRP primary characteristics and derived stats for a character:
@@ -204,7 +204,7 @@ Admins can also trigger retraining and review AI evaluation snapshots at **Admin
 - **Admin-only routes** — everything under `src/app/admin/` is protected; the middleware in `middleware.ts` and Auth.js handle role checks.
 - **BRP rules** — keep mechanics faithful to Basic Roleplaying: percentile skills, d100 rolls with CRITICAL/SUCCESS/FAILURE/FUMBLE tiers, luck spend, improvement rolls on FAILURE/FUMBLE.
 - **Schema changes** — always create a Prisma migration (`npx prisma migrate dev --name <description>`) rather than editing the database directly. Run `npx prisma generate` after schema changes.
-- **One claim per user** — a user can claim exactly one character. Admins cannot claim characters themselves.
+- **Character claims** — a user can claim multiple characters. Each character can only be claimed by one user. Admins cannot claim characters themselves.
 - **Lore in every AI prompt** — when writing new AI generation code, pull active `LoreDocument` records and inject them as context so the AI stays grounded in the "Arcane P.I." setting.
 - **Feedback loop** — AI suggestions should go through `AIGeneration` → `AIFeedback` so accepted/edited results can feed model retraining.
 

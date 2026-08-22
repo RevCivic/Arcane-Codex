@@ -51,11 +51,6 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
     ? await prisma.allowedEmail.findMany({ orderBy: { email: 'asc' } })
     : []
 
-  // Does the current USER already own a different character?
-  const userAlreadyClaims = !isAdmin && !isOwner
-    ? await prisma.character.findFirst({ where: { claimedByEmail: email } })
-    : null
-
   const claimAction   = claimCharacter.bind(null, characterId)
   const unclaimAction = unclaimCharacter.bind(null, characterId)
   const assignAction  = adminAssignCharacter.bind(null, characterId)
@@ -178,10 +173,6 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
             ) : character.claimedByEmail ? (
               <p className="text-xs" style={{ color: '#6b7280' }}>
                 This character has already been claimed by another player.
-              </p>
-            ) : userAlreadyClaims ? (
-              <p className="text-xs" style={{ color: '#6b7280' }}>
-                You already claim <strong style={{ color: '#e2e8f0' }}>{userAlreadyClaims.name}</strong>. Unclaim that character first if you want to claim this one.
               </p>
             ) : (
               <div className="flex items-center justify-between gap-3">

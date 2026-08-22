@@ -18,9 +18,35 @@ export default async function MyCharacterPage() {
   // Admins manage all characters — /my-character is for players only
   if (allowed.role === AccessRole.ADMIN) redirect('/characters')
 
-  // Redirect to the character's sheet if already claimed
-  const claimed = await prisma.character.findFirst({ where: { claimedByEmail: email } })
-  if (claimed) redirect(`/characters/${claimed.id}/sheet`)
+  const claimed = await prisma.character.findMany({
+    where: { claimedByEmail: email },
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true, role: true },
+  })
+  if (claimed.length === 1) redirect(`/characters/${claimed[0].id}/sheet`)
+
+  if (claimed.length > 1) {
+    return (
+      <div className="max-w-2xl mx-auto mt-12" style={{ fontFamily: 'Georgia, serif' }}>
+        <h1 className="text-2xl font-bold uppercase tracking-widest mb-2 arcane-glow" style={{ color: '#8b5cf6' }}>
+          My Characters
+        </h1>
+        <p className="mb-6" style={{ color: '#9ca3af' }}>Choose a character sheet to open.</p>
+        <div className="grid gap-3">
+          {claimed.map((character) => (
+            <Link
+              key={character.id}
+              href={`/characters/${character.id}/sheet`}
+              className="card-arcane flex items-center justify-between rounded-lg p-4 transition-colors hover:border-purple-500"
+            >
+              <span className="font-semibold" style={{ color: '#e2e8f0' }}>{character.name}</span>
+              <span className="text-sm" style={{ color: '#a78bfa' }}>{character.role ?? 'Character'} →</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   // No claimed character — show empty state with guidance
   return (

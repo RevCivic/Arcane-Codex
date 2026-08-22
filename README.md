@@ -94,7 +94,7 @@ Notes:
 
 ### How claim / ownership works
 
-Each player user can claim **exactly one** character. Once claimed, the character is linked to that user's Google account email.
+Each player user can claim multiple characters. Once claimed, each character is linked to that user's Google account email.
 
 | Actor | What they can do |
 |-------|-----------------|
@@ -103,8 +103,8 @@ Each player user can claim **exactly one** character. Once claimed, the characte
 | **ADMIN** | View + edit any character sheet; assign or clear any claim from the admin assign form on the character detail page |
 
 Rules:
-- One user → one character, one character → one user (1 : 1).
-- A user must unclaim their current character before claiming a new one.
+- One player can be assigned multiple characters; each character can be assigned to one player.
+- A user can claim any number of currently unclaimed characters.
 - Admins cannot claim characters themselves (`/my-character` redirects admins to `/characters`).
 
 ### Claiming a character
