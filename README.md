@@ -15,22 +15,19 @@ docker compose up -d
 
 The app will be available at `http://localhost:3000` (or whatever `HOST_PORT` is set to).
 
-### AI assistant container (text + stats only)
+### AI gateway
 
-Arcane Codex now includes an internal AI service container for **character text and BRP stat/skill suggestions only**.
-It does **not** generate images.
+Chat and character generation use the shared, OpenAI-compatible
+[RevCivic AI gateway](https://github.com/RevCivic/ai-gateway). Arcane Codex sends
+the admin prompt, active lore, and relevant character data with each request, so
+campaign context stays in this application while model providers and routing stay
+in the gateway.
 
-The current generator is prompt-driven: admins can define a global campaign prompt, and users can steer suggestions with structured intent such as ally, enemy, entity, deity, tone, threat, and mechanical focus.
-
-- Default CPU profile (smaller/quantized model): started automatically as `ai`.
-- On first start, `ollama-init` pulls the configured model by connecting to the `ollama` service over Docker networking.
-- Optional GPU profile (larger/faster model): start with:
-
-```bash
-docker compose --profile gpu up -d ai-gpu app db
-```
-
-When using GPU mode, set `AI_MODE=gpu` and `AI_SERVICE_URL=http://ai-gpu:8000`.
+Configure `AI_GATEWAY_URL` with the home-lab gateway's network-reachable URL and
+set `AI_GATEWAY_MODEL` to its configured LiteLLM model alias. Set
+`AI_GATEWAY_API_KEY` when the gateway requires bearer authentication. The URL can
+be an origin, a `/v1` base URL, or a complete `/v1/chat/completions` URL. Docker
+Compose runs only the application and PostgreSQL; it does not pull or host a model.
 
 ### Changing the host port
 
@@ -55,19 +52,9 @@ npx prisma migrate dev
 npm run dev
 ```
 
-### AI retraining (manual + scheduled)
-
-- Admins can trigger retraining from **Admin → Skills → AI Training Control**.
-- Retraining uses accepted/edited feedback records and stores model versions for rollback history.
-- **Admin → AI / Language Model** also shows an evaluation snapshot for representative investigator, ally, enemy, entity, and deity prompts so you can review distinctiveness and prompt adherence.
-
-For periodic retraining, configure `AI_RETRAIN_TOKEN` and run:
-
-```bash
-APP_URL=http://localhost:3000 AI_RETRAIN_TOKEN=... npm run ai:retrain
-```
-
-You can schedule this command with cron/systemd/GitHub Actions.
+Accepted, edited, and rejected suggestions are still stored locally for campaign
+auditing. Model training and evaluation are managed by the gateway rather than by
+Arcane Codex.
 
 ## Migrating existing SQLite data to PostgreSQL
 
