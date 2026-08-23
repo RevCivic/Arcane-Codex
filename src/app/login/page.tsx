@@ -1,4 +1,4 @@
-import { auth, signIn } from '@/auth'
+import { auth } from '@/auth'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -40,12 +40,7 @@ export default async function LoginPage({
         </p>
       )}
 
-      <form
-        action={async () => {
-          'use server'
-          await signIn('google', { redirectTo: '/' })
-        }}
-      >
+      <form action="/login/google" method="get">
         <button
           type="submit"
           className="block w-full px-4 py-3 rounded border font-semibold uppercase tracking-wider transition-all duration-200 hover:text-purple-200 text-center"
