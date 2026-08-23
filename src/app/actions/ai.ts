@@ -1,14 +1,11 @@
 'use server'
 
-import { AccessRole, AIFeedbackStatus, AIGenerationType, AITrainingJobStatus, Prisma } from '@/generated/prisma'
+import { AccessRole, AIFeedbackStatus, AIGenerationType, Prisma } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
 import {
   generateCharacterBulkTextFromAI,
   generateCharacterStatsSkillsFromAI,
   generateCharacterTextFromAI,
-  getAIEvaluationSnapshotFromAI,
-  sendAIFeedbackToService,
-  triggerAIRetrain,
 } from '@/lib/aiClient'
 import type { AIPromptContext } from '@/lib/aiPromptContext'
 import { revalidatePath } from 'next/cache'
@@ -121,11 +118,6 @@ type AIFeedbackInput = {
   status: 'ACCEPTED' | 'EDITED' | 'REJECTED'
   finalValues?: Record<string, unknown>
   note?: string
-}
-
-type AITrainingRequestInput = {
-  mode?: 'cpu' | 'gpu'
-  baseModel?: string
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -356,166 +348,10 @@ export async function captureAIFeedback(input: AIFeedbackInput): Promise<{ ok: b
       },
     })
 
-    try {
-      await sendAIFeedbackToService({
-        generationId: input.generationId,
-        status: input.status,
-        finalValues: input.finalValues,
-      })
-    } catch (error) {
-      console.error('[ai] feedback sync failed', error)
-    }
-
     return { ok: true }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to capture AI feedback'
     return { ok: false, error: message }
-  }
-}
-
-export async function requestAIModelRetrain(
-  input: AITrainingRequestInput = {},
-): Promise<{ ok: boolean; jobId?: number; modelVersion?: string; error?: string }> {
-  const user = await requireAdminUser()
-  const mode = input.mode === 'gpu' ? 'gpu' : 'cpu'
-  const baseModel =
-    input.baseModel?.trim() ||
-    (mode === 'gpu'
-      ? process.env.AI_MODEL_GPU || process.env.AI_MODEL_CPU || 'model'
-      : process.env.AI_MODEL_CPU || process.env.AI_MODEL_GPU || 'model')
-
-  const trainingSet = await prisma.aIFeedback.findMany({
-    where: { status: { in: [AIFeedbackStatus.ACCEPTED, AIFeedbackStatus.EDITED] } },
-    orderBy: { createdAt: 'desc' },
-    take: 500,
-    include: {
-      generation: {
-        select: {
-          type: true,
-          inputPayload: true,
-          suggestion: true,
-          modelName: true,
-          modelVersion: true,
-        },
-      },
-    },
-  })
-
-  const trainingExamples = trainingSet.map((item) => ({
-    generationType: item.generation.type,
-    inputPayload: item.generation.inputPayload,
-    suggestedOutput: item.generation.suggestion,
-    status: item.status,
-    finalValues: item.finalValues,
-    sourceModelName: item.generation.modelName,
-    sourceModelVersion: item.generation.modelVersion,
-  }))
-
-  const groupedByEntityType = trainingExamples.reduce<Record<string, number>>((acc, example) => {
-    const payload = typeof example.inputPayload === 'object' && example.inputPayload ? example.inputPayload : {}
-    const promptContext =
-      'promptContext' in payload && typeof payload.promptContext === 'object' && payload.promptContext
-        ? (payload.promptContext as Record<string, unknown>)
-        : {}
-    const entityType = typeof promptContext.entityType === 'string' && promptContext.entityType.trim()
-      ? promptContext.entityType.trim()
-      : 'unspecified'
-    acc[entityType] = (acc[entityType] ?? 0) + 1
-    return acc
-  }, {})
-
-  const job = await prisma.aITrainingJob.create({
-    data: {
-      requestedByEmail: user.email,
-      status: AITrainingJobStatus.PENDING,
-      mode,
-      baseModel,
-      payload: { trainingExamples: trainingExamples.length, groupedByEntityType },
-    },
-    select: { id: true },
-  })
-
-  try {
-    await prisma.aITrainingJob.update({
-      where: { id: job.id },
-      data: { status: AITrainingJobStatus.RUNNING, startedAt: new Date() },
-    })
-
-    const retrain = await triggerAIRetrain({
-      mode,
-      baseModel,
-      trainingExamples,
-    })
-
-    await prisma.$transaction([
-      prisma.aIModelVersion.updateMany({ data: { isActive: false } }),
-      prisma.aIModelVersion.create({
-        data: {
-          modelName: retrain.modelName,
-          version: retrain.modelVersion,
-          mode: retrain.mode,
-          metadata: { trainingExamples: trainingExamples.length, sourceJobId: job.id, groupedByEntityType },
-          isActive: true,
-        },
-      }),
-      prisma.aITrainingJob.update({
-        where: { id: job.id },
-        data: {
-          status: AITrainingJobStatus.SUCCEEDED,
-          completedAt: new Date(),
-          result: retrain,
-        },
-      }),
-    ])
-
-    revalidatePath('/admin/skills')
-    return { ok: true, jobId: job.id, modelVersion: retrain.modelVersion }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'AI retraining failed'
-    await prisma.aITrainingJob.update({
-      where: { id: job.id },
-      data: {
-        status: AITrainingJobStatus.FAILED,
-        completedAt: new Date(),
-        error: message,
-      },
-    })
-    console.error('[ai] retraining failed', error)
-    return { ok: false, jobId: job.id, error: message }
-  }
-}
-
-export async function getAITrainingDashboard() {
-  await requireAdminUser()
-
-  const [activeModel, recentJobs] = await Promise.all([
-    prisma.aIModelVersion.findFirst({
-      where: { isActive: true },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.aITrainingJob.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-      include: { requestedBy: { select: { email: true } } },
-    }),
-  ])
-
-  return { activeModel, recentJobs }
-}
-
-export async function getAIEvaluationSnapshot() {
-  await requireAdminUser()
-
-  try {
-    return await getAIEvaluationSnapshotFromAI()
-  } catch (error) {
-    return {
-      modelName: '',
-      modelVersion: '',
-      criteria: [],
-      cases: [],
-      error: error instanceof Error ? error.message : 'Failed to load AI evaluation snapshot',
-    }
   }
 }
 
