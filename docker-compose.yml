@@ -6,7 +6,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-arcane_codex}"]
       interval: 5s
@@ -46,5 +46,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  db_data:
   uploads_data:
