@@ -156,7 +156,10 @@ Arcane Codex now requires Google sign-in for all app routes.
        - Example (custom host): `http://hq.shank-home.net:3001`
 5. Copy the generated Client ID and Client Secret into `.env` as `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`.
 
-> **⚠ Most common cause of `Unknown Action` errors:** `AUTH_URL` is left as `http://localhost:3000` when the app is deployed on a different host. Auth.js uses `AUTH_URL` to route all auth requests — if it doesn't match the origin users actually browse to, every auth request will fail.
+> **Important:** `Failed to find Server Action` and Auth.js `UnknownAction` are
+> different errors. A missing Server Action means the browser submitted an action
+> identifier from a different build (usually stale cached HTML or mixed app
+> replicas). `UnknownAction` means Auth.js received an unsupported auth action.
 
 For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set `AUTH_URL` to that exact public URL so Auth.js can trust and generate the correct auth endpoints. `AUTH_URL` must be an origin only (scheme + host + optional port), not a path like `/api/auth` or `/api/auth/callback/google`.
 
@@ -164,8 +167,17 @@ For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set
 
 ### OAuth troubleshooting (common misconfigurations)
 
-- **`Unknown Action` from Auth.js** ← check this first
-  - **This almost always means `AUTH_URL` is wrong.** Set `AUTH_URL` to the exact origin users browse to — for example `http://hq.shank-home.net:3001` — not `http://localhost:3000`.
+- **`Failed to find Server Action "x"` from Next.js**
+  - This is not an allowlist decision. It means the submitted page came from an older/newer build than the container which handled the request.
+  - Arcane Codex starts login through the stable `/login/google` route, so rebuild and redeploy the current image before troubleshooting an old image.
+  - Remove any proxy/CDN cache for `/login` and restart every app replica. Make sure all replicas run the same image digest; do not mix old and new containers behind a load balancer.
+  - Reload `/login` without cache (or clear site data). A service worker or restored browser tab can retain old HTML.
+
+- **`UnknownAction` from Auth.js**
+  - Use `/login` (which starts OAuth at `/login/google`) rather than constructing a provider URL manually.
+
+- **Wrong callback host, cookie errors, or Google redirect mismatch**
+  - Set `AUTH_URL` to the exact origin users browse to — for example `http://hq.shank-home.net:3001` — not `http://localhost:3000`.
   - `AUTH_URL` must match the origin in your Google Cloud authorized redirect URI (`<AUTH_URL>/api/auth/callback/google`).
   - `AUTH_URL` must be origin-only — do not include a path (e.g. `http://localhost:3000/api/auth` is wrong).
   - `HOST_PORT` in `.env` must match the port in `AUTH_URL` (e.g. both `3001` for the custom-host deployment).
@@ -178,9 +190,12 @@ For non-localhost deployments (for example `http://hq.shank-home.net:3001`), set
     - `AUTH_URL/api/auth/callback/google`
   - Scheme (`http` vs `https`), host, and port must match exactly.
 
-- **Login succeeds with Google but app denies access**
-  - The signed-in email is not in the Arcane Codex allowlist.
-  - Ask an admin to add the email at `/admin/access`.
+- **Login succeeds with Google but Auth.js logs `AccessDenied`**
+  - Arcane Codex returns this error when Google's normalized email has no row in the PostgreSQL `AllowedEmail` table.
+  - After host cleanup, first verify that Compose mounted the original database volume: `docker compose ps`, then `docker volume ls | grep postgres_data`. Portainer stack/project renames can create a new, empty namespaced volume; volume pruning can remove an unattached volume.
+  - Check the live allowlist without printing passwords: `docker compose exec db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-arcane_codex}" -c 'SELECT email, role FROM "AllowedEmail" ORDER BY email;'`.
+  - If the expected rows and campaign data are missing, stop the stack and restore/reattach the original PostgreSQL volume or restore a backup. Do **not** run `prisma db seed` against a populated production database: this project's development seed deletes and recreates campaign data.
+  - If only an allowlist row is missing, insert the normalized lowercase email directly while locked out: `docker compose exec db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-arcane_codex}" -c \"INSERT INTO \\\"AllowedEmail\\\" (email, role, \\\"createdAt\\\", \\\"updatedAt\\\") VALUES ('admin@example.com', 'ADMIN', NOW(), NOW()) ON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role, \\\"updatedAt\\\" = NOW();\"`. Replace the example address, then clear the app's cookies and sign in again.
 
 - **Auth callback or state/cookie errors**
   - `AUTH_URL` must be the exact public origin users browse to.
