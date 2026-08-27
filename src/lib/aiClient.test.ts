@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { resolveGatewayEndpoint, resolveGatewayHeaders, resolveGatewayUrl } from './aiClient'
+import {
+  extractGatewayContent,
+  resolveGatewayEndpoint,
+  resolveGatewayHeaders,
+  resolveGatewayModel,
+  resolveGatewayUrl,
+} from './aiClient'
 
 test('resolveGatewayEndpoint accepts an origin, v1 base, or complete endpoint', () => {
   assert.equal(resolveGatewayEndpoint('http://ai-gateway:4000'), 'http://ai-gateway:4000/v1/chat/completions')
@@ -38,10 +44,35 @@ test('resolveGatewayUrl validates split gateway configuration', () => {
   assert.throws(() => resolveGatewayUrl({ AI_GATEWAY_HOST: 'gateway', AI_GATEWAY_PROTOCOL: 'ftp' }), /AI_GATEWAY_PROTOCOL/)
 })
 
-test('resolveGatewayHeaders sends the configured gateway key as a bearer token', () => {
-  assert.deepEqual(resolveGatewayHeaders({ AI_GATEWAY_API_KEY: ' gateway-secret ' }), {
+test('resolveGatewayHeaders reads and trims the gateway key at request time', () => {
+  assert.deepEqual(resolveGatewayHeaders({ AI_GATEWAY_API_KEY: ' secret-key ' }), {
     'content-type': 'application/json',
-    authorization: 'Bearer gateway-secret',
+    authorization: 'Bearer secret-key',
   })
-  assert.deepEqual(resolveGatewayHeaders({}), { 'content-type': 'application/json' })
+  assert.deepEqual(resolveGatewayHeaders({ AI_GATEWAY_API_KEY: '   ' }), {
+    'content-type': 'application/json',
+  })
+})
+
+test('resolveGatewayModel uses the balanced gateway class by default', () => {
+  assert.equal(resolveGatewayModel({}), 'balanced')
+  assert.equal(resolveGatewayModel({ AI_GATEWAY_MODEL: ' heavy ' }), 'heavy')
+  assert.equal(resolveGatewayModel({ AI_GATEWAY_MODEL: '   ' }), 'balanced')
+})
+
+test('extractGatewayContent supports OpenAI-compatible response variants', () => {
+  assert.equal(extractGatewayContent({ choices: [{ message: { content: 'Hello' } }] }), 'Hello')
+  assert.equal(extractGatewayContent({ choices: [{ text: 'Legacy completion' }] }), 'Legacy completion')
+  assert.equal(extractGatewayContent({ output_text: 'Gateway output' }), 'Gateway output')
+  assert.equal(extractGatewayContent({ response: 'OK' }), 'OK')
+  assert.equal(extractGatewayContent('OK'), 'OK')
+})
+
+test('extractGatewayContent joins structured text content parts', () => {
+  assert.equal(extractGatewayContent({
+    choices: [{ message: { content: [
+      { type: 'text', text: 'First' },
+      { type: 'text', text: { value: 'Second' } },
+    ] } }],
+  }), 'First\nSecond')
 })

@@ -24,7 +24,8 @@ campaign context stays in this application while model providers and routing sta
 in the gateway.
 
 Configure `AI_GATEWAY_URL` with the home-lab gateway's network-reachable URL and
-set `AI_GATEWAY_MODEL` to its configured LiteLLM model alias. Set
+set `AI_GATEWAY_MODEL` to one of its routing classes: `fast`, `balanced`, `heavy`,
+or `background`. Arcane Codex defaults to `balanced`. Set
 `AI_GATEWAY_API_KEY` when the gateway requires bearer authentication. The URL can
 be an origin, a `/v1` base URL, or a complete `/v1/chat/completions` URL. Docker
 Compose runs only the application and PostgreSQL; it does not pull or host a model.
@@ -34,10 +35,57 @@ blank and set `AI_GATEWAY_HOST` (a DNS hostname, IPv4 address, or IPv6 address) 
 `AI_GATEWAY_PORT` instead. `AI_GATEWAY_PROTOCOL` defaults to `http` and can be set
 to `https`. A configured `AI_GATEWAY_URL` takes precedence over these split values.
 
-`AI_GATEWAY_API_KEY` must be configured on the **Arcane Codex app deployment**
-(not only on the gateway). The app sends it server-side as
-`Authorization: Bearer <key>` on every gateway request. After adding or rotating
-the secret, restart/redeploy the app so the running server receives the new value.
+### Exporting deployment logs
+
+On the Docker host, export the logs from every container in the Portainer/Compose
+stack to `/mnt/38tb/containers/arcane-codex-deploy.log` with:
+
+```bash
+./scripts/export-deployment-logs.sh
+```
+
+The script includes stopped containers and combines each container's standard
+output and standard error. If the stack has a different project name in Portainer,
+set it explicitly:
+
+```bash
+PORTAINER_STACK_NAME=my-stack ./scripts/export-deployment-logs.sh
+```
+
+An alternate output path can be supplied as the first argument.
+
+### Troubleshooting gateway authentication
+
+An `AI gateway request failed (401)` message means the app reached the gateway,
+but the gateway rejected its credentials; it is not a slow or incomplete Arcane
+Codex deployment. Set `AI_GATEWAY_API_KEY` to a key issued by the gateway in the
+Portainer stack environment and recreate the app container so Compose passes the
+updated value into it. Restarting an existing container does not apply changed
+environment variables.
+
+Confirm that the variable is present without printing the secret:
+
+```bash
+docker compose exec app sh -c 'test -n "$AI_GATEWAY_API_KEY" && echo "AI gateway key is configured" || echo "AI gateway key is missing"'
+```
+
+If it is present and requests still return 401, replace it with a currently valid
+gateway-issued key and recreate the app service:
+
+```bash
+docker compose up -d --force-recreate app
+```
+
+An `Unknown model class` response means `AI_GATEWAY_MODEL` does not match a
+gateway routing class. Older deployments defaulted this value to `default`, which
+the gateway does not support. Change it to `balanced` (recommended for chat),
+`fast`, `heavy`, or `background`, and then recreate the app service.
+
+Arcane Codex accepts standard chat-completion message content, structured text
+content blocks, legacy completion text, and the gateway's top-level `response` or
+`output_text` fields. If a successful gateway response contains no recognized text,
+the application error lists the response field names to help diagnose a response
+contract mismatch without logging the potentially sensitive response body.
 
 ### Changing the host port
 
