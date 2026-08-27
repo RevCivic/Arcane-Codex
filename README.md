@@ -29,6 +29,11 @@ set `AI_GATEWAY_MODEL` to its configured LiteLLM model alias. Set
 be an origin, a `/v1` base URL, or a complete `/v1/chat/completions` URL. Docker
 Compose runs only the application and PostgreSQL; it does not pull or host a model.
 
+For deployments that manage connection details separately, leave `AI_GATEWAY_URL`
+blank and set `AI_GATEWAY_HOST` (a DNS hostname, IPv4 address, or IPv6 address) and
+`AI_GATEWAY_PORT` instead. `AI_GATEWAY_PROTOCOL` defaults to `http` and can be set
+to `https`. A configured `AI_GATEWAY_URL` takes precedence over these split values.
+
 ### Changing the host port
 
 Set `HOST_PORT` before starting Compose, or add it to your `.env` file:

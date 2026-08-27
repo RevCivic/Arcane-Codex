@@ -1,6 +1,5 @@
 import type { AIPromptContext } from '@/lib/aiPromptContext'
 
-const GATEWAY_URL = process.env.AI_GATEWAY_URL?.trim()
 const GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY?.trim()
 const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL?.trim() || 'default'
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_GATEWAY_TIMEOUT_MS) || 200_000
@@ -68,12 +67,35 @@ export function resolveGatewayEndpoint(baseUrl: string) {
   return `${normalized}/v1/chat/completions`
 }
 
+export function resolveGatewayUrl(env: NodeJS.ProcessEnv = process.env) {
+  const configuredUrl = env.AI_GATEWAY_URL?.trim()
+  if (configuredUrl) return configuredUrl
+
+  const host = env.AI_GATEWAY_HOST?.trim()
+  if (!host) throw new Error('AI_GATEWAY_URL or AI_GATEWAY_HOST is not configured')
+
+  const protocol = env.AI_GATEWAY_PROTOCOL?.trim().replace(/:$/, '') || 'http'
+  if (protocol !== 'http' && protocol !== 'https') {
+    throw new Error('AI_GATEWAY_PROTOCOL must be http or https')
+  }
+
+  const port = env.AI_GATEWAY_PORT?.trim()
+  if (port && (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535)) {
+    throw new Error('AI_GATEWAY_PORT must be a number between 1 and 65535')
+  }
+
+  // URL requires brackets around a bare IPv6 address. Already-bracketed values
+  // remain untouched, while DNS names and IPv4 addresses pass through as-is.
+  const normalizedHost = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host
+  return `${protocol}://${normalizedHost}${port ? `:${port}` : ''}`
+}
+
 async function complete(messages: GatewayMessage[], json = false): Promise<GatewayResult<unknown>> {
-  if (!GATEWAY_URL) throw new Error('AI_GATEWAY_URL is not configured')
+  const gatewayUrl = resolveGatewayUrl()
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   try {
-    const response = await fetch(resolveGatewayEndpoint(GATEWAY_URL), {
+    const response = await fetch(resolveGatewayEndpoint(gatewayUrl), {
       method: 'POST', cache: 'no-store', signal: controller.signal,
       headers: {
         'content-type': 'application/json',
