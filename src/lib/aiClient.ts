@@ -1,8 +1,6 @@
 import type { AIPromptContext } from '@/lib/aiPromptContext'
 
-const GATEWAY_URL = process.env.AI_GATEWAY_URL?.trim()
-const GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY?.trim()
-const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL?.trim() || 'default'
+const DEFAULT_GATEWAY_MODEL = 'balanced'
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_GATEWAY_TIMEOUT_MS) || 200_000
 const MAX_TOKENS = Number(process.env.AI_MAX_TOKENS) || 700
 const TEMPERATURE = Number(process.env.AI_TEMPERATURE) || 0.4
@@ -45,6 +43,30 @@ function asObject(value: unknown): Record<string, unknown> {
 
 function asString(value: unknown) { return typeof value === 'string' ? value.trim() : '' }
 
+function contentPartText(value: unknown): string {
+  if (typeof value === 'string') return value.trim()
+  const part = asObject(value)
+  return asString(part.text) || asString(asObject(part.text).value) || asString(part.content)
+}
+
+export function extractGatewayContent(value: unknown): string {
+  if (typeof value === 'string') return value.trim()
+
+  const payload = asObject(value)
+  const choice = asObject(Array.isArray(payload.choices) ? payload.choices[0] : undefined)
+  const messageContent = asObject(choice.message).content
+  if (Array.isArray(messageContent)) {
+    const content = messageContent.map(contentPartText).filter(Boolean).join('\n').trim()
+    if (content) return content
+  }
+
+  return contentPartText(messageContent)
+    || asString(choice.text)
+    || asString(payload.output_text)
+    || asString(payload.response)
+    || contentPartText(payload.content)
+}
+
 function asInt(value: unknown, fallback = 0) {
   const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : NaN
   return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback
@@ -68,32 +90,81 @@ export function resolveGatewayEndpoint(baseUrl: string) {
   return `${normalized}/v1/chat/completions`
 }
 
+export function resolveGatewayUrl(env: NodeJS.ProcessEnv = process.env) {
+  const configuredUrl = env.AI_GATEWAY_URL?.trim()
+  if (configuredUrl) return configuredUrl
+
+  const host = env.AI_GATEWAY_HOST?.trim()
+  if (!host) throw new Error('AI_GATEWAY_URL or AI_GATEWAY_HOST is not configured')
+
+  const protocol = env.AI_GATEWAY_PROTOCOL?.trim().replace(/:$/, '') || 'http'
+  if (protocol !== 'http' && protocol !== 'https') {
+    throw new Error('AI_GATEWAY_PROTOCOL must be http or https')
+  }
+
+  const port = env.AI_GATEWAY_PORT?.trim()
+  if (port && (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535)) {
+    throw new Error('AI_GATEWAY_PORT must be a number between 1 and 65535')
+  }
+
+  // URL requires brackets around a bare IPv6 address. Already-bracketed values
+  // remain untouched, while DNS names and IPv4 addresses pass through as-is.
+  const normalizedHost = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host
+  return `${protocol}://${normalizedHost}${port ? `:${port}` : ''}`
+}
+
+export function resolveGatewayHeaders(env: NodeJS.ProcessEnv = process.env) {
+  const apiKey = env.AI_GATEWAY_API_KEY?.trim()
+  return {
+    'content-type': 'application/json',
+    ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+  }
+}
+
+export function resolveGatewayModel(env: NodeJS.ProcessEnv = process.env) {
+  return env.AI_GATEWAY_MODEL?.trim() || DEFAULT_GATEWAY_MODEL
+}
+
 async function complete(messages: GatewayMessage[], json = false): Promise<GatewayResult<unknown>> {
-  if (!GATEWAY_URL) throw new Error('AI_GATEWAY_URL is not configured')
+  const gatewayUrl = resolveGatewayUrl()
+  const gatewayModel = resolveGatewayModel()
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   try {
-    const response = await fetch(resolveGatewayEndpoint(GATEWAY_URL), {
+    const response = await fetch(resolveGatewayEndpoint(gatewayUrl), {
       method: 'POST', cache: 'no-store', signal: controller.signal,
-      headers: {
-        'content-type': 'application/json',
-        ...(GATEWAY_API_KEY ? { authorization: `Bearer ${GATEWAY_API_KEY}` } : {}),
-      },
+      headers: resolveGatewayHeaders(),
       body: JSON.stringify({
-        model: GATEWAY_MODEL, messages, temperature: TEMPERATURE, max_tokens: MAX_TOKENS,
+        model: gatewayModel, messages, temperature: TEMPERATURE, max_tokens: MAX_TOKENS,
         ...(json ? { response_format: { type: 'json_object' } } : {}),
       }),
     })
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 500)
-      throw new Error(`AI gateway request failed (${response.status})${detail ? `: ${detail}` : ''}`)
+      const authenticationHint = response.status === 401
+        ? ' Verify that AI_GATEWAY_API_KEY is set to a gateway-issued key in the running app container, then recreate the container.'
+        : ''
+      const modelHint = response.status === 400 && detail.includes('Unknown model class')
+        ? ' Set AI_GATEWAY_MODEL to a model class supported by the gateway (for example: fast, balanced, heavy, or background), then recreate the container.'
+        : ''
+      throw new Error(`AI gateway request failed (${response.status})${detail ? `: ${detail}` : ''}.${authenticationHint}${modelHint}`)
     }
-    const payload = asObject(await response.json())
-    const choice = asObject(Array.isArray(payload.choices) ? payload.choices[0] : undefined)
-    const content = asString(asObject(choice.message).content)
-    if (!content) throw new Error('AI gateway returned an empty response')
+    const responseText = await response.text()
+    let responsePayload: unknown
+    try {
+      responsePayload = JSON.parse(responseText)
+    } catch {
+      responsePayload = responseText
+    }
+    const payload = asObject(responsePayload)
+    const content = extractGatewayContent(responsePayload)
+    if (!content) {
+      const responseKeys = Object.keys(payload)
+      const detail = responseKeys.length ? ` (response fields: ${responseKeys.join(', ')})` : ''
+      throw new Error(`AI gateway returned a successful response without text content${detail}`)
+    }
     return {
-      modelName: asString(payload.model) || GATEWAY_MODEL,
+      modelName: asString(payload.model) || gatewayModel,
       modelVersion: asString(payload.id) || 'gateway',
       value: json ? parseJson(content) : content,
     }
