@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { resolveGatewayEndpoint, resolveGatewayUrl } from './aiClient'
+import { resolveGatewayEndpoint, resolveGatewayHeaders, resolveGatewayUrl } from './aiClient'
 
 test('resolveGatewayEndpoint accepts an origin, v1 base, or complete endpoint', () => {
   assert.equal(resolveGatewayEndpoint('http://ai-gateway:4000'), 'http://ai-gateway:4000/v1/chat/completions')
@@ -36,4 +36,12 @@ test('resolveGatewayUrl validates split gateway configuration', () => {
   assert.throws(() => resolveGatewayUrl({}), /AI_GATEWAY_URL or AI_GATEWAY_HOST is not configured/)
   assert.throws(() => resolveGatewayUrl({ AI_GATEWAY_HOST: 'gateway', AI_GATEWAY_PORT: '70000' }), /AI_GATEWAY_PORT/)
   assert.throws(() => resolveGatewayUrl({ AI_GATEWAY_HOST: 'gateway', AI_GATEWAY_PROTOCOL: 'ftp' }), /AI_GATEWAY_PROTOCOL/)
+})
+
+test('resolveGatewayHeaders sends the configured gateway key as a bearer token', () => {
+  assert.deepEqual(resolveGatewayHeaders({ AI_GATEWAY_API_KEY: ' gateway-secret ' }), {
+    'content-type': 'application/json',
+    authorization: 'Bearer gateway-secret',
+  })
+  assert.deepEqual(resolveGatewayHeaders({}), { 'content-type': 'application/json' })
 })

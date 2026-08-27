@@ -34,6 +34,11 @@ blank and set `AI_GATEWAY_HOST` (a DNS hostname, IPv4 address, or IPv6 address) 
 `AI_GATEWAY_PORT` instead. `AI_GATEWAY_PROTOCOL` defaults to `http` and can be set
 to `https`. A configured `AI_GATEWAY_URL` takes precedence over these split values.
 
+`AI_GATEWAY_API_KEY` must be configured on the **Arcane Codex app deployment**
+(not only on the gateway). The app sends it server-side as
+`Authorization: Bearer <key>` on every gateway request. After adding or rotating
+the secret, restart/redeploy the app so the running server receives the new value.
+
 ### Changing the host port
 
 Set `HOST_PORT` before starting Compose, or add it to your `.env` file:

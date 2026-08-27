@@ -1,6 +1,5 @@
 import type { AIPromptContext } from '@/lib/aiPromptContext'
 
-const GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY?.trim()
 const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL?.trim() || 'default'
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_GATEWAY_TIMEOUT_MS) || 200_000
 const MAX_TOKENS = Number(process.env.AI_MAX_TOKENS) || 700
@@ -90,6 +89,14 @@ export function resolveGatewayUrl(env: NodeJS.ProcessEnv = process.env) {
   return `${protocol}://${normalizedHost}${port ? `:${port}` : ''}`
 }
 
+export function resolveGatewayHeaders(env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  const apiKey = env.AI_GATEWAY_API_KEY?.trim()
+  return {
+    'content-type': 'application/json',
+    ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+  }
+}
+
 async function complete(messages: GatewayMessage[], json = false): Promise<GatewayResult<unknown>> {
   const gatewayUrl = resolveGatewayUrl()
   const controller = new AbortController()
@@ -97,10 +104,7 @@ async function complete(messages: GatewayMessage[], json = false): Promise<Gatew
   try {
     const response = await fetch(resolveGatewayEndpoint(gatewayUrl), {
       method: 'POST', cache: 'no-store', signal: controller.signal,
-      headers: {
-        'content-type': 'application/json',
-        ...(GATEWAY_API_KEY ? { authorization: `Bearer ${GATEWAY_API_KEY}` } : {}),
-      },
+      headers: resolveGatewayHeaders(),
       body: JSON.stringify({
         model: GATEWAY_MODEL, messages, temperature: TEMPERATURE, max_tokens: MAX_TOKENS,
         ...(json ? { response_format: { type: 'json_object' } } : {}),
@@ -108,7 +112,10 @@ async function complete(messages: GatewayMessage[], json = false): Promise<Gatew
     })
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 500)
-      throw new Error(`AI gateway request failed (${response.status})${detail ? `: ${detail}` : ''}`)
+      const authHint = response.status === 401
+        ? ' Verify that AI_GATEWAY_API_KEY is set to the gateway-issued key in the app deployment environment, then restart the app.'
+        : ''
+      throw new Error(`AI gateway request failed (${response.status})${detail ? `: ${detail}` : ''}${authHint}`)
     }
     const payload = asObject(await response.json())
     const choice = asObject(Array.isArray(payload.choices) ? payload.choices[0] : undefined)
