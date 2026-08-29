@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  buildGatewayRequestBody,
   extractGatewayContent,
+  formatGatewayResponseForLog,
   resolveGatewayEndpoint,
   resolveGatewayHeaders,
   resolveGatewayModel,
@@ -75,4 +77,23 @@ test('extractGatewayContent joins structured text content parts', () => {
       { type: 'text', text: { value: 'Second' } },
     ] } }],
   }), 'First\nSecond')
+})
+
+test('formatGatewayResponseForLog preserves short responses and identifies truncation', () => {
+  assert.equal(formatGatewayResponseForLog('{"unexpected":true}', 100), '{"unexpected":true}')
+  assert.equal(
+    formatGatewayResponseForLog('abcdefghij', 4),
+    'abcd… [truncated 6 characters]',
+  )
+})
+
+test('buildGatewayRequestBody leaves completion length under gateway control', () => {
+  const body = buildGatewayRequestBody([{ role: 'user', content: 'Hello' }], 'balanced')
+  assert.deepEqual(body, {
+    model: 'balanced',
+    messages: [{ role: 'user', content: 'Hello' }],
+    temperature: 0.4,
+  })
+  assert.equal('max_tokens' in body, false)
+  assert.equal('max_completion_tokens' in body, false)
 })

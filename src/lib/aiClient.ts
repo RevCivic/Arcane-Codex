@@ -2,8 +2,8 @@ import type { AIPromptContext } from '@/lib/aiPromptContext'
 
 const DEFAULT_GATEWAY_MODEL = 'balanced'
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_GATEWAY_TIMEOUT_MS) || 200_000
-const MAX_TOKENS = Number(process.env.AI_MAX_TOKENS) || 700
 const TEMPERATURE = Number(process.env.AI_TEMPERATURE) || 0.4
+const MAX_DIAGNOSTIC_RESPONSE_LENGTH = 4_000
 
 export type CharacterTextSuggestion = {
   description: string
@@ -31,7 +31,7 @@ export type CharacterBulkTextSuggestion = { rowIndex: number; role: string; stat
 export type SkillPromptInput = { id: number; name: string; category: string | null; baseValue: number }
 type AIPromptContextInput = Partial<Omit<AIPromptContext, 'entityType'>> & { entityType?: string }
 type GatewayResult<T> = { modelName: string; modelVersion: string; value: T }
-type GatewayMessage = { role: 'system' | 'user' | 'assistant'; content: string }
+export type GatewayMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, Math.trunc(value)))
@@ -67,6 +67,11 @@ export function extractGatewayContent(value: unknown): string {
     || contentPartText(payload.content)
 }
 
+export function formatGatewayResponseForLog(responseText: string, maxLength = MAX_DIAGNOSTIC_RESPONSE_LENGTH) {
+  if (responseText.length <= maxLength) return responseText
+  return `${responseText.slice(0, maxLength)}… [truncated ${responseText.length - maxLength} characters]`
+}
+
 function asInt(value: unknown, fallback = 0) {
   const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : NaN
   return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback
@@ -90,7 +95,7 @@ export function resolveGatewayEndpoint(baseUrl: string) {
   return `${normalized}/v1/chat/completions`
 }
 
-export function resolveGatewayUrl(env: NodeJS.ProcessEnv = process.env) {
+export function resolveGatewayUrl(env: Record<string, string | undefined> = process.env) {
   const configuredUrl = env.AI_GATEWAY_URL?.trim()
   if (configuredUrl) return configuredUrl
 
@@ -113,7 +118,7 @@ export function resolveGatewayUrl(env: NodeJS.ProcessEnv = process.env) {
   return `${protocol}://${normalizedHost}${port ? `:${port}` : ''}`
 }
 
-export function resolveGatewayHeaders(env: NodeJS.ProcessEnv = process.env) {
+export function resolveGatewayHeaders(env: Record<string, string | undefined> = process.env) {
   const apiKey = env.AI_GATEWAY_API_KEY?.trim()
   return {
     'content-type': 'application/json',
@@ -121,8 +126,17 @@ export function resolveGatewayHeaders(env: NodeJS.ProcessEnv = process.env) {
   }
 }
 
-export function resolveGatewayModel(env: NodeJS.ProcessEnv = process.env) {
+export function resolveGatewayModel(env: Record<string, string | undefined> = process.env) {
   return env.AI_GATEWAY_MODEL?.trim() || DEFAULT_GATEWAY_MODEL
+}
+
+export function buildGatewayRequestBody(messages: GatewayMessage[], model: string, json = false) {
+  return {
+    model,
+    messages,
+    temperature: TEMPERATURE,
+    ...(json ? { response_format: { type: 'json_object' as const } } : {}),
+  }
 }
 
 async function complete(messages: GatewayMessage[], json = false): Promise<GatewayResult<unknown>> {
@@ -134,10 +148,7 @@ async function complete(messages: GatewayMessage[], json = false): Promise<Gatew
     const response = await fetch(resolveGatewayEndpoint(gatewayUrl), {
       method: 'POST', cache: 'no-store', signal: controller.signal,
       headers: resolveGatewayHeaders(),
-      body: JSON.stringify({
-        model: gatewayModel, messages, temperature: TEMPERATURE, max_tokens: MAX_TOKENS,
-        ...(json ? { response_format: { type: 'json_object' } } : {}),
-      }),
+      body: JSON.stringify(buildGatewayRequestBody(messages, gatewayModel, json)),
     })
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 500)
@@ -159,6 +170,11 @@ async function complete(messages: GatewayMessage[], json = false): Promise<Gatew
     const payload = asObject(responsePayload)
     const content = extractGatewayContent(responsePayload)
     if (!content) {
+      console.error('[ai-gateway] Unable to extract text from successful chat completion response', {
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+        responseBody: formatGatewayResponseForLog(responseText),
+      })
       const responseKeys = Object.keys(payload)
       const detail = responseKeys.length ? ` (response fields: ${responseKeys.join(', ')})` : ''
       throw new Error(`AI gateway returned a successful response without text content${detail}`)

@@ -17,9 +17,10 @@ type Props = {
   activeSessionId?: number | null
   onSelectSession: (id: number) => void
   onNewSession: () => void
+  onDeleteSession: (id: number) => void
 }
 
-export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onNewSession }: Props) {
+export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onNewSession, onDeleteSession }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -40,6 +41,7 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
     if (!confirm(`Delete session "${title}"? This cannot be undone.`)) return
     startTransition(async () => {
       await deleteChatSession(id)
+      onDeleteSession(id)
     })
   }
 
