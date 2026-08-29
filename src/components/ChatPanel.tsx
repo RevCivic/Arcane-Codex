@@ -46,6 +46,11 @@ export function ChatPanel({
     setSidebarOpen(false)
   }
 
+  const removeSession = (id: number) => {
+    setSessions((prev) => prev.filter((session) => session.id !== id))
+    if (activeSessionId === id) startNewSession()
+  }
+
   const sendMessage = async (text: string) => {
     const userMsg: ChatMessage = { role: 'user', content: text }
     setMessages((prev) => [...prev, userMsg])
@@ -127,6 +132,7 @@ export function ChatPanel({
           activeSessionId={activeSessionId}
           onSelectSession={loadSession}
           onNewSession={startNewSession}
+          onDeleteSession={removeSession}
         />
       </div>
 
@@ -167,6 +173,7 @@ export function ChatPanel({
                 activeSessionId={activeSessionId}
                 onSelectSession={loadSession}
                 onNewSession={startNewSession}
+                onDeleteSession={removeSession}
               />
             </div>
             <button
