@@ -102,9 +102,8 @@ export async function renameChatSession(sessionId: number, title: string) {
 
 export async function deleteChatSession(sessionId: number) {
   await requireAdminUser()
-  const session = await prisma.chatSession.findUnique({ where: { id: sessionId } })
-  if (!session) throw new Error('Session not found')
-
-  await prisma.chatSession.delete({ where: { id: sessionId } })
+  // Treat an already-removed session as a successful delete. This avoids a noisy
+  // server-action exception when two tabs or a stale sidebar delete the same row.
+  await prisma.chatSession.deleteMany({ where: { id: sessionId } })
   revalidatePath('/chat')
 }

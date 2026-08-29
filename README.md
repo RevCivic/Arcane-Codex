@@ -83,9 +83,15 @@ the gateway does not support. Change it to `balanced` (recommended for chat),
 
 Arcane Codex accepts standard chat-completion message content, structured text
 content blocks, legacy completion text, and the gateway's top-level `response` or
-`output_text` fields. If a successful gateway response contains no recognized text,
-the application error lists the response field names to help diagnose a response
-contract mismatch without logging the potentially sensitive response body.
+`output_text` fields. If an empty response reports that `completion_tokens` equals
+the requested `max_tokens`, the model likely spent its allowance before producing
+visible text (this is common with reasoning models and large campaign prompts).
+Arcane Codex retries that response once with a larger allowance. Set
+`AI_MAX_TOKENS` higher if this happens frequently; `2000` is the default.
+
+If the retry is also empty, the application logs the response status, content type,
+and at most 4,000 characters of the gateway response body. Gateway responses may
+contain campaign content, so restrict production log access appropriately.
 
 ### Changing the host port
 

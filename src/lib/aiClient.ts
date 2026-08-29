@@ -2,8 +2,9 @@ import type { AIPromptContext } from '@/lib/aiPromptContext'
 
 const DEFAULT_GATEWAY_MODEL = 'balanced'
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_GATEWAY_TIMEOUT_MS) || 200_000
-const MAX_TOKENS = Number(process.env.AI_MAX_TOKENS) || 700
+const MAX_TOKENS = Number(process.env.AI_MAX_TOKENS) || 2_000
 const TEMPERATURE = Number(process.env.AI_TEMPERATURE) || 0.4
+const MAX_DIAGNOSTIC_RESPONSE_LENGTH = 4_000
 
 export type CharacterTextSuggestion = {
   description: string
@@ -67,6 +68,18 @@ export function extractGatewayContent(value: unknown): string {
     || contentPartText(payload.content)
 }
 
+export function formatGatewayResponseForLog(responseText: string, maxLength = MAX_DIAGNOSTIC_RESPONSE_LENGTH) {
+  if (responseText.length <= maxLength) return responseText
+  return `${responseText.slice(0, maxLength)}… [truncated ${responseText.length - maxLength} characters]`
+}
+
+export function getEmptyResponseRetryMaxTokens(value: unknown, requestedMaxTokens: number) {
+  const usage = asObject(asObject(value).usage)
+  const completionTokens = asInt(usage.completion_tokens)
+  if (completionTokens < requestedMaxTokens) return null
+  return Math.min(8_192, Math.max(4_096, requestedMaxTokens * 2))
+}
+
 function asInt(value: unknown, fallback = 0) {
   const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : NaN
   return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback
@@ -90,7 +103,7 @@ export function resolveGatewayEndpoint(baseUrl: string) {
   return `${normalized}/v1/chat/completions`
 }
 
-export function resolveGatewayUrl(env: NodeJS.ProcessEnv = process.env) {
+export function resolveGatewayUrl(env: Record<string, string | undefined> = process.env) {
   const configuredUrl = env.AI_GATEWAY_URL?.trim()
   if (configuredUrl) return configuredUrl
 
@@ -113,7 +126,7 @@ export function resolveGatewayUrl(env: NodeJS.ProcessEnv = process.env) {
   return `${protocol}://${normalizedHost}${port ? `:${port}` : ''}`
 }
 
-export function resolveGatewayHeaders(env: NodeJS.ProcessEnv = process.env) {
+export function resolveGatewayHeaders(env: Record<string, string | undefined> = process.env) {
   const apiKey = env.AI_GATEWAY_API_KEY?.trim()
   return {
     'content-type': 'application/json',
@@ -121,11 +134,16 @@ export function resolveGatewayHeaders(env: NodeJS.ProcessEnv = process.env) {
   }
 }
 
-export function resolveGatewayModel(env: NodeJS.ProcessEnv = process.env) {
+export function resolveGatewayModel(env: Record<string, string | undefined> = process.env) {
   return env.AI_GATEWAY_MODEL?.trim() || DEFAULT_GATEWAY_MODEL
 }
 
-async function complete(messages: GatewayMessage[], json = false): Promise<GatewayResult<unknown>> {
+async function complete(
+  messages: GatewayMessage[],
+  json = false,
+  maxTokens = MAX_TOKENS,
+  retryEmptyResponse = true,
+): Promise<GatewayResult<unknown>> {
   const gatewayUrl = resolveGatewayUrl()
   const gatewayModel = resolveGatewayModel()
   const controller = new AbortController()
@@ -135,7 +153,7 @@ async function complete(messages: GatewayMessage[], json = false): Promise<Gatew
       method: 'POST', cache: 'no-store', signal: controller.signal,
       headers: resolveGatewayHeaders(),
       body: JSON.stringify({
-        model: gatewayModel, messages, temperature: TEMPERATURE, max_tokens: MAX_TOKENS,
+        model: gatewayModel, messages, temperature: TEMPERATURE, max_tokens: maxTokens,
         ...(json ? { response_format: { type: 'json_object' } } : {}),
       }),
     })
@@ -159,6 +177,22 @@ async function complete(messages: GatewayMessage[], json = false): Promise<Gatew
     const payload = asObject(responsePayload)
     const content = extractGatewayContent(responsePayload)
     if (!content) {
+      const retryMaxTokens = retryEmptyResponse
+        ? getEmptyResponseRetryMaxTokens(responsePayload, maxTokens)
+        : null
+      if (retryMaxTokens) {
+        console.warn('[ai-gateway] Completion consumed the entire token allowance without returning text; retrying', {
+          requestedMaxTokens: maxTokens,
+          retryMaxTokens,
+          model: asString(payload.model) || gatewayModel,
+        })
+        return complete(messages, json, retryMaxTokens, false)
+      }
+      console.error('[ai-gateway] Unable to extract text from successful chat completion response', {
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+        responseBody: formatGatewayResponseForLog(responseText),
+      })
       const responseKeys = Object.keys(payload)
       const detail = responseKeys.length ? ` (response fields: ${responseKeys.join(', ')})` : ''
       throw new Error(`AI gateway returned a successful response without text content${detail}`)

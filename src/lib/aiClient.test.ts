@@ -3,6 +3,8 @@ import test from 'node:test'
 
 import {
   extractGatewayContent,
+  formatGatewayResponseForLog,
+  getEmptyResponseRetryMaxTokens,
   resolveGatewayEndpoint,
   resolveGatewayHeaders,
   resolveGatewayModel,
@@ -75,4 +77,19 @@ test('extractGatewayContent joins structured text content parts', () => {
       { type: 'text', text: { value: 'Second' } },
     ] } }],
   }), 'First\nSecond')
+})
+
+test('formatGatewayResponseForLog preserves short responses and identifies truncation', () => {
+  assert.equal(formatGatewayResponseForLog('{"unexpected":true}', 100), '{"unexpected":true}')
+  assert.equal(
+    formatGatewayResponseForLog('abcdefghij', 4),
+    'abcd… [truncated 6 characters]',
+  )
+})
+
+test('getEmptyResponseRetryMaxTokens retries responses that exhaust their token allowance', () => {
+  assert.equal(getEmptyResponseRetryMaxTokens({ usage: { completion_tokens: 700 } }, 700), 4096)
+  assert.equal(getEmptyResponseRetryMaxTokens({ usage: { completion_tokens: 4096 } }, 4096), 8192)
+  assert.equal(getEmptyResponseRetryMaxTokens({ usage: { completion_tokens: 699 } }, 700), null)
+  assert.equal(getEmptyResponseRetryMaxTokens({}, 700), null)
 })
