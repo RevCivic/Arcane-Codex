@@ -4,6 +4,7 @@ const DEFAULT_GATEWAY_MODEL = 'balanced'
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_GATEWAY_TIMEOUT_MS) || 200_000
 const MAX_TOKENS = Number(process.env.AI_MAX_TOKENS) || 700
 const TEMPERATURE = Number(process.env.AI_TEMPERATURE) || 0.4
+const MAX_DIAGNOSTIC_RESPONSE_LENGTH = 4_000
 
 export type CharacterTextSuggestion = {
   description: string
@@ -65,6 +66,11 @@ export function extractGatewayContent(value: unknown): string {
     || asString(payload.output_text)
     || asString(payload.response)
     || contentPartText(payload.content)
+}
+
+export function formatGatewayResponseForLog(responseText: string, maxLength = MAX_DIAGNOSTIC_RESPONSE_LENGTH) {
+  if (responseText.length <= maxLength) return responseText
+  return `${responseText.slice(0, maxLength)}… [truncated ${responseText.length - maxLength} characters]`
 }
 
 function asInt(value: unknown, fallback = 0) {
@@ -159,6 +165,11 @@ async function complete(messages: GatewayMessage[], json = false): Promise<Gatew
     const payload = asObject(responsePayload)
     const content = extractGatewayContent(responsePayload)
     if (!content) {
+      console.error('[ai-gateway] Unable to extract text from successful chat completion response', {
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+        responseBody: formatGatewayResponseForLog(responseText),
+      })
       const responseKeys = Object.keys(payload)
       const detail = responseKeys.length ? ` (response fields: ${responseKeys.join(', ')})` : ''
       throw new Error(`AI gateway returned a successful response without text content${detail}`)

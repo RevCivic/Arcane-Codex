@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   extractGatewayContent,
+  formatGatewayResponseForLog,
   resolveGatewayEndpoint,
   resolveGatewayHeaders,
   resolveGatewayModel,
@@ -75,4 +76,12 @@ test('extractGatewayContent joins structured text content parts', () => {
       { type: 'text', text: { value: 'Second' } },
     ] } }],
   }), 'First\nSecond')
+})
+
+test('formatGatewayResponseForLog preserves short responses and identifies truncation', () => {
+  assert.equal(formatGatewayResponseForLog('{"unexpected":true}', 100), '{"unexpected":true}')
+  assert.equal(
+    formatGatewayResponseForLog('abcdefghij', 4),
+    'abcd… [truncated 6 characters]',
+  )
 })
