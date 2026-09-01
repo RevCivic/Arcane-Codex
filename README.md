@@ -95,6 +95,11 @@ suggests primary BRP characteristics and skill percentages; Arcane Codex calcula
 HP, sanity, magic points, luck, and build deterministically from those primary
 characteristics before presenting the suggestion.
 
+Structured character-generation requests ask for JSON in the prompt but do not send
+the provider-specific `response_format` option. This keeps them on the same proven
+gateway request path as chat while the client continues to parse plain, fenced, or
+embedded JSON responses.
+
 If a response is empty, the application logs the response status, content type, and
 at most 4,000 characters of the gateway response body. Gateway responses may contain
 campaign content, so restrict production log access appropriately.

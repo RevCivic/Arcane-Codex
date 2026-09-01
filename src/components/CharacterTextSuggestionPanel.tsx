@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { captureAIFeedback, generateCharacterTextSuggestion } from '@/app/actions'
 import { AIPromptContextFields } from '@/components/AIPromptContextFields'
 import { DEFAULT_AI_PROMPT_CONTEXT, type AIPromptContext } from '@/lib/aiPromptContext'
+import { getAIActionErrorMessage } from '@/lib/aiActionError'
 
 type Suggestion = {
   description: string
@@ -50,31 +51,36 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
     setLoading(true)
     setError(null)
 
-    const result = await generateCharacterTextSuggestion({
-      characterId,
-      name: getInputValue(form, 'name'),
-      firstName: getInputValue(form, 'firstName'),
-      lastName: getInputValue(form, 'lastName'),
-      race: getInputValue(form, 'race'),
-      gender: getInputValue(form, 'gender'),
-      role: getInputValue(form, 'role'),
-      affiliation: getInputValue(form, 'affiliation'),
-      currentCase: getInputValue(form, 'currentCase'),
-      currentLocation: getInputValue(form, 'currentLocation'),
-      homeOrigin: getInputValue(form, 'homeOrigin'),
-      description: getInputValue(form, 'description'),
-      additionalPrompt,
-      promptContext,
-    })
+    try {
+      const result = await generateCharacterTextSuggestion({
+        characterId,
+        name: getInputValue(form, 'name'),
+        firstName: getInputValue(form, 'firstName'),
+        lastName: getInputValue(form, 'lastName'),
+        race: getInputValue(form, 'race'),
+        gender: getInputValue(form, 'gender'),
+        role: getInputValue(form, 'role'),
+        affiliation: getInputValue(form, 'affiliation'),
+        currentCase: getInputValue(form, 'currentCase'),
+        currentLocation: getInputValue(form, 'currentLocation'),
+        homeOrigin: getInputValue(form, 'homeOrigin'),
+        description: getInputValue(form, 'description'),
+        additionalPrompt,
+        promptContext,
+      })
 
-    setLoading(false)
-    if (!result.ok || !result.suggestion || !result.generationId) {
-      setError(result.error ?? 'AI suggestion failed')
-      return
+      if (!result.ok || !result.suggestion || !result.generationId) {
+        setError(result.error ?? 'AI suggestion failed')
+        return
+      }
+
+      setGenerationId(result.generationId)
+      setSuggestion(result.suggestion)
+    } catch (error) {
+      setError(getAIActionErrorMessage(error, 'AI suggestion failed'))
+    } finally {
+      setLoading(false)
     }
-
-    setGenerationId(result.generationId)
-    setSuggestion(result.suggestion)
   }
 
   async function handleFeedback(status: 'ACCEPTED' | 'EDITED' | 'REJECTED', event: React.MouseEvent<HTMLButtonElement>) {

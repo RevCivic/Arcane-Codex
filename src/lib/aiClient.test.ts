@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { getAIActionErrorMessage } from './aiActionError'
 
 import {
   buildGatewayRequestBody,
@@ -97,6 +98,15 @@ test('buildGatewayRequestBody leaves completion length under gateway control', (
   })
   assert.equal('max_tokens' in body, false)
   assert.equal('max_completion_tokens' in body, false)
+  assert.equal('response_format' in body, false)
+})
+
+test('getAIActionErrorMessage explains stale deployment action IDs', () => {
+  assert.equal(
+    getAIActionErrorMessage(new Error('Failed to find Server Action "x". This request might be from an older or newer deployment.'), 'Failed'),
+    'The application was updated while this page was open. Refresh the page and try again.',
+  )
+  assert.equal(getAIActionErrorMessage(new Error('Gateway unavailable'), 'Failed'), 'Gateway unavailable')
 })
 
 test('deriveCharacterStats calculates BRP derived values from primary characteristics', () => {

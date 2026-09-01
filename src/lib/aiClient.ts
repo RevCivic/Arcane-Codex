@@ -130,12 +130,11 @@ export function resolveGatewayModel(env: Record<string, string | undefined> = pr
   return env.AI_GATEWAY_MODEL?.trim() || DEFAULT_GATEWAY_MODEL
 }
 
-export function buildGatewayRequestBody(messages: GatewayMessage[], model: string, json = false) {
+export function buildGatewayRequestBody(messages: GatewayMessage[], model: string) {
   return {
     model,
     messages,
     temperature: TEMPERATURE,
-    ...(json ? { response_format: { type: 'json_object' as const } } : {}),
   }
 }
 
@@ -148,7 +147,7 @@ async function complete(messages: GatewayMessage[], json = false): Promise<Gatew
     const response = await fetch(resolveGatewayEndpoint(gatewayUrl), {
       method: 'POST', cache: 'no-store', signal: controller.signal,
       headers: resolveGatewayHeaders(),
-      body: JSON.stringify(buildGatewayRequestBody(messages, gatewayModel, json)),
+      body: JSON.stringify(buildGatewayRequestBody(messages, gatewayModel)),
     })
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 500)
