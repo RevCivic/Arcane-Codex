@@ -79,7 +79,7 @@ export default async function AdminSkillsPage() {
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Base Value (%)</label>
-            <input name="baseValue" type="number" min={0} max={100} defaultValue={0} className={inputClass} />
+            <input name="baseValue" type="number" min={0} max={999} defaultValue={0} className={inputClass} />
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Sort Order</label>

@@ -8,9 +8,10 @@ const HIGH_LUCK_BONUS_ROLLS = new Set([1, 69])
 const DOUBLE_DIGIT_ROLLS = new Set([11, 22, 33, 44, 55, 66, 77, 88, 99])
 
 export function getD100ResultType(roll: number, target: number): D100ResultType {
+  // Natural 99 or 100 are always failures/fumbles, regardless of target
+  if (roll === 100 || roll === 99) return 'FUMBLE'
   if (HIGH_LUCK_BONUS_ROLLS.has(roll)) return 'CRITICAL'
   if (DOUBLE_DIGIT_ROLLS.has(roll)) return roll <= target ? 'CRITICAL' : 'FUMBLE'
-  if (roll === 100) return 'FUMBLE'
   if (target < 50 && roll >= 96) return 'FUMBLE'
   if (roll <= target) return 'SUCCESS'
   return 'FAILURE'

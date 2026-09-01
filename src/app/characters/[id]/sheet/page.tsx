@@ -500,7 +500,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                                       type="number"
                                       defaultValue={customValue ?? ''}
                                       min={0}
-                                      max={100}
+                                      max={999}
                                       placeholder={String(skill.baseValue)}
                                       className="arcane-input text-center font-bold"
                                       style={{ width: '60px', color: customValue !== undefined ? '#a78bfa' : '#6b7280' }}
