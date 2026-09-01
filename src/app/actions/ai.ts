@@ -133,6 +133,38 @@ async function assertCharacterAccess(characterId: number, user: { email: string;
   }
 }
 
+async function getCharacterAIContext(characterId: number | null) {
+  if (characterId === null) return null
+  const character = await prisma.character.findUnique({
+    where: { id: characterId },
+    select: {
+      id: true, name: true, firstName: true, lastName: true, race: true, gender: true,
+      age: true, role: true, description: true, affiliation: true, currentCase: true,
+      currentLocation: true, homeOrigin: true, status: true,
+      tags: { select: { name: true } },
+      sheet: {
+        select: {
+          str: true, con: true, siz: true, dex: true, intelligence: true, pow: true,
+          cha: true, app: true, edu: true, currentHp: true, maxHp: true,
+          currentSanity: true, maxSanity: true, currentMp: true, maxMp: true,
+          luck: true, build: true, wounds: true, notes: true,
+        },
+      },
+      characterPowers: {
+        select: { modifier: true, notes: true, power: { select: { name: true, description: true } } },
+      },
+    },
+  })
+  if (!character) return null
+  const { characterPowers, ...details } = character
+  return {
+    ...details,
+    age: character.age?.toString() ?? null,
+    tags: character.tags.map(({ name }) => name),
+    powers: characterPowers.map(({ power, ...assignment }) => ({ ...power, ...assignment })),
+  }
+}
+
 // ─── Server Actions ───────────────────────────────────────────────────────────
 
 export async function generateCharacterTextSuggestion(
@@ -148,6 +180,7 @@ export async function generateCharacterTextSuggestion(
 
     if (characterId !== null) await assertCharacterAccess(characterId, user)
 
+    const existingCharacter = await getCharacterAIContext(characterId)
     const aiPayload = {
       name: (input.name ?? '').trim(),
       firstName: (input.firstName ?? '').trim(),
@@ -171,6 +204,7 @@ export async function generateCharacterTextSuggestion(
         metaphysicalNature: (input.promptContext?.metaphysicalNature ?? '').trim(),
         mechanicalFocus: (input.promptContext?.mechanicalFocus ?? '').trim(),
       },
+      existingCharacter,
     }
 
     const [primaryPromptConfig, loreContext] = await Promise.all([
@@ -212,10 +246,13 @@ export async function generateCharacterStatsSkillsSuggestion(
         : null
     if (characterId !== null) await assertCharacterAccess(characterId, user)
 
-    const skills = await prisma.skill.findMany({
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      select: { id: true, name: true, category: true, baseValue: true },
-    })
+    const [skills, characterDetails] = await Promise.all([
+      prisma.skill.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        select: { id: true, name: true, category: true, baseValue: true },
+      }),
+      getCharacterAIContext(characterId),
+    ])
 
     const aiPayload = {
       name: (input.name ?? '').trim(),
@@ -234,6 +271,7 @@ export async function generateCharacterStatsSkillsSuggestion(
         mechanicalFocus: (input.promptContext?.mechanicalFocus ?? '').trim(),
       },
       skills,
+      characterDetails,
     }
 
     const [primaryPromptConfig, loreContext] = await Promise.all([
@@ -256,6 +294,7 @@ export async function generateCharacterStatsSkillsSuggestion(
           description: aiPayload.description,
           additionalPrompt: aiPayload.additionalPrompt,
           skillCatalog: skills,
+          characterDetails,
         },
         suggestion: ai.suggestion,
       },

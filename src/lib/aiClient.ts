@@ -2,7 +2,6 @@ import type { AIPromptContext } from '@/lib/aiPromptContext'
 
 const DEFAULT_GATEWAY_MODEL = 'balanced'
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_GATEWAY_TIMEOUT_MS) || 200_000
-const MAX_TOKENS = Number(process.env.AI_MAX_TOKENS) || 2_000
 const TEMPERATURE = Number(process.env.AI_TEMPERATURE) || 0.4
 const MAX_DIAGNOSTIC_RESPONSE_LENGTH = 4_000
 
@@ -32,7 +31,7 @@ export type CharacterBulkTextSuggestion = { rowIndex: number; role: string; stat
 export type SkillPromptInput = { id: number; name: string; category: string | null; baseValue: number }
 type AIPromptContextInput = Partial<Omit<AIPromptContext, 'entityType'>> & { entityType?: string }
 type GatewayResult<T> = { modelName: string; modelVersion: string; value: T }
-type GatewayMessage = { role: 'system' | 'user' | 'assistant'; content: string }
+export type GatewayMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, Math.trunc(value)))
@@ -71,13 +70,6 @@ export function extractGatewayContent(value: unknown): string {
 export function formatGatewayResponseForLog(responseText: string, maxLength = MAX_DIAGNOSTIC_RESPONSE_LENGTH) {
   if (responseText.length <= maxLength) return responseText
   return `${responseText.slice(0, maxLength)}… [truncated ${responseText.length - maxLength} characters]`
-}
-
-export function getEmptyResponseRetryMaxTokens(value: unknown, requestedMaxTokens: number) {
-  const usage = asObject(asObject(value).usage)
-  const completionTokens = asInt(usage.completion_tokens)
-  if (completionTokens < requestedMaxTokens) return null
-  return Math.min(8_192, Math.max(4_096, requestedMaxTokens * 2))
 }
 
 function asInt(value: unknown, fallback = 0) {
@@ -138,12 +130,16 @@ export function resolveGatewayModel(env: Record<string, string | undefined> = pr
   return env.AI_GATEWAY_MODEL?.trim() || DEFAULT_GATEWAY_MODEL
 }
 
-async function complete(
-  messages: GatewayMessage[],
-  json = false,
-  maxTokens = MAX_TOKENS,
-  retryEmptyResponse = true,
-): Promise<GatewayResult<unknown>> {
+export function buildGatewayRequestBody(messages: GatewayMessage[], model: string, json = false) {
+  return {
+    model,
+    messages,
+    temperature: TEMPERATURE,
+    ...(json ? { response_format: { type: 'json_object' as const } } : {}),
+  }
+}
+
+async function complete(messages: GatewayMessage[], json = false): Promise<GatewayResult<unknown>> {
   const gatewayUrl = resolveGatewayUrl()
   const gatewayModel = resolveGatewayModel()
   const controller = new AbortController()
@@ -152,10 +148,7 @@ async function complete(
     const response = await fetch(resolveGatewayEndpoint(gatewayUrl), {
       method: 'POST', cache: 'no-store', signal: controller.signal,
       headers: resolveGatewayHeaders(),
-      body: JSON.stringify({
-        model: gatewayModel, messages, temperature: TEMPERATURE, max_tokens: maxTokens,
-        ...(json ? { response_format: { type: 'json_object' } } : {}),
-      }),
+      body: JSON.stringify(buildGatewayRequestBody(messages, gatewayModel, json)),
     })
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 500)
@@ -177,17 +170,6 @@ async function complete(
     const payload = asObject(responsePayload)
     const content = extractGatewayContent(responsePayload)
     if (!content) {
-      const retryMaxTokens = retryEmptyResponse
-        ? getEmptyResponseRetryMaxTokens(responsePayload, maxTokens)
-        : null
-      if (retryMaxTokens) {
-        console.warn('[ai-gateway] Completion consumed the entire token allowance without returning text; retrying', {
-          requestedMaxTokens: maxTokens,
-          retryMaxTokens,
-          model: asString(payload.model) || gatewayModel,
-        })
-        return complete(messages, json, retryMaxTokens, false)
-      }
       console.error('[ai-gateway] Unable to extract text from successful chat completion response', {
         status: response.status,
         contentType: response.headers.get('content-type'),
@@ -213,18 +195,32 @@ function contextMessage(systemPrompt?: string) {
   ].filter(Boolean).join('\n\n')
 }
 
-function validateStats(value: unknown): CharacterStatsSuggestion {
+function calculateBuild(str: number, siz: number) {
+  const total = str + siz
+  if (total <= 12) return -2
+  if (total <= 16) return -1
+  if (total <= 24) return 0
+  if (total <= 32) return 1
+  if (total <= 40) return 2
+  if (total <= 56) return 3
+  return 4
+}
+
+export function deriveCharacterStats(value: unknown): CharacterStatsSuggestion {
   const o = asObject(value)
+  const str = clamp(asInt(o.str, 10), 1, 30)
+  const con = clamp(asInt(o.con, 10), 1, 30)
+  const siz = clamp(asInt(o.siz, 10), 1, 30)
+  const pow = clamp(asInt(o.pow, 10), 1, 30)
   return {
-    str: clamp(asInt(o.str, 10), 1, 30), con: clamp(asInt(o.con, 10), 1, 30),
-    siz: clamp(asInt(o.siz, 10), 1, 30), dex: clamp(asInt(o.dex, 10), 1, 30),
-    intelligence: clamp(asInt(o.intelligence, 10), 1, 30), pow: clamp(asInt(o.pow, 10), 1, 30),
+    str, con, siz, pow, dex: clamp(asInt(o.dex, 10), 1, 30),
+    intelligence: clamp(asInt(o.intelligence, 10), 1, 30),
     cha: clamp(asInt(o.cha, 10), 1, 30), app: clamp(asInt(o.app, 10), 1, 30),
-    edu: clamp(asInt(o.edu, 10), 1, 30), currentHp: clamp(asInt(o.currentHp, 10), 1, 99),
-    maxHp: clamp(asInt(o.maxHp, 10), 1, 99), currentSanity: clamp(asInt(o.currentSanity, 50), 1, 99),
-    maxSanity: clamp(asInt(o.maxSanity, 50), 1, 99), currentMp: clamp(asInt(o.currentMp, 10), 1, 99),
-    maxMp: clamp(asInt(o.maxMp, 10), 1, 99), luck: clamp(asInt(o.luck, 50), 1, 99),
-    build: clamp(asInt(o.build, 0), -2, 4),
+    edu: clamp(asInt(o.edu, 10), 1, 30),
+    currentHp: Math.ceil((con + siz) / 2), maxHp: Math.ceil((con + siz) / 2),
+    currentSanity: Math.min(99, pow * 5), maxSanity: Math.min(99, pow * 5),
+    currentMp: pow, maxMp: pow, luck: Math.min(99, pow * 5),
+    build: calculateBuild(str, siz),
   }
 }
 
@@ -232,6 +228,7 @@ export async function generateCharacterTextFromAI(input: {
   name: string; firstName: string; lastName: string; race: string; gender: string; role: string
   affiliation: string; currentCase: string; currentLocation: string; homeOrigin: string
   baseDescription: string; additionalPrompt: string; systemPrompt?: string; promptContext?: AIPromptContextInput
+  existingCharacter?: Record<string, unknown> | null
 }): Promise<Omit<GatewayResult<CharacterTextSuggestion>, 'value'> & { suggestion: CharacterTextSuggestion }> {
   const result = await complete([
     { role: 'system', content: `${contextMessage(input.systemPrompt)}\n\nReturn only a JSON object with these string fields: description, affiliation, currentCase, currentLocation, homeOrigin, role, entityType, narrativeRole, motivations, demeanor, mechanicalFocus.` },
@@ -245,15 +242,16 @@ export async function generateCharacterTextFromAI(input: {
 export async function generateCharacterStatsSkillsFromAI(input: {
   name: string; role: string; race: string; description: string; additionalPrompt: string
   systemPrompt?: string; promptContext?: AIPromptContextInput; skills: SkillPromptInput[]
+  characterDetails?: Record<string, unknown> | null
 }) {
   const result = await complete([
-    { role: 'system', content: `${contextMessage(input.systemPrompt)}\n\nUse faithful BRP ranges. Return only JSON: {"stats":{all requested characteristic and derived-stat fields},"skills":[{"skillId":number,"value":number}]}. Only use skill IDs from the catalog.` },
+    { role: 'system', content: `${contextMessage(input.systemPrompt)}\n\nUse faithful BRP ranges. Return only JSON: {"stats":{"str":number,"con":number,"siz":number,"dex":number,"intelligence":number,"pow":number,"cha":number,"app":number,"edu":number},"skills":[{"skillId":number,"value":number}]}. Only use skill IDs from the catalog. Derived HP, sanity, MP, luck, and build are calculated by Arcane Codex from the primary characteristics.` },
     { role: 'user', content: `Suggest a BRP character sheet for:\n${JSON.stringify({ ...input, systemPrompt: undefined }, null, 2)}` },
   ], true)
   const raw = asObject(result.value)
   const validIds = new Set(input.skills.map(({ id }) => id))
   const skills = (Array.isArray(raw.skills) ? raw.skills : []).map(asObject).map((item) => ({ skillId: asInt(item.skillId, -1), value: clamp(asInt(item.value), 0, 100) })).filter(({ skillId }) => validIds.has(skillId))
-  return { modelName: result.modelName, modelVersion: result.modelVersion, suggestion: { stats: validateStats(raw.stats), skills } }
+  return { modelName: result.modelName, modelVersion: result.modelVersion, suggestion: { stats: deriveCharacterStats(raw.stats), skills } }
 }
 
 export async function generateCharacterBulkTextFromAI(rows: Array<{ rowIndex: number; name: string; firstName: string; lastName: string; role: string; status: string }>, systemPrompt?: string, promptContext?: AIPromptContextInput, additionalPrompt?: string) {

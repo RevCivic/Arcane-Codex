@@ -2,9 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  buildGatewayRequestBody,
+  deriveCharacterStats,
   extractGatewayContent,
   formatGatewayResponseForLog,
-  getEmptyResponseRetryMaxTokens,
   resolveGatewayEndpoint,
   resolveGatewayHeaders,
   resolveGatewayModel,
@@ -87,9 +88,38 @@ test('formatGatewayResponseForLog preserves short responses and identifies trunc
   )
 })
 
-test('getEmptyResponseRetryMaxTokens retries responses that exhaust their token allowance', () => {
-  assert.equal(getEmptyResponseRetryMaxTokens({ usage: { completion_tokens: 700 } }, 700), 4096)
-  assert.equal(getEmptyResponseRetryMaxTokens({ usage: { completion_tokens: 4096 } }, 4096), 8192)
-  assert.equal(getEmptyResponseRetryMaxTokens({ usage: { completion_tokens: 699 } }, 700), null)
-  assert.equal(getEmptyResponseRetryMaxTokens({}, 700), null)
+test('buildGatewayRequestBody leaves completion length under gateway control', () => {
+  const body = buildGatewayRequestBody([{ role: 'user', content: 'Hello' }], 'balanced')
+  assert.deepEqual(body, {
+    model: 'balanced',
+    messages: [{ role: 'user', content: 'Hello' }],
+    temperature: 0.4,
+  })
+  assert.equal('max_tokens' in body, false)
+  assert.equal('max_completion_tokens' in body, false)
+})
+
+test('deriveCharacterStats calculates BRP derived values from primary characteristics', () => {
+  assert.deepEqual(deriveCharacterStats({
+    str: 13, con: 11, siz: 14, dex: 12, intelligence: 16,
+    pow: 15, cha: 10, app: 9, edu: 17,
+    currentHp: 99, maxHp: 99, luck: 1,
+  }), {
+    str: 13, con: 11, siz: 14, dex: 12, intelligence: 16,
+    pow: 15, cha: 10, app: 9, edu: 17,
+    currentHp: 13, maxHp: 13,
+    currentSanity: 75, maxSanity: 75,
+    currentMp: 15, maxMp: 15,
+    luck: 75, build: 1,
+  })
+})
+
+test('deriveCharacterStats clamps primary and percentile-derived values', () => {
+  const stats = deriveCharacterStats({ str: 99, con: 0, siz: 99, pow: 30 })
+  assert.equal(stats.str, 30)
+  assert.equal(stats.con, 1)
+  assert.equal(stats.maxHp, 16)
+  assert.equal(stats.maxSanity, 99)
+  assert.equal(stats.luck, 99)
+  assert.equal(stats.build, 4)
 })
