@@ -88,6 +88,13 @@ requests, leaving completion length and provider-specific reasoning-token behavi
 under the gateway's control. This prevents the application from cutting off a
 response before the model emits visible text.
 
+Character detail and character-sheet suggestions use the same gateway endpoint as
+chat. For existing characters, requests include the saved profile, tags, powers,
+and current sheet alongside the editable form values and skill catalog. The model
+suggests primary BRP characteristics and skill percentages; Arcane Codex calculates
+HP, sanity, magic points, luck, and build deterministically from those primary
+characteristics before presenting the suggestion.
+
 If a response is empty, the application logs the response status, content type, and
 at most 4,000 characters of the gateway response body. Gateway responses may contain
 campaign content, so restrict production log access appropriately.
