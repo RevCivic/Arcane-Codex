@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { captureAIFeedback, generateCharacterStatsSkillsSuggestion } from '@/app/actions'
 import { AIPromptContextFields } from '@/components/AIPromptContextFields'
 import { DEFAULT_AI_PROMPT_CONTEXT, type AIPromptContext } from '@/lib/aiPromptContext'
+import { getAIActionErrorMessage } from '@/lib/aiActionError'
 
 type Props = {
   characterId: number
@@ -63,25 +64,30 @@ export function CharacterSheetSuggestionPanel({ characterId }: Props) {
     setLoading(true)
     setError(null)
 
-    const result = await generateCharacterStatsSkillsSuggestion({
-      characterId,
-      name: getInputValue(form, 'characterName'),
-      role: getInputValue(form, 'characterRole'),
-      race: getInputValue(form, 'characterRace'),
-      description: getInputValue(form, 'characterDescription'),
-      additionalPrompt,
-      promptContext,
-    })
+    try {
+      const result = await generateCharacterStatsSkillsSuggestion({
+        characterId,
+        name: getInputValue(form, 'characterName'),
+        role: getInputValue(form, 'characterRole'),
+        race: getInputValue(form, 'characterRace'),
+        description: getInputValue(form, 'characterDescription'),
+        additionalPrompt,
+        promptContext,
+      })
 
-    setLoading(false)
-    if (!result.ok || !result.generationId || !result.suggestion) {
-      setError(result.error ?? 'Failed to suggest stats and skills')
-      return
+      if (!result.ok || !result.generationId || !result.suggestion) {
+        setError(result.error ?? 'Failed to suggest stats and skills')
+        return
+      }
+
+      setGenerationId(result.generationId)
+      setStats(result.suggestion.stats)
+      setSkills(result.suggestion.skills)
+    } catch (error) {
+      setError(getAIActionErrorMessage(error, 'Failed to suggest stats and skills'))
+    } finally {
+      setLoading(false)
     }
-
-    setGenerationId(result.generationId)
-    setStats(result.suggestion.stats)
-    setSkills(result.suggestion.skills)
   }
 
   async function applySuggestions(event: React.MouseEvent<HTMLButtonElement>) {

@@ -83,9 +83,26 @@ the gateway does not support. Change it to `balanced` (recommended for chat),
 
 Arcane Codex accepts standard chat-completion message content, structured text
 content blocks, legacy completion text, and the gateway's top-level `response` or
-`output_text` fields. If a successful gateway response contains no recognized text,
-the application error lists the response field names to help diagnose a response
-contract mismatch without logging the potentially sensitive response body.
+`output_text` fields. Arcane Codex deliberately omits `max_tokens` from gateway
+requests, leaving completion length and provider-specific reasoning-token behavior
+under the gateway's control. This prevents the application from cutting off a
+response before the model emits visible text.
+
+Character detail and character-sheet suggestions use the same gateway endpoint as
+chat. For existing characters, requests include the saved profile, tags, powers,
+and current sheet alongside the editable form values and skill catalog. The model
+suggests primary BRP characteristics and skill percentages; Arcane Codex calculates
+HP, sanity, magic points, luck, and build deterministically from those primary
+characteristics before presenting the suggestion.
+
+Structured character-generation requests ask for JSON in the prompt but do not send
+the provider-specific `response_format` option. This keeps them on the same proven
+gateway request path as chat while the client continues to parse plain, fenced, or
+embedded JSON responses.
+
+If a response is empty, the application logs the response status, content type, and
+at most 4,000 characters of the gateway response body. Gateway responses may contain
+campaign content, so restrict production log access appropriately.
 
 ### Changing the host port
 
