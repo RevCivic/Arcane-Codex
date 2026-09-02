@@ -67,7 +67,6 @@ export function SearchBar({ placeholder }: { placeholder?: string }) {
           outline: 'none',
           width: '100%',
           minWidth: '120px',
-          ,
         }}
       />
     </div>

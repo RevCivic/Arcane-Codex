@@ -83,7 +83,6 @@ export function SyncFromSheetButton() {
           className="text-xs text-left sm:text-right"
           style={{
             color: activeResult?.error ? '#f87171' : '#4ade80',
-            ,
           }}
         >
           {resultMessage}

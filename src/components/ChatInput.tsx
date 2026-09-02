@@ -56,7 +56,6 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask the Arc
           backgroundColor: '#111118',
           border: '1px solid #374151',
           color: '#e8eef7',
-          ,
           lineHeight: '1.5',
           minHeight: '38px',
         }}
@@ -69,7 +68,6 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask the Arc
         style={{
           backgroundColor: '#7c3aed',
           color: '#fff',
-          ,
           alignSelf: 'flex-end',
         }}
       >

@@ -43,7 +43,6 @@ export function ChatWindow({ messages, isLoading = false }: Props) {
           <div
             className="max-w-[80%] rounded-lg px-4 py-3 text-sm"
             style={{
-              ,
               lineHeight: '1.6',
               ...(msg.role === 'user'
                 ? {
@@ -77,7 +76,6 @@ export function ChatWindow({ messages, isLoading = false }: Props) {
               backgroundColor: '#111118',
               border: '1px solid #2a2a3e',
               color: '#7c3aed',
-              ,
             }}
           >
             <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: '#7c3aed' }}>

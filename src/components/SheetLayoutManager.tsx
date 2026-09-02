@@ -358,7 +358,6 @@ export function SheetLayoutManager({
                           color: '#a78bfa',
                           fontSize: '12px',
                           cursor: 'pointer',
-                          ,
                           textTransform: 'uppercase',
                           letterSpacing: '0.08em',
                           transition: 'background-color 0.2s',
@@ -436,7 +435,6 @@ export function SheetLayoutManager({
                     fontSize: '11px',
                     userSelect: 'none',
                     cursor: isTouchDevice ? 'default' : isHidden ? 'default' : 'grab',
-                    ,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                   }}

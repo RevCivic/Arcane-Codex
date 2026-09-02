@@ -133,7 +133,6 @@ export default async function Home() {
                 style={{
                   borderColor: section.href === '/inventory' ? '#7f1d1d' : '#374151',
                   color: section.href === '/inventory' ? '#f87171' : '#9ca3af',
-                  ,
                 }}
               >
                 <span>+</span>
@@ -145,7 +144,6 @@ export default async function Home() {
                 style={{
                   borderColor: '#3b1f6e',
                   color: '#a78bfa',
-                  ,
                 }}
               >
                 <span>≡</span>
@@ -163,7 +161,6 @@ export default async function Home() {
           backgroundColor: '#0d0d15',
           border: '1px solid #3b1f6e',
           color: '#9ca3af',
-          ,
         }}
       >
         <p className="mb-2" style={{ color: '#8b5cf6' }}>

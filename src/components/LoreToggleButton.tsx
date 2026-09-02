@@ -22,7 +22,6 @@ export function LoreToggleButton({ id, isActive }: Props) {
         backgroundColor: isActive ? '#052e16' : '#2a2a3e',
         color: isActive ? '#86efac' : '#9ca3af',
         border: `1px solid ${isActive ? '#16a34a44' : '#37415144'}`,
-        ,
       }}
       title={isActive ? 'Deactivate (remove from AI context)' : 'Activate (include in AI context)'}
     >

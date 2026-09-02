@@ -99,7 +99,6 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
                       backgroundColor: '#111118',
                       border: '1px solid #374151',
                       color: '#e8eef7',
-                      ,
                     }}
                   />
                   <div className="flex gap-1 mt-1">
@@ -132,7 +131,6 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
                     className="text-xs font-medium truncate pr-12"
                     style={{
                       color: s.id === activeSessionId ? '#e8eef7' : '#9ca3af',
-                      ,
                     }}
                   >
                     {s.title}

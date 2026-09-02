@@ -51,7 +51,6 @@ export function TagFilter({ tags }: TagFilterProps) {
                 border: '1px solid #3b1f6e',
                 backgroundColor: selectedState ? '#3b1f6e' : '#111118',
                 color: selectedState ? '#e9d5ff' : '#a78bfa',
-                ,
               }}
             >
               #{tag}
