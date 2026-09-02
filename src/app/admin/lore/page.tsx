@@ -25,7 +25,7 @@ const TYPE_COLORS: Record<LoreDocumentType, string> = {
   SPECIES_DETAIL: '#059669',
   FACTION_DETAIL: '#dc2626',
   WORLD_LORE: '#2563eb',
-  CUSTOM: '#6b7280',
+  CUSTOM: '#a0a9b8',
 }
 
 export default async function AdminLorePage() {
@@ -41,32 +41,32 @@ export default async function AdminLorePage() {
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
-        <Link href="/admin/ai" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href="/admin/ai" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← AI / Language Model
         </Link>
       </div>
 
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
+          <h1 className="text-2xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6' }}>
             📚 Lore Library
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+          <p className="text-sm mt-1" style={{ color: '#a0a9b8' }}>
             Manage world-building documents that ground AI generation and chat responses
           </p>
         </div>
         <Link
           href="/admin/lore/new"
           className="px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider hover:opacity-90"
-          style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
+          style={{ backgroundColor: '#7c3aed', color: '#fff' }}
         >
           + New Document
         </Link>
       </div>
 
       {docs.length === 0 ? (
-        <div className="card-arcane rounded-lg p-10 text-center" style={{ fontFamily: 'Georgia, serif' }}>
-          <p className="text-sm mb-4" style={{ color: '#6b7280' }}>No lore documents yet.</p>
+        <div className="card-arcane rounded-lg p-10 text-center" style={{  }}>
+          <p className="text-sm mb-4" style={{ color: '#a0a9b8' }}>No lore documents yet.</p>
           <Link
             href="/admin/lore/new"
             className="px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider hover:opacity-90"
@@ -92,24 +92,24 @@ export default async function AdminLorePage() {
                     {TYPE_LABELS[doc.type]}
                   </span>
                   {!doc.isActive && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ color: '#6b7280', border: '1px solid #374151' }}>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ color: '#a0a9b8', border: '1px solid #374151' }}>
                       inactive
                     </span>
                   )}
-                  <span className="text-[11px]" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
+                  <span className="text-[11px]" style={{ color: '#6b7380' }}>
                     sort: {doc.sortOrder}
                   </span>
                 </div>
-                <p className="text-sm font-medium truncate" style={{ color: '#e2e8f0', fontFamily: 'Georgia, serif' }}>
+                <p className="text-sm font-medium truncate" style={{ color: '#e8eef7' }}>
                   {doc.title}
                 </p>
                 {doc.summary && (
-                  <p className="text-xs mt-1 line-clamp-2" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
+                  <p className="text-xs mt-1 line-clamp-2" style={{ color: '#9ca3af' }}>
                     {doc.summary}
                   </p>
                 )}
                 {doc.tags && (
-                  <p className="text-[11px] mt-1" style={{ color: '#6b7280' }}>
+                  <p className="text-[11px] mt-1" style={{ color: '#a0a9b8' }}>
                     🏷 {doc.tags}
                   </p>
                 )}
@@ -120,7 +120,7 @@ export default async function AdminLorePage() {
                 <Link
                   href={`/admin/lore/${doc.id}/edit`}
                   className="px-3 py-1.5 rounded text-xs hover:opacity-80"
-                  style={{ backgroundColor: '#1f2937', color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                  style={{ backgroundColor: '#2a2a3e', color: '#9ca3af' }}
                 >
                   Edit
                 </Link>

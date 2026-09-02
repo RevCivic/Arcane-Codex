@@ -41,7 +41,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask the Arc
   return (
     <div
       className="flex gap-2 p-3 border-t"
-      style={{ borderColor: '#1f2937', backgroundColor: '#07070d' }}
+      style={{ borderColor: '#2a2a3e', backgroundColor: '#07070d' }}
     >
       <textarea
         ref={textareaRef}
@@ -55,8 +55,8 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask the Arc
         style={{
           backgroundColor: '#111118',
           border: '1px solid #374151',
-          color: '#e2e8f0',
-          fontFamily: 'Georgia, serif',
+          color: '#e8eef7',
+          ,
           lineHeight: '1.5',
           minHeight: '38px',
         }}
@@ -69,7 +69,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask the Arc
         style={{
           backgroundColor: '#7c3aed',
           color: '#fff',
-          fontFamily: 'Georgia, serif',
+          ,
           alignSelf: 'flex-end',
         }}
       >

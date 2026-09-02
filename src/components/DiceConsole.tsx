@@ -160,7 +160,7 @@ function DifficultySelector({
 }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>
         Difficulty
       </div>
       <div className="grid grid-cols-3 gap-1.5">
@@ -175,14 +175,14 @@ function DifficultySelector({
               className="rounded px-2 py-2 text-center transition-all"
               style={{
                 backgroundColor: '#0d0d15',
-                border: `1px solid ${isSel ? t.color : '#1f2937'}`,
+                border: `1px solid ${isSel ? t.color : '#2a2a3e'}`,
                 boxShadow: isSel ? `0 0 8px ${t.color}55` : 'none',
               }}
             >
-              <div className="text-xs font-semibold" style={{ color: isSel ? t.color : '#6b7280', fontFamily: 'Georgia, serif' }}>
+              <div className="text-xs font-semibold" style={{ color: isSel ? t.color : '#a0a9b8' }}>
                 {t.label}
               </div>
-              <div className="text-xs" style={{ color: '#4b5563' }}>{t.desc}</div>
+              <div className="text-xs" style={{ color: '#6b7380' }}>{t.desc}</div>
               {effective !== null && (
                 <div className="text-xs font-bold mt-0.5" style={{ color: isSel ? t.color : '#374151' }}>
                   {effective}%
@@ -216,10 +216,10 @@ function LuckSpendPrompt({
   const affordable = canAffordLuck(currentLuck, cost)
   return (
     <div className="rounded-lg p-4" style={{ backgroundColor: '#1a0f00', border: '1px solid #92400e66' }}>
-      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#f59e0b', fontFamily: 'Georgia, serif' }}>
+      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#f59e0b' }}>
         🍀 Spend Luck?
       </div>
-      <p className="text-xs mb-3" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
+      <p className="text-xs mb-3" style={{ color: '#9ca3af' }}>
         Spend{' '}
         <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>{cost}</span>{' '}
         Luck to convert this Failure into a Success.
@@ -233,7 +233,7 @@ function LuckSpendPrompt({
           disabled={!affordable || isPending}
           onClick={() => onSpend(rollHistoryId, cost)}
           className="px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ backgroundColor: '#92400e', color: '#fef3c7', fontFamily: 'Georgia, serif' }}
+          style={{ backgroundColor: '#92400e', color: '#fef3c7' }}
         >
           {isPending ? '…' : `Spend ${cost} Luck`}
         </button>
@@ -241,7 +241,7 @@ function LuckSpendPrompt({
           type="button"
           onClick={onDismiss}
           className="px-3 py-1.5 rounded text-xs uppercase tracking-wider"
-          style={{ border: '1px solid #374151', color: '#6b7280', fontFamily: 'Georgia, serif' }}
+          style={{ border: '1px solid #374151', color: '#a0a9b8' }}
         >
           Dismiss
         </button>
@@ -495,27 +495,27 @@ export function DiceConsole({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <section className="card-arcane rounded-lg" style={{ fontFamily: 'Georgia, serif' }}>
+    <section className="card-arcane rounded-lg" style={{  }}>
 
       {/* ── Collapsible header ── */}
       <button
         type="button"
         onClick={() => setIsCollapsed((c) => !c)}
         className="w-full flex items-center justify-between p-6 text-left"
-        style={{ borderBottom: isCollapsed ? 'none' : '1px solid #1f2937' }}
+        style={{ borderBottom: isCollapsed ? 'none' : '1px solid #2a2a3e' }}
       >
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-widest" style={{ color: '#d97706' }}>
             🎲 Arcane Dice Console
           </h2>
-          <p className="text-xs mt-0.5" style={{ color: '#4b5563' }}>
+          <p className="text-xs mt-0.5" style={{ color: '#6b7380' }}>
             Ability checks · Skill checks · Free rolls
             {clientLuck !== null && (
               <span style={{ color: '#f59e0b' }}> · 🍀 Luck: {clientLuck}</span>
             )}
           </p>
         </div>
-        <span className="text-xs ml-4 shrink-0" style={{ color: '#4b5563' }}>
+        <span className="text-xs ml-4 shrink-0" style={{ color: '#6b7380' }}>
           {isCollapsed ? '▼ expand' : '▲ collapse'}
         </span>
       </button>
@@ -524,7 +524,7 @@ export function DiceConsole({
         <div className="p-6 pt-5 space-y-6">
 
           {/* Tab bar */}
-          <div className="flex rounded overflow-hidden" style={{ border: '1px solid #1f2937' }}>
+          <div className="flex rounded overflow-hidden" style={{ border: '1px solid #2a2a3e' }}>
             {(
               [
                 ['ability', '⚡ Ability'],
@@ -540,8 +540,8 @@ export function DiceConsole({
                 className="flex-1 py-2 text-xs uppercase tracking-wider transition-colors"
                 style={{
                   backgroundColor: tab === t ? '#3b1f6e' : '#0d0d15',
-                  color:           tab === t ? '#c4b5fd' : '#6b7280',
-                  borderRight:     i < arr.length - 1 ? '1px solid #1f2937' : 'none',
+                  color:           tab === t ? '#c4b5fd' : '#a0a9b8',
+                  borderRight:     i < arr.length - 1 ? '1px solid #2a2a3e' : 'none',
                 }}
               >
                 {lbl}
@@ -563,7 +563,7 @@ export function DiceConsole({
                       Characteristic
                     </div>
                     {availableStats.length === 0 ? (
-                      <p className="text-xs" style={{ color: '#6b7280' }}>No stats set on this sheet yet.</p>
+                      <p className="text-xs" style={{ color: '#a0a9b8' }}>No stats set on this sheet yet.</p>
                     ) : (
                       <div className="grid grid-cols-3 gap-2">
                         {availableStats.map((s) => (
@@ -574,13 +574,13 @@ export function DiceConsole({
                             className="rounded p-2 text-center transition-all"
                             style={{
                               backgroundColor: selectedStat === s.key ? '#1e1133' : '#0d0d15',
-                              border: `1px solid ${selectedStat === s.key ? '#7c3aed' : '#1f2937'}`,
+                              border: `1px solid ${selectedStat === s.key ? '#7c3aed' : '#2a2a3e'}`,
                               boxShadow: selectedStat === s.key ? '0 0 10px rgba(124,58,237,0.35)' : 'none',
                             }}
                           >
                             <div className="text-xs uppercase" style={{ color: '#d97706' }}>{s.label}</div>
                             <div className="text-lg font-bold" style={{ color: '#a78bfa' }}>{s.value}</div>
-                            <div className="text-xs" style={{ color: '#4b5563' }}>→ {(s.value ?? 0) * 5}%</div>
+                            <div className="text-xs" style={{ color: '#6b7380' }}>→ {(s.value ?? 0) * 5}%</div>
                           </button>
                         ))}
                       </div>
@@ -615,7 +615,7 @@ export function DiceConsole({
                   <div>
                     <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>Skill</div>
                     {skills.length === 0 ? (
-                      <p className="text-xs" style={{ color: '#6b7280' }}>No skills defined yet.</p>
+                      <p className="text-xs" style={{ color: '#a0a9b8' }}>No skills defined yet.</p>
                     ) : (
                       <select
                         value={selectedSkillId}
@@ -670,7 +670,7 @@ export function DiceConsole({
                   <div>
                     <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706' }}>Power</div>
                     {powers.length === 0 ? (
-                      <p className="text-xs" style={{ color: '#6b7280' }}>No rollable powers assigned.</p>
+                      <p className="text-xs" style={{ color: '#a0a9b8' }}>No rollable powers assigned.</p>
                     ) : (
                       <select
                         value={selectedPowerId}
@@ -737,9 +737,9 @@ export function DiceConsole({
                           className="rounded py-2 text-center font-bold transition-all"
                           style={{
                             backgroundColor: selectedDie === d ? '#1e1133' : '#0d0d15',
-                            border: `1px solid ${selectedDie === d ? '#7c3aed' : '#1f2937'}`,
+                            border: `1px solid ${selectedDie === d ? '#7c3aed' : '#2a2a3e'}`,
                             boxShadow: selectedDie === d ? '0 0 10px rgba(124,58,237,0.35)' : 'none',
-                            color: selectedDie === d ? '#c4b5fd' : '#6b7280',
+                            color: selectedDie === d ? '#c4b5fd' : '#a0a9b8',
                             fontSize: '0.8rem',
                           }}
                         >
@@ -822,10 +822,10 @@ export function DiceConsole({
                             border: `1px solid ${RESULT_CONFIG[latestRT].border}`,
                             boxShadow: `0 0 28px ${RESULT_CONFIG[latestRT].glow}`,
                           }
-                        : { backgroundColor: '#0d0d15', border: '1px solid #1f2937' }
+                        : { backgroundColor: '#0d0d15', border: '1px solid #2a2a3e' }
                     }
                   >
-                    <div className="text-xs uppercase tracking-widest mb-3" style={{ color: '#6b7280' }}>
+                    <div className="text-xs uppercase tracking-widest mb-3" style={{ color: '#a0a9b8' }}>
                       {latest.label}{latest.difficulty && ` · ${latest.difficulty}`}
                     </div>
 
@@ -834,7 +834,7 @@ export function DiceConsole({
                       style={{
                         fontSize: '5rem',
                         lineHeight: 1,
-                        color: isScrambling ? '#7c3aed' : (latestRT ? RESULT_CONFIG[latestRT].color : '#e2e8f0'),
+                        color: isScrambling ? '#7c3aed' : (latestRT ? RESULT_CONFIG[latestRT].color : '#e8eef7'),
                         textShadow: isScrambling
                           ? '0 0 30px rgba(124,58,237,0.8)'
                           : (latestRT ? `0 0 40px ${RESULT_CONFIG[latestRT].glow}` : 'none'),
@@ -861,7 +861,7 @@ export function DiceConsole({
                           ))}
                           {latest.modifier !== null && latest.modifier !== 0 && (
                             <span className="text-xs px-2 py-1 rounded"
-                              style={{ backgroundColor: '#111118', color: '#6b7280', border: '1px solid #1f2937' }}>
+                              style={{ backgroundColor: '#111118', color: '#a0a9b8', border: '1px solid #2a2a3e' }}>
                               {latest.modifier > 0 ? '+' : ''}{latest.modifier}
                             </span>
                           )}
@@ -883,7 +883,7 @@ export function DiceConsole({
                       </div>
                     )}
                     {!isScrambling && flavorText && (
-                      <div className="mt-3 text-xs italic" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+                      <div className="mt-3 text-xs italic" style={{ color: '#a0a9b8' }}>
                         {flavorText}
                       </div>
                     )}
@@ -891,7 +891,7 @@ export function DiceConsole({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center rounded-lg min-h-48"
-                  style={{ border: '1px dashed #1f2937' }}>
+                  style={{ border: '1px dashed #2a2a3e' }}>
                   <div style={{ fontSize: '3.5rem' }}>🎲</div>
                   <div className="text-xs uppercase tracking-widest mt-2" style={{ color: '#374151' }}>
                     Awaiting Roll
@@ -902,7 +902,7 @@ export function DiceConsole({
               {/* Roll history */}
               {history.length > 0 && (
                 <div>
-                  <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#4b5563' }}>
+                  <div className="text-xs uppercase tracking-wider mb-2" style={{ color: '#6b7380' }}>
                     Roll History
                   </div>
                   <div className="space-y-1 max-h-64 overflow-y-auto">
@@ -912,7 +912,7 @@ export function DiceConsole({
                         <div
                           key={r.id}
                           className="flex items-center justify-between text-xs rounded px-3 py-1.5"
-                          style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}
+                          style={{ backgroundColor: '#0d0d15', border: '1px solid #2a2a3e' }}
                         >
                           <div className="flex flex-col min-w-0 mr-2">
                             <span className="truncate" style={{ color: '#9ca3af' }}>
@@ -923,11 +923,11 @@ export function DiceConsole({
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="font-bold" style={{ color: rt ? RESULT_CONFIG[rt].color : '#e2e8f0' }}>
+                            <span className="font-bold" style={{ color: rt ? RESULT_CONFIG[rt].color : '#e8eef7' }}>
                               {r.roll}
                             </span>
                             {r.target !== null && (
-                              <span style={{ color: '#4b5563' }}>/{r.target}</span>
+                              <span style={{ color: '#6b7380' }}>/{r.target}</span>
                             )}
                             {rt && <span>{RESULT_CONFIG[rt].emoji}</span>}
                             {r.luckSpent ? (

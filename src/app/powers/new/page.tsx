@@ -14,14 +14,14 @@ export default async function NewPowerPage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href="/powers" className="text-sm hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href="/powers" className="text-sm hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← Powers
         </Link>
       </div>
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6' }}>
         + New Power
       </h1>
-      <form action={createPower} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+      <form action={createPower} className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Name *</label>
           <input name="name" required className="arcane-input" placeholder="e.g. Arcane Sight" />
@@ -38,12 +38,12 @@ export default async function NewPowerPage() {
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Base Ability</label>
             <AbilitySelector skills={skills} />
-            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Skill linked to this power, or none if passive</p>
+            <p className="text-xs mt-1" style={{ color: '#a0a9b8' }}>Skill linked to this power, or none if passive</p>
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Base %</label>
             <input name="basePercentage" type="number" min={0} max={999} className="arcane-input" placeholder="0–999" />
-            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Standard skill percentage for this power</p>
+            <p className="text-xs mt-1" style={{ color: '#a0a9b8' }}>Standard skill percentage for this power</p>
           </div>
         </div>
         <div>

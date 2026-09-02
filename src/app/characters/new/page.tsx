@@ -11,16 +11,16 @@ export default async function NewCharacterPage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href="/characters" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href="/characters" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← Characters
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6' }}>
         + New Character
       </h1>
 
-      <form action={createCharacter} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+      <form action={createCharacter} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
         <CharacterTextSuggestionPanel />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -85,12 +85,12 @@ export default async function NewCharacterPage() {
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL or Local Path</label>
           <input name="imageUrl" type="text" className="arcane-input" placeholder="https://example.com/image.png or /uploads/characters/image.png" />
-          <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>Enter an http(s) URL or a path under /uploads/.</p>
+          <p className="mt-1 text-xs" style={{ color: '#a0a9b8' }}>Enter an http(s) URL or a path under /uploads/.</p>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Or Upload Image</label>
           <input name="imageFile" type="file" accept="image/*" className="arcane-input" />
-          <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>A selected file takes precedence over the URL or local path above (maximum 5 MB).</p>
+          <p className="mt-1 text-xs" style={{ color: '#a0a9b8' }}>A selected file takes precedence over the URL or local path above (maximum 5 MB).</p>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>

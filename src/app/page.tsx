@@ -69,13 +69,13 @@ export default async function Home() {
         <div className="text-6xl mb-4">🔮</div>
         <h1
           className="text-4xl font-bold tracking-widest uppercase mb-2 arcane-glow"
-          style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}
+          style={{ color: '#8b5cf6' }}
         >
           Arcane Codex
         </h1>
         <p
           className="text-lg tracking-widest uppercase mb-6 gold-glow"
-          style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}
+          style={{ color: '#d97706' }}
         >
           Bureau of Supernatural Investigation
         </p>
@@ -83,7 +83,7 @@ export default async function Home() {
           className="h-px max-w-lg mx-auto"
           style={{ background: 'linear-gradient(to right, transparent, #7c3aed, transparent)' }}
         />
-        <p className="mt-6 max-w-2xl mx-auto text-base leading-7" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
+        <p className="mt-6 max-w-2xl mx-auto text-base leading-7" style={{ color: '#9ca3af' }}>
           Welcome to the Bureau&apos;s operational codex. This encrypted archive contains classified
           dossiers on all personnel, locations, artifacts, and incidents related to ongoing
           supernatural investigations. Access is restricted to authorized agents only.
@@ -96,16 +96,16 @@ export default async function Home() {
           <Link key={section.href} href={section.href}>
             <div
               className="card-arcane rounded-lg p-5 text-center cursor-pointer"
-              style={{ fontFamily: 'Georgia, serif' }}
+              style={{  }}
             >
               <div className="text-3xl mb-2">{section.icon}</div>
               <div className="text-3xl font-bold mb-1" style={{ color: section.color }}>
                 {counts[i]}
               </div>
-              <div className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#e2e8f0' }}>
+              <div className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#e8eef7' }}>
                 {section.label}
               </div>
-              <div className="text-xs mt-1" style={{ color: '#6b7280' }}>
+              <div className="text-xs mt-1" style={{ color: '#a0a9b8' }}>
                 {section.desc}
               </div>
             </div>
@@ -116,11 +116,11 @@ export default async function Home() {
       {/* Quick access */}
       <div
         className="rounded-lg p-6 mb-8"
-        style={{ backgroundColor: '#111118', border: '1px solid #1f2937' }}
+        style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}
       >
         <h2
           className="text-lg font-semibold uppercase tracking-widest mb-4"
-          style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}
+          style={{ color: '#d97706' }}
         >
           ✦ Quick Access
         </h2>
@@ -133,7 +133,7 @@ export default async function Home() {
                 style={{
                   borderColor: section.href === '/inventory' ? '#7f1d1d' : '#374151',
                   color: section.href === '/inventory' ? '#f87171' : '#9ca3af',
-                  fontFamily: 'Georgia, serif',
+                  ,
                 }}
               >
                 <span>+</span>
@@ -145,7 +145,7 @@ export default async function Home() {
                 style={{
                   borderColor: '#3b1f6e',
                   color: '#a78bfa',
-                  fontFamily: 'Georgia, serif',
+                  ,
                 }}
               >
                 <span>≡</span>
@@ -163,7 +163,7 @@ export default async function Home() {
           backgroundColor: '#0d0d15',
           border: '1px solid #3b1f6e',
           color: '#9ca3af',
-          fontFamily: 'Georgia, serif',
+          ,
         }}
       >
         <p className="mb-2" style={{ color: '#8b5cf6' }}>

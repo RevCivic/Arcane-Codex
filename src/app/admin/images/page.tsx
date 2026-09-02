@@ -46,48 +46,48 @@ export default async function AdminImagesPage({ searchParams }: AdminImagesPageP
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <Link href="/admin/access" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href="/admin/access" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← Access
         </Link>
       </div>
 
       <h1
         className="text-2xl font-bold tracking-widest uppercase mb-2 arcane-glow"
-        style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}
+        style={{ color: '#8b5cf6' }}
       >
         🖼️ Image Hosting
       </h1>
-      <p className="text-sm mb-6" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
+      <p className="text-sm mb-6" style={{ color: '#9ca3af' }}>
         Download remote character images, store them locally, and generate thumbnails for list views.
       </p>
 
       {typeof result.scanned === 'string' && (
-        <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: '#111118', border: '1px solid #2d1b69', color: '#e2e8f0', fontFamily: 'Georgia, serif' }}>
+        <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: '#111118', border: '1px solid #2d1b69', color: '#e8eef7' }}>
           Scanned {result.scanned} images · Converted {result.converted ?? '0'} · Skipped {result.skipped ?? '0'} · Failed {result.failed ?? '0'}
         </div>
       )}
       {typeof result.thumbnailScanned === 'string' && (
-        <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: '#111118', border: '1px solid #164e63', color: '#e2e8f0', fontFamily: 'Georgia, serif' }}>
+        <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: '#111118', border: '1px solid #164e63', color: '#e8eef7' }}>
           Scanned {result.thumbnailScanned} images · Generated {result.thumbnailGenerated ?? '0'} · Refreshed {result.thumbnailRefreshed ?? '0'} · Skipped {result.thumbnailSkipped ?? '0'} · Failed {result.thumbnailFailed ?? '0'}
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="rounded-lg p-5" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
-          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#6b7280' }}>With Images</div>
-          <div className="text-3xl font-bold" style={{ color: '#e2e8f0' }}>{allImageCount}</div>
+        <div className="rounded-lg p-5" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}>
+          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#a0a9b8' }}>With Images</div>
+          <div className="text-3xl font-bold" style={{ color: '#e8eef7' }}>{allImageCount}</div>
         </div>
-        <div className="rounded-lg p-5" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
-          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#6b7280' }}>Local</div>
+        <div className="rounded-lg p-5" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}>
+          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#a0a9b8' }}>Local</div>
           <div className="text-3xl font-bold" style={{ color: '#4ade80' }}>{localImageCount}</div>
         </div>
-        <div className="rounded-lg p-5" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
-          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#6b7280' }}>Remote</div>
+        <div className="rounded-lg p-5" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}>
+          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#a0a9b8' }}>Remote</div>
           <div className="text-3xl font-bold" style={{ color: '#f59e0b' }}>{remoteImageCount}</div>
         </div>
       </div>
 
-      <form action={localizeCharacterImages} className="rounded-lg p-6 space-y-4" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
+      <form action={localizeCharacterImages} className="rounded-lg p-6 space-y-4" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}>
         <p className="text-sm" style={{ color: '#9ca3af' }}>
           This converts all non-local character image URLs to files in <code>/public/uploads/characters</code> and creates a <code>-thumb.webp</code> thumbnail for each one.
         </p>
@@ -100,7 +100,7 @@ export default async function AdminImagesPage({ searchParams }: AdminImagesPageP
         </button>
       </form>
 
-      <form action={generateCharacterThumbnails} className="mt-4 rounded-lg p-6 space-y-4" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
+      <form action={generateCharacterThumbnails} className="mt-4 rounded-lg p-6 space-y-4" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}>
         <p className="text-sm" style={{ color: '#9ca3af' }}>
           This scans locally hosted character images, creates missing thumbnails, and refreshes existing ones for the character grid.
         </p>

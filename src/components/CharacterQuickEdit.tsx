@@ -10,7 +10,7 @@ export function CharacterQuickEditProvider({ children }: { children: React.React
   return (
     <QuickEditContext.Provider value={enabled}>
       <div className="contents">
-        <div className="mb-4 flex items-center justify-end gap-3 text-sm" style={{ color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
+        <div className="mb-4 flex items-center justify-end gap-3 text-sm" style={{ color: '#a78bfa' }}>
           <span>Quick Edit</span>
           <button
             type="button"
@@ -22,7 +22,7 @@ export function CharacterQuickEditProvider({ children }: { children: React.React
           >
             <span className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
           </button>
-          <span className="w-7 text-xs" style={{ color: '#6b7280' }}>{enabled ? 'On' : 'Off'}</span>
+          <span className="w-7 text-xs" style={{ color: '#a0a9b8' }}>{enabled ? 'On' : 'Off'}</span>
         </div>
         {children}
       </div>
@@ -61,7 +61,7 @@ export function CharacterQuickEdit({ character, action }: { character: QuickChar
   return (
     <form action={action} className="mt-3 grid grid-cols-1 gap-2 rounded-md p-3 sm:grid-cols-2 lg:grid-cols-3" style={{ backgroundColor: '#0d0d1a', border: '1px solid #3b1f6e' }}>
       {fields.map(([name, label, type]) => (
-        <label key={name} className="text-[10px] uppercase tracking-wider" style={{ color: '#6b7280' }}>
+        <label key={name} className="text-[10px] uppercase tracking-wider" style={{ color: '#a0a9b8' }}>
           {label}
           <input name={name} type={type} min={type === 'number' ? 0 : undefined} defaultValue={character[name] ?? ''} className="arcane-input mt-1 w-full text-sm normal-case tracking-normal" />
         </label>

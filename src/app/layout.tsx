@@ -52,7 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#0a0a0f', color: '#e2e8f0' }}>
+      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#0a0a0f', color: '#e8eef7', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif" }}>
         {/* Top Nav */}
         <header style={{ backgroundColor: '#07070d', borderBottom: '1px solid #1a1a2e' }}>
           <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2 min-w-0">
@@ -61,13 +61,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <div className="min-w-0">
                 <div
                   className="text-lg sm:text-xl font-bold tracking-widest uppercase arcane-glow truncate"
-                  style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}
+                  style={{ color: '#8b5cf6' }}
                 >
                   Arcane Codex
                 </div>
                 <div
                   className="text-xs tracking-wide sm:tracking-widest uppercase truncate"
-                  style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}
+                  style={{ color: '#d97706' }}
                 >
                   Bureau of Supernatural Investigation
                 </div>
@@ -100,7 +100,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           style={{ borderTop: '1px solid #1a1a2e', backgroundColor: '#07070d' }}
           className="text-center py-4 text-xs"
         >
-          <span style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
+          <span style={{ color: '#7a8390' }}>
             ✦ Arcane Codex · Bureau of Supernatural Investigation · BRP System ✦
           </span>
         </footer>

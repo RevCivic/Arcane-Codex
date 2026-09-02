@@ -23,7 +23,7 @@ const navItemClass =
   'flex items-center gap-1.5 rounded px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400'
 const mobileNavItemClass =
   'flex min-h-11 items-center gap-2 rounded px-3 py-2 text-base leading-tight transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400'
-const navItemStyle = { color: '#9ca3af', fontFamily: 'Georgia, serif' }
+const navItemStyle = { color: '#a0a9b8' }
 
 export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, playerCharacters = [], pendingImportCount = 0 }: ResponsiveNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -160,7 +160,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, playerCharacters 
                 <div
                   id="mobile-nav-title"
                   className="text-sm tracking-widest uppercase"
-                  style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}
+                  style={{ color: '#d97706' }}
                 >
                   Navigation
                 </div>
@@ -169,7 +169,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, playerCharacters 
                   onClick={() => setMobileOpen(false)}
                   aria-label="Close navigation menu"
                   className="rounded px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
-                  style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+                  style={{ color: '#a0a9b8' }}
                 >
                   Close
                 </button>

@@ -18,16 +18,16 @@ export default async function NewLoreDocumentPage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href="/admin/lore" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href="/admin/lore" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← Lore Library
         </Link>
       </div>
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
+        <h1 className="text-2xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6' }}>
           📄 New Lore Document
         </h1>
-        <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <p className="text-sm mt-1" style={{ color: '#a0a9b8' }}>
           Create a document to add to the AI knowledge base
         </p>
       </div>

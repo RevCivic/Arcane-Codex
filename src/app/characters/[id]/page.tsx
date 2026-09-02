@@ -72,15 +72,15 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href={returnTo} className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href={returnTo} className="text-sm transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← Characters
         </Link>
       </div>
 
-      <div className="card-arcane rounded-lg p-6 mb-6" style={{ fontFamily: 'Georgia, serif' }}>
+      <div className="card-arcane rounded-lg p-6 mb-6" style={{  }}>
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2" style={{ color: '#e2e8f0' }}>{character.name}</h1>
+            <h1 className="text-3xl font-bold mb-2" style={{ color: '#e8eef7' }}>{character.name}</h1>
             <div className="flex items-center gap-2 flex-wrap">
               {character.role && (
                 <span className="text-xs px-2 py-0.5 rounded-full uppercase tracking-wider" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
@@ -107,7 +107,7 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
                   🔗 {isAdmin ? character.claimedByEmail : isOwner ? 'Claimed by you' : 'Claimed'}
                 </span>
               ) : (
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#111118', color: '#4b5563' }}>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#111118', color: '#6b7380' }}>
                   Unclaimed
                 </span>
               )}
@@ -150,11 +150,11 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
           </div>
         </div>
 
-        <hr style={{ borderColor: '#1f2937', margin: '1rem 0' }} />
+        <hr style={{ borderColor: '#2a2a3e', margin: '1rem 0' }} />
 
         {/* ── Claim / Unclaim controls (non-admin users) ─────────────────────── */}
         {!isAdmin && (
-          <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
+          <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#0d0d15', border: '1px solid #2a2a3e' }}>
             {isOwner ? (
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs" style={{ color: '#4ade80' }}>
@@ -171,7 +171,7 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
                 </form>
               </div>
             ) : character.claimedByEmail ? (
-              <p className="text-xs" style={{ color: '#6b7280' }}>
+              <p className="text-xs" style={{ color: '#a0a9b8' }}>
                 This character has already been claimed by another player.
               </p>
             ) : (
@@ -201,7 +201,7 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
             </h3>
             <form action={assignAction} className="flex items-end gap-3 flex-wrap">
               <div className="flex-1 min-w-0">
-                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>
+                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#a0a9b8' }}>
                   Assign to Email (leave blank to clear)
                 </label>
                 <select name="email" defaultValue={character.claimedByEmail ?? ''} className="arcane-input">
@@ -237,7 +237,7 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
                   loading="lazy"
                   referrerPolicy="no-referrer"
                   className="w-full max-w-xl rounded border"
-                  style={{ borderColor: '#1f2937' }}
+                  style={{ borderColor: '#2a2a3e' }}
                 />
               </dd>
             </div>
@@ -245,55 +245,55 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
           {character.description && (
             <div className="sm:col-span-2">
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Description</dt>
-              <dd className="text-sm leading-6" style={{ color: '#e2e8f0' }}>{character.description}</dd>
+              <dd className="text-sm leading-6" style={{ color: '#e8eef7' }}>{character.description}</dd>
             </div>
           )}
           {character.race && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Race</dt>
-              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.race}</dd>
+              <dd className="text-sm" style={{ color: '#e8eef7' }}>{character.race}</dd>
             </div>
           )}
           {character.gender && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Gender</dt>
-              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.gender}</dd>
+              <dd className="text-sm" style={{ color: '#e8eef7' }}>{character.gender}</dd>
             </div>
           )}
           {character.age !== null && character.age !== undefined && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Age</dt>
-              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.age.toString()}</dd>
+              <dd className="text-sm" style={{ color: '#e8eef7' }}>{character.age.toString()}</dd>
             </div>
           )}
           {character.affiliation && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Affiliation</dt>
-              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.affiliation}</dd>
+              <dd className="text-sm" style={{ color: '#e8eef7' }}>{character.affiliation}</dd>
             </div>
           )}
           {character.currentCase && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Case</dt>
-              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.currentCase}</dd>
+              <dd className="text-sm" style={{ color: '#e8eef7' }}>{character.currentCase}</dd>
             </div>
           )}
           {character.currentLocation && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Current Location</dt>
-              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.currentLocation}</dd>
+              <dd className="text-sm" style={{ color: '#e8eef7' }}>{character.currentLocation}</dd>
             </div>
           )}
           {character.homeOrigin && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Home / Origin</dt>
-              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{character.homeOrigin}</dd>
+              <dd className="text-sm" style={{ color: '#e8eef7' }}>{character.homeOrigin}</dd>
             </div>
           )}
           {character.stats && (
             <div className="sm:col-span-2">
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Stats (BRP)</dt>
-              <dd className="text-sm font-mono p-2 rounded" style={{ backgroundColor: '#0d0d15', color: '#a78bfa', border: '1px solid #1f2937' }}>
+              <dd className="text-sm font-mono p-2 rounded" style={{ backgroundColor: '#0d0d15', color: '#a78bfa', border: '1px solid #2a2a3e' }}>
                 {character.stats}
               </dd>
             </div>
@@ -303,7 +303,7 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Reference Links</dt>
               <dd className="space-y-2">
                 {referenceLinks.map((link) => (
-                  <p key={`${link.url}-${link.note}`} className="text-sm" style={{ color: '#e2e8f0' }}>
+                  <p key={`${link.url}-${link.note}`} className="text-sm" style={{ color: '#e8eef7' }}>
                     <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 break-all" style={{ color: '#a78bfa' }}>
                       {link.url}
                     </a>
@@ -320,19 +320,19 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
       {/* Powers */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+          <h2 className="text-xl font-semibold uppercase tracking-widest" style={{ color: '#d97706' }}>
             ⚡ Powers
           </h2>
         </div>
 
         {/* Admin: Assign power form */}
         {isAdmin && unassignedPowers.length > 0 && (
-          <form action={assignPower} className="mb-4 p-4 rounded-lg space-y-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #2d1b69', fontFamily: 'Georgia, serif' }}>
+          <form action={assignPower} className="mb-4 p-4 rounded-lg space-y-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #2d1b69' }}>
             <h3 className="text-xs uppercase tracking-widest" style={{ color: '#a78bfa' }}>⚡ Assign Power</h3>
             <input type="hidden" name="characterId" value={characterId} />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-1">
-                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Power</label>
+                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#a0a9b8' }}>Power</label>
                 <select name="powerId" required className="arcane-input">
                   <option value="">Select a power…</option>
                   {unassignedPowers.map((p) => (
@@ -341,11 +341,11 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
                 </select>
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Modifier (%)</label>
+                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#a0a9b8' }}>Modifier (%)</label>
                 <input name="modifier" type="number" defaultValue={0} className="arcane-input" placeholder="e.g. -20 or +10" />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Notes</label>
+                <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#a0a9b8' }}>Notes</label>
                 <input name="notes" type="text" className="arcane-input" placeholder="Reason for modifier…" />
               </div>
             </div>
@@ -356,7 +356,7 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
         )}
 
         {character.characterPowers.length === 0 ? (
-          <p className="text-sm" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>No powers assigned to this character.</p>
+          <p className="text-sm" style={{ color: '#a0a9b8' }}>No powers assigned to this character.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {character.characterPowers.map((cp) => {
@@ -370,9 +370,9 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
                   : (cp.power.baseAbility ? skillNameMap.get(cp.power.baseAbility) : undefined)
 
               return (
-                <div key={cp.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                <div key={cp.id} className="card-arcane rounded-lg p-4" style={{  }}>
                   <div className="flex items-center justify-between mb-2">
-                    <Link href={`/powers/${cp.power.id}`} className="font-semibold hover:text-purple-300" style={{ color: '#e2e8f0' }}>
+                    <Link href={`/powers/${cp.power.id}`} className="font-semibold hover:text-purple-300" style={{ color: '#e8eef7' }}>
                       {cp.power.name}
                     </Link>
                     {isAdmin && (
@@ -399,19 +399,19 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
                       )}
                     </p>
                   )}
-                  {cp.notes && <p className="text-xs italic" style={{ color: '#6b7280' }}>{cp.notes}</p>}
+                  {cp.notes && <p className="text-xs italic" style={{ color: '#a0a9b8' }}>{cp.notes}</p>}
 
                   {/* Admin: edit assignment modifier */}
                   {isAdmin && (
                     <details className="mt-2">
-                      <summary className="text-xs cursor-pointer" style={{ color: '#4b5563' }}>Edit modifier…</summary>
+                      <summary className="text-xs cursor-pointer" style={{ color: '#6b7380' }}>Edit modifier…</summary>
                       <form action={updateCharacterPower.bind(null, cp.id)} className="mt-2 grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-xs mb-1" style={{ color: '#6b7280' }}>Modifier (%)</label>
+                          <label className="block text-xs mb-1" style={{ color: '#a0a9b8' }}>Modifier (%)</label>
                           <input name="modifier" type="number" defaultValue={cp.modifier} className="arcane-input" />
                         </div>
                         <div>
-                          <label className="block text-xs mb-1" style={{ color: '#6b7280' }}>Notes</label>
+                          <label className="block text-xs mb-1" style={{ color: '#a0a9b8' }}>Notes</label>
                           <input name="notes" type="text" defaultValue={cp.notes ?? ''} className="arcane-input" />
                         </div>
                         <div className="col-span-2">
@@ -433,23 +433,23 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
       {(isAdmin || character.characterAbilities.length > 0) && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+            <h2 className="text-xl font-semibold uppercase tracking-widest" style={{ color: '#d97706' }}>
               ✨ Abilities
             </h2>
           </div>
 
           {/* Admin: Add standalone ability */}
           {isAdmin && (
-            <form action={createCharacterAbility} className="mb-4 p-4 rounded-lg space-y-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #2d1b69', fontFamily: 'Georgia, serif' }}>
+            <form action={createCharacterAbility} className="mb-4 p-4 rounded-lg space-y-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #2d1b69' }}>
               <h3 className="text-xs uppercase tracking-widest" style={{ color: '#a78bfa' }}>✨ Add Ability</h3>
               <input type="hidden" name="characterId" value={characterId} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Ability Name</label>
+                  <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#a0a9b8' }}>Ability Name</label>
                   <input name="name" type="text" required className="arcane-input" placeholder="e.g. Arcane Perception" />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>Starting Value (%)</label>
+                  <label className="block text-xs uppercase tracking-wider mb-1" style={{ color: '#a0a9b8' }}>Starting Value (%)</label>
                   <input name="currentValue" type="number" required min={0} max={200} className="arcane-input" placeholder="e.g. 30" />
                 </div>
               </div>
@@ -460,13 +460,13 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
           )}
 
           {character.characterAbilities.length === 0 ? (
-            <p className="text-sm" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>No standalone abilities assigned to this character.</p>
+            <p className="text-sm" style={{ color: '#a0a9b8' }}>No standalone abilities assigned to this character.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {character.characterAbilities.map((ca) => (
-                <div key={ca.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                <div key={ca.id} className="card-arcane rounded-lg p-4" style={{  }}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>{ca.name}</span>
+                    <span className="font-semibold text-sm" style={{ color: '#e8eef7' }}>{ca.name}</span>
                     <div className="flex items-center gap-2">
                       <span className="font-mono px-1 rounded text-xs" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{ca.currentValue}%</span>
                       {ca.markedForImprovement && (
@@ -485,14 +485,14 @@ export default async function CharacterDetailPage({ params, searchParams }: { pa
                   {/* Admin: edit ability */}
                   {isAdmin && (
                     <details className="mt-2">
-                      <summary className="text-xs cursor-pointer" style={{ color: '#4b5563' }}>Edit ability…</summary>
+                      <summary className="text-xs cursor-pointer" style={{ color: '#6b7380' }}>Edit ability…</summary>
                       <form action={updateCharacterAbility.bind(null, ca.id)} className="mt-2 grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-xs mb-1" style={{ color: '#6b7280' }}>Name</label>
+                          <label className="block text-xs mb-1" style={{ color: '#a0a9b8' }}>Name</label>
                           <input name="name" type="text" defaultValue={ca.name} className="arcane-input" />
                         </div>
                         <div>
-                          <label className="block text-xs mb-1" style={{ color: '#6b7280' }}>Current Value (%)</label>
+                          <label className="block text-xs mb-1" style={{ color: '#a0a9b8' }}>Current Value (%)</label>
                           <input name="currentValue" type="number" defaultValue={ca.currentValue} min={0} max={200} className="arcane-input" />
                         </div>
                         <div className="col-span-2">

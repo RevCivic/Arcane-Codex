@@ -10,14 +10,14 @@ export default async function NewEventPage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href="/events" className="text-sm hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href="/events" className="text-sm hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← Events
         </Link>
       </div>
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6' }}>
         + New Event
       </h1>
-      <form action={createEvent} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+      <form action={createEvent} className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Name *</label>
           <input name="name" required className="arcane-input" placeholder="e.g. The Millbrook Incident" />
@@ -45,7 +45,7 @@ export default async function NewEventPage() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Hold Ctrl / Cmd to select multiple</p>
+          <p className="text-xs mt-1" style={{ color: '#a0a9b8' }}>Hold Ctrl / Cmd to select multiple</p>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>

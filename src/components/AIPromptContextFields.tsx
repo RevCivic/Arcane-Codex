@@ -16,7 +16,7 @@ type Props = {
   onChange: (value: AIPromptContext) => void
 }
 
-const inputStyle = { backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' } as const
+const inputStyle = { backgroundColor: '#111827', border: '1px solid #374151', color: '#e8eef7' } as const
 
 function update(value: AIPromptContext, key: keyof AIPromptContext, next: string) {
   return { ...value, [key]: next }
