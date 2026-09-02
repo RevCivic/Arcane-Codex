@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useSyncExternalStore, useEffect } from 'react'
+import { saveSheetLayoutPreference, type SheetLayoutPreferenceData } from '@/app/actions/sheetLayout'
 
 export interface SheetModule {
   key: string
@@ -12,30 +13,34 @@ interface Props {
   modules: SheetModule[]
   isAdmin: boolean
   characterId: number
+  initialPreference?: SheetLayoutPreferenceData
 }
 
 const BTN_BASE = 'text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300'
 const BTN_PRIMARY = 'text-xs px-3 py-1.5 rounded transition-colors hover:opacity-80 font-semibold uppercase tracking-wider'
 
-// ── Custom hook: reads/writes layout order from localStorage ──────────────────
+// ── Custom hook: reads/writes layout data from localStorage & server ────────
 
-interface OrderCache {
+interface PreferenceCache {
   raw: string | null
-  result: string[]
+  result: SheetLayoutPreferenceData
 }
 
-function useStoredOrder(
+function useStoredPreference(
   storageKey: string,
-  defaultOrder: string[],
-): [string[], (order: string[]) => void] {
-  // Keep a stable ref to the default order so getSnapshot doesn't need it as a dep.
-  // defaultOrder is derived from server props (module keys) which don't change at runtime.
-  const defaultRef = useRef<string[]>(defaultOrder)
+  defaultModules: string[],
+  initialPreference?: SheetLayoutPreferenceData,
+): [SheetLayoutPreferenceData, (pref: SheetLayoutPreferenceData) => Promise<void>] {
+  const defaultRef = useRef<SheetLayoutPreferenceData>({
+    hiddenModules: [],
+    moduleOrder: defaultModules,
+    moduleSizes: {},
+  })
 
-  // Cache last parsed result to ensure reference stability (useSyncExternalStore requires it).
-  // Initialize raw as null: if no layout is stored, the first snapshot will also see null
-  // and correctly return defaultOrder from the cache.
-  const cacheRef = useRef<OrderCache>({ raw: null, result: defaultOrder })
+  const cacheRef = useRef<PreferenceCache>({
+    raw: null,
+    result: initialPreference || defaultRef.current,
+  })
 
   const subscribe = useCallback(
     (callback: () => void) => {
@@ -45,47 +50,51 @@ function useStoredOrder(
     [],
   )
 
-  const getSnapshot = useCallback((): string[] => {
+  const getSnapshot = useCallback((): SheetLayoutPreferenceData => {
     const raw = localStorage.getItem(storageKey)
     if (cacheRef.current.raw === raw) return cacheRef.current.result
 
     const defaults = defaultRef.current
     if (!raw) {
-      cacheRef.current = { raw, result: defaults }
-      return defaults
+      const result = initialPreference || defaults
+      cacheRef.current = { raw, result }
+      return result
     }
     try {
       const parsed = JSON.parse(raw) as unknown
-      if (!Array.isArray(parsed)) {
-        cacheRef.current = { raw, result: defaults }
-        return defaults
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        'hiddenModules' in parsed &&
+        'moduleOrder' in parsed &&
+        'moduleSizes' in parsed
+      ) {
+        const pref = parsed as SheetLayoutPreferenceData
+        cacheRef.current = { raw, result: pref }
+        return pref
       }
-      const validKeys = new Set(defaults)
-      const filtered = (parsed as string[]).filter((k) => validKeys.has(k))
-      const missing = defaults.filter((k) => !filtered.includes(k))
-      const result = [...filtered, ...missing]
-      cacheRef.current = { raw, result }
-      return result
+      cacheRef.current = { raw, result: defaults }
+      return defaults
     } catch {
       cacheRef.current = { raw, result: defaults }
       return defaults
     }
-  }, [storageKey])
+  }, [storageKey, initialPreference])
 
-  const getServerSnapshot = useCallback(() => defaultRef.current, [])
+  const getServerSnapshot = useCallback(() => initialPreference || defaultRef.current, [initialPreference])
 
-  const order = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  const preference = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
-  const saveOrder = useCallback(
-    (newOrder: string[]) => {
-      localStorage.setItem(storageKey, JSON.stringify(newOrder))
-      // Notify other tabs and trigger our own subscription
+  const savePreference = useCallback(
+    (newPref: SheetLayoutPreferenceData) => {
+      localStorage.setItem(storageKey, JSON.stringify(newPref))
       window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
+      return Promise.resolve()
     },
     [storageKey],
   )
 
-  return [order, saveOrder]
+  return [preference, savePreference]
 }
 
 // ── Custom hook: detects touch-primary devices ────────────────────────────────
@@ -106,18 +115,28 @@ function useIsTouchDevice(): boolean {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
+export function SheetLayoutManager({
+  modules,
+  isAdmin,
+  characterId,
+  initialPreference,
+}: Props) {
   const storageKey = isAdmin
     ? 'arcane-layout:admin'
     : `arcane-layout:char:${characterId}`
 
   const defaultOrder = modules.map((m) => m.key)
+  const [preference, savePreferenceLocal] = useStoredPreference(
+    storageKey,
+    defaultOrder,
+    initialPreference,
+  )
 
-  const [savedOrder, persistOrder] = useStoredOrder(storageKey, defaultOrder)
   const [isEditing, setIsEditing] = useState(false)
-  const [draftOrder, setDraftOrder] = useState<string[]>([])
+  const [draftPreference, setDraftPreference] = useState<SheetLayoutPreferenceData>({ ...preference })
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [showHiddenMenu, setShowHiddenMenu] = useState(false)
 
   const isTouchDevice = useIsTouchDevice()
 
@@ -125,43 +144,67 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
   const collapseAll = useCallback(() => window.dispatchEvent(new Event('arcane:collapseAll')), [])
 
   const enterEditMode = useCallback(() => {
-    setDraftOrder([...savedOrder])
+    setDraftPreference({ ...preference })
     setIsEditing(true)
     window.dispatchEvent(new Event('arcane:collapseAll'))
-  }, [savedOrder])
+  }, [preference])
 
   const cancelEdit = useCallback(() => {
     setIsEditing(false)
-    setDraftOrder([])
+    setDraftPreference({ ...preference })
     setDragIndex(null)
     setDragOverIndex(null)
+  }, [preference])
+
+  const saveLayout = useCallback(async () => {
+    await savePreferenceLocal(draftPreference)
+    // Sync to server
+    try {
+      await saveSheetLayoutPreference(characterId, draftPreference)
+    } catch {
+      // Silently fail - local preference is still saved
+    }
+    setIsEditing(false)
+    setDragIndex(null)
+    setDragOverIndex(null)
+  }, [draftPreference, characterId, savePreferenceLocal])
+
+  const toggleHideModule = useCallback((key: string) => {
+    setDraftPreference((prev) => {
+      const hidden = new Set(prev.hiddenModules)
+      if (hidden.has(key)) {
+        hidden.delete(key)
+      } else {
+        hidden.add(key)
+      }
+      return { ...prev, hiddenModules: Array.from(hidden) }
+    })
   }, [])
 
-  const saveLayout = useCallback(() => {
-    persistOrder(draftOrder)
-    setIsEditing(false)
-    setDraftOrder([])
-    setDragIndex(null)
-    setDragOverIndex(null)
-  }, [persistOrder, draftOrder])
+  const restoreModule = useCallback((key: string) => {
+    setDraftPreference((prev) => ({
+      ...prev,
+      hiddenModules: prev.hiddenModules.filter((k) => k !== key),
+    }))
+  }, [])
 
   // ── Touch reorder handlers ───────────────────────────────────────────────────
 
   const moveUp = useCallback((index: number) => {
-    setDraftOrder((prev) => {
+    setDraftPreference((prev) => {
       if (index === 0) return prev
-      const next = [...prev]
-      ;[next[index - 1], next[index]] = [next[index], next[index - 1]]
-      return next
+      const newOrder = [...prev.moduleOrder]
+      ;[newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]]
+      return { ...prev, moduleOrder: newOrder }
     })
   }, [])
 
   const moveDown = useCallback((index: number) => {
-    setDraftOrder((prev) => {
-      if (index >= prev.length - 1) return prev
-      const next = [...prev]
-      ;[next[index], next[index + 1]] = [next[index + 1], next[index]]
-      return next
+    setDraftPreference((prev) => {
+      if (index >= prev.moduleOrder.length - 1) return prev
+      const newOrder = [...prev.moduleOrder]
+      ;[newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]]
+      return { ...prev, moduleOrder: newOrder }
     })
   }, [])
 
@@ -186,14 +229,18 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
         setDragOverIndex(null)
         return
       }
-      const newOrder = [...draftOrder]
-      const [removed] = newOrder.splice(dragIndex, 1)
-      newOrder.splice(targetIndex, 0, removed)
-      setDraftOrder(newOrder)
+
+      setDraftPreference((prev) => {
+        const newOrder = [...prev.moduleOrder]
+        const [removed] = newOrder.splice(dragIndex, 1)
+        newOrder.splice(targetIndex, 0, removed)
+        return { ...prev, moduleOrder: newOrder }
+      })
+
       setDragIndex(null)
       setDragOverIndex(null)
     },
-    [dragIndex, draftOrder],
+    [dragIndex],
   )
 
   const handleDragEnd = useCallback(() => {
@@ -203,10 +250,13 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
 
   // ── Resolve display order ────────────────────────────────────────────────────
 
-  const currentOrder = isEditing ? draftOrder : savedOrder
+  const currentOrder = draftPreference.moduleOrder
   const orderedModules = currentOrder
     .map((key) => modules.find((m) => m.key === key))
     .filter((m): m is SheetModule => m != null)
+
+  const visibleModules = orderedModules.filter((m) => !draftPreference.hiddenModules.includes(m.key))
+  const hiddenModules = orderedModules.filter((m) => draftPreference.hiddenModules.includes(m.key))
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -223,7 +273,9 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
               className="text-xs flex-1"
               style={{ color: '#a78bfa', fontFamily: 'Georgia, serif' }}
             >
-              {`✦ ${isTouchDevice ? 'Use ▲ ▼ buttons to reorder' : 'Drag modules to reorder'} — unsaved until you ${isTouchDevice ? 'tap' : 'click'} Save Layout`}
+              {`✦ ${isTouchDevice ? 'Use ▲ ▼ buttons to reorder' : 'Drag modules to reorder'} — ${
+                hiddenModules.length > 0 ? `${hiddenModules.length} hidden` : 'check visibility'
+              }`}
             </span>
             <button
               type="button"
@@ -260,6 +312,70 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
             >
               ▸ Collapse All
             </button>
+            {hiddenModules.length > 0 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowHiddenMenu(!showHiddenMenu)}
+                  className={BTN_BASE}
+                  style={{ color: '#f59e0b', border: '1px solid #b45309' }}
+                  title={`${hiddenModules.length} hidden module(s)`}
+                >
+                  👁️ {hiddenModules.length} Hidden
+                </button>
+                {showHiddenMenu && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      backgroundColor: '#0d0d15',
+                      border: '1px solid #3b1f6e',
+                      borderRadius: '6px',
+                      padding: '8px 0',
+                      minWidth: '200px',
+                      zIndex: 50,
+                      marginTop: '4px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                    }}
+                  >
+                    {hiddenModules.map((module) => (
+                      <button
+                        key={module.key}
+                        type="button"
+                        onClick={() => {
+                          restoreModule(module.key)
+                          setShowHiddenMenu(false)
+                        }}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          padding: '8px 12px',
+                          textAlign: 'left',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          color: '#a78bfa',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          fontFamily: 'Georgia, serif',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1e1133'
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
+                        }}
+                      >
+                        👁️ {module.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <button
               type="button"
               onClick={enterEditMode}
@@ -274,29 +390,36 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
 
       {/* ── Module list ─────────────────────────────────────────────────── */}
       <div className={isEditing ? 'select-none' : undefined}>
-        {orderedModules.map((module, index) => {
-          const isDragging = dragIndex === index
-          const isDropTarget = isEditing && dragOverIndex === index && dragIndex !== index
+        {orderedModules.map((module, moduleIndex) => {
+          const isHidden = draftPreference.hiddenModules.includes(module.key)
+          const isDragging = dragIndex === moduleIndex
+          const isDropTarget = isEditing && dragOverIndex === moduleIndex && dragIndex !== moduleIndex
+
+          if (!isEditing && isHidden) {
+            // Don't render hidden modules in non-edit mode
+            return null
+          }
 
           return (
             <div
               key={module.key}
               className="mb-8"
-              draggable={isEditing && !isTouchDevice}
-              onDragStart={isEditing && !isTouchDevice ? (e) => handleDragStart(e, index) : undefined}
-              onDragOver={isEditing && !isTouchDevice ? (e) => handleDragOver(e, index) : undefined}
-              onDrop={isEditing && !isTouchDevice ? (e) => handleDrop(e, index) : undefined}
-              onDragEnd={isEditing && !isTouchDevice ? handleDragEnd : undefined}
+              draggable={isEditing && !isTouchDevice && !isHidden}
+              onDragStart={isEditing && !isTouchDevice && !isHidden ? (e) => handleDragStart(e, moduleIndex) : undefined}
+              onDragOver={isEditing && !isTouchDevice && !isHidden ? (e) => handleDragOver(e, moduleIndex) : undefined}
+              onDrop={isEditing && !isTouchDevice && !isHidden ? (e) => handleDrop(e, moduleIndex) : undefined}
+              onDragEnd={isEditing && !isTouchDevice && !isHidden ? handleDragEnd : undefined}
               style={{
-                opacity: isDragging ? 0.4 : 1,
+                opacity: isDragging ? 0.4 : isHidden && isEditing ? 0.6 : 1,
                 transition: 'opacity 0.15s',
                 outline: isDropTarget ? '2px dashed #7c3aed' : '2px solid transparent',
                 outlineOffset: '4px',
                 borderRadius: '8px',
-                cursor: isEditing && !isTouchDevice ? 'grab' : undefined,
+                cursor: isEditing && !isTouchDevice && !isHidden ? 'grab' : undefined,
+                position: 'relative',
               }}
             >
-              {/* Drag handle — only visible in edit mode */}
+              {/* Drag handle & module controls — only visible in edit mode */}
               {isEditing && (
                 <div
                   style={{
@@ -305,75 +428,105 @@ export function SheetLayoutManager({ modules, isAdmin, characterId }: Props) {
                     gap: '8px',
                     padding: '6px 10px',
                     marginBottom: '6px',
-                    backgroundColor: '#1e1133',
-                    border: '1px solid #3b1f6e',
+                    backgroundColor: isHidden ? '#2d1a4e' : '#1e1133',
+                    border: `1px solid ${isHidden ? '#4b2971' : '#3b1f6e'}`,
                     borderRadius: '6px',
                     color: '#a78bfa',
                     fontSize: '11px',
                     userSelect: 'none',
-                    cursor: isTouchDevice ? 'default' : 'grab',
+                    cursor: isTouchDevice ? 'default' : isHidden ? 'default' : 'grab',
                     fontFamily: 'Georgia, serif',
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                   }}
                 >
-                  {!isTouchDevice && (
+                  {!isTouchDevice && !isHidden && (
                     <span style={{ fontSize: '16px', lineHeight: 1, color: '#6b7280' }}>⠿</span>
                   )}
                   <span style={{ flex: 1 }}>{module.label}</span>
-                  {isTouchDevice && (
-                    <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
-                      <button
-                        type="button"
-                        aria-label={`Move ${module.label} up`}
-                        disabled={index === 0}
-                        onClick={() => moveUp(index)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '44px',
-                          height: '44px',
-                          borderRadius: '6px',
-                          border: '1px solid #3b1f6e',
-                          backgroundColor: index === 0 ? '#12091f' : '#2d1a4e',
-                          color: index === 0 ? '#4b5563' : '#a78bfa',
-                          fontSize: '18px',
-                          cursor: index === 0 ? 'not-allowed' : 'pointer',
-                          flexShrink: 0,
-                        }}
-                      >
-                        ▲
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Move ${module.label} down`}
-                        disabled={index === draftOrder.length - 1}
-                        onClick={() => moveDown(index)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '44px',
-                          height: '44px',
-                          borderRadius: '6px',
-                          border: '1px solid #3b1f6e',
-                          backgroundColor: index === draftOrder.length - 1 ? '#12091f' : '#2d1a4e',
-                          color: index === draftOrder.length - 1 ? '#4b5563' : '#a78bfa',
-                          fontSize: '18px',
-                          cursor: index === draftOrder.length - 1 ? 'not-allowed' : 'pointer',
-                          flexShrink: 0,
-                        }}
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+                    {isTouchDevice && !isHidden && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label={`Move ${module.label} up`}
+                          disabled={moduleIndex === 0}
+                          onClick={() => moveUp(moduleIndex)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '4px',
+                            border: '1px solid #3b1f6e',
+                            backgroundColor: moduleIndex === 0 ? '#12091f' : '#2d1a4e',
+                            color: moduleIndex === 0 ? '#4b5563' : '#a78bfa',
+                            fontSize: '14px',
+                            cursor: moduleIndex === 0 ? 'not-allowed' : 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Move ${module.label} down`}
+                          disabled={moduleIndex === orderedModules.length - 1}
+                          onClick={() => moveDown(moduleIndex)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '4px',
+                            border: '1px solid #3b1f6e',
+                            backgroundColor: moduleIndex === orderedModules.length - 1 ? '#12091f' : '#2d1a4e',
+                            color: moduleIndex === orderedModules.length - 1 ? '#4b5563' : '#a78bfa',
+                            fontSize: '14px',
+                            cursor: moduleIndex === orderedModules.length - 1 ? 'not-allowed' : 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          ▼
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={isHidden ? `Show ${module.label}` : `Hide ${module.label}`}
+                      onClick={() => toggleHideModule(module.key)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '4px',
+                        border: '1px solid #3b1f6e',
+                        backgroundColor: isHidden ? '#4b2971' : '#2d1a4e',
+                        color: isHidden ? '#f59e0b' : '#a78bfa',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        transition: 'all 0.2s',
+                      }}
+                      title={isHidden ? 'Show module' : 'Hide module'}
+                    >
+                      {isHidden ? '👁️' : '🙈'}
+                    </button>
+                  </div>
                 </div>
               )}
 
               {/* Module content — pointer events disabled during edit to avoid accidental toggles */}
-              <div style={{ pointerEvents: isEditing ? 'none' : undefined }}>
+              <div
+                style={{
+                  pointerEvents: isEditing ? 'none' : undefined,
+                  opacity: isHidden && isEditing ? 0.5 : 1,
+                }}
+              >
                 {module.content}
               </div>
             </div>

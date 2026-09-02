@@ -7,6 +7,7 @@ import { AccessRole } from '@/generated/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { importFoundryCharacterSheet, updateCharacterSheet } from '@/app/actions'
+import { getSheetLayoutPreference } from '@/app/actions/sheetLayout'
 import { DiceConsole } from '@/components/DiceConsole'
 import type { StatEntry, SkillEntry, PowerEntry } from '@/components/DiceConsole'
 import { SkillImprovementPanel } from '@/components/SkillImprovementPanel'
@@ -261,6 +262,14 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
   const isOwner = character.claimedByEmail === email
 
   if (!isAdmin && !isOwner) redirect(`/characters/${characterId}`)
+
+  // Fetch layout preferences (requires auth context, so done after validation)
+  let layoutPreference
+  try {
+    layoutPreference = await getSheetLayoutPreference(characterId)
+  } catch {
+    layoutPreference = undefined
+  }
 
   const sheet = character.sheet
   const action = updateCharacterSheet.bind(null, characterId)
@@ -838,6 +847,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
               ]
             : []),
         ]}
+        initialPreference={layoutPreference}
       />
     </div>
   )

@@ -97,20 +97,21 @@ model VerificationToken {
 }
 
 model AllowedEmail {
-  id             Int             @id @default(autoincrement())
-  email          String          @unique
-  role           AccessRole      @default(USER)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id             Int                     @id @default(autoincrement())
+  email          String                  @unique
+  role           AccessRole              @default(USER)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
   characters     Character[]
   aiGenerations  AIGeneration[]
   aiFeedback     AIFeedback[]
   aiTrainingJobs AITrainingJob[]
   chatSessions   ChatSession[]
+  layoutPreferences SheetLayoutPreference[]
 }
 
 model Character {
-  id                 Int                @id @default(autoincrement())
+  id                 Int                     @id @default(autoincrement())
   name               String
   firstName          String?
   lastName           String?
@@ -126,11 +127,11 @@ model Character {
   homeOrigin         String?
   imageUrl           String?
   referenceLinks     Json?
-  status             String?            @default("Active")
+  status             String?                 @default("Active")
   claimedByEmail     String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  claimedBy          AllowedEmail?      @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  claimedBy          AllowedEmail?           @relation(fields: [claimedByEmail], references: [email], onDelete: SetNull)
   tags               Tag[]
   sheet              CharacterSheet?
   characterPowers    CharacterPower[]
@@ -141,6 +142,7 @@ model Character {
   aiGenerations      AIGeneration[]
   chatSessions       ChatSession[]
   importQueueItems   ImportQueueItem[]
+  layoutPreferences  SheetLayoutPreference[]
 
   @@index([claimedByEmail])
 }
@@ -472,4 +474,27 @@ model ImportQueueItem {
   /// Only one PENDING item per character at a time.
   /// Enforced with a partial unique index in SQL because reviewed items may
   /// legitimately share the same character/status pair over time.
+}
+
+/// User preferences for character sheet layout customization.
+/// Admin default layout has both userEmail = null and characterId = null.
+/// Regular users can override with their own per-character preferences.
+model SheetLayoutPreference {
+  id              Int             @id @default(autoincrement())
+  userEmail       String?
+  user            AllowedEmail?   @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+  /// Null = admin default layout; non-null = user-specific layout for a character
+  characterId     Int?
+  character       Character?      @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  /// Array of module keys that are currently hidden
+  hiddenModules   Json            @default("[]")
+  /// Array of module keys in display order
+  moduleOrder     Json            @default("[]")
+  /// JSON object mapping module key → { width?: string, height?: string }
+  moduleSizes     Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  /// One preference per (user, character) pair; admin has one entry with characterId = null
+  @@unique([userEmail, characterId])
 }
