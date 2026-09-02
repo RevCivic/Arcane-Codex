@@ -86,16 +86,10 @@ function useStoredPreference(
   const preference = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   const savePreference = useCallback(
-    async (newPref: SheetLayoutPreferenceData) => {
+    (newPref: SheetLayoutPreferenceData) => {
       localStorage.setItem(storageKey, JSON.stringify(newPref))
       window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
-      // Also sync to server
-      try {
-        // Note: we'll pass characterId via closure when calling this
-        // For now, just update localStorage
-      } catch {
-        // Silently fail - still have localStorage fallback
-      }
+      return Promise.resolve()
     },
     [storageKey],
   )
@@ -195,8 +189,6 @@ export function SheetLayoutManager({
   }, [])
 
   // ── Touch reorder handlers ───────────────────────────────────────────────────
-
-  const visibleOrder = draftPreference.moduleOrder.filter((k) => !draftPreference.hiddenModules.includes(k))
 
   const moveUp = useCallback((index: number) => {
     setDraftPreference((prev) => {

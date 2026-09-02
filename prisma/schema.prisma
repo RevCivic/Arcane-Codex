@@ -477,7 +477,7 @@ model ImportQueueItem {
 }
 
 /// User preferences for character sheet layout customization.
-/// Admin users with (characterId = null, userEmail = <admin>) define the default layout for all users.
+/// Admin default layout has both userEmail = null and characterId = null.
 /// Regular users can override with their own per-character preferences.
 model SheetLayoutPreference {
   id              Int             @id @default(autoincrement())
