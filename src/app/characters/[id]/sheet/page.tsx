@@ -72,7 +72,7 @@ const PRIMARY_CHARACTERISTIC_HELP = {
 } as const
 
 const DERIVED_STAT_HELP = {
-  HIT_POINTS: 'Hit Points: represents physical health. Typically CON ÷ 2 at creation. Reduced by wounds; unconscious when reduced to 0 or below.',
+  HIT_POINTS: 'Hit Points: represents physical health. Typically (CON + SIZ) ÷ 2 at creation. Reduced by wounds; unconscious when reduced to 0 or below.',
   SANITY: 'Sanity Points: resistance to supernatural horror and psychological stress. Reduced by encountering the supernatural. Critical encounters can cause temporary or permanent insanity.',
   MAGIC_PTS: 'Magic Points: fuel for magic spells and rituals. Typically POW at creation. Spent to cast spells; regenerates slowly during rest.',
   LUCK: 'Luck Points: fate\'s favor on your side. Can be spent to re-roll dice during critical moments. Resets between story arcs.',
