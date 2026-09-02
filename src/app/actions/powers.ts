@@ -194,6 +194,77 @@ export async function updatePower(id: number, formData: FormData) {
   redirect(`/powers/${id}`)
 }
 
+export async function updatePowersBulk(formData: FormData) {
+  await requireAdminUser()
+
+  const ids = getFormStrings(formData, 'id').map((id) => parseInt(id, 10))
+  const names = getFormStrings(formData, 'name')
+  const descriptions = getFormStrings(formData, 'description')
+  const effects = getFormStrings(formData, 'effect')
+  const baseAbilities = getFormStrings(formData, 'baseAbility')
+  const basePercentages = getFormStrings(formData, 'basePercentage')
+
+  if (ids.length === 0) throw new Error('No powers to update.')
+
+  // Fetch existing powers for comparison
+  const existingPowers = await prisma.power.findMany({
+    where: { id: { in: ids } },
+    include: {
+      characterPowers: { select: { id: true, characterId: true, modifier: true } },
+    },
+  })
+
+  if (existingPowers.length !== ids.length) {
+    throw new Error('One or more powers not found.')
+  }
+
+  // Update each power
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]
+    const name = names[i]?.trim()
+    const description = getNullableString(descriptions[i] ?? '')
+    const effect = getNullableString(effects[i] ?? '')
+    const baseAbility = getNullableString(baseAbilities[i] ?? '')
+    const basePercentage = toNullableInt(basePercentages[i] ?? '')
+
+    if (!name) continue // Skip empty rows
+
+    const existing = existingPowers.find((p) => p.id === id)
+    if (!existing) continue
+
+    // Update the power
+    await prisma.power.update({
+      where: { id },
+      data: { name, description, effect, baseAbility, basePercentage },
+    })
+
+    // Sync character power abilities if baseAbility or basePercentage changed
+    if (existing.baseAbility !== baseAbility || existing.basePercentage !== basePercentage) {
+      for (const cp of existing.characterPowers) {
+        const prevEffective = existing.basePercentage != null
+          ? existing.basePercentage + cp.modifier
+          : null
+        const newEffective = basePercentage != null ? basePercentage + cp.modifier : null
+        await syncCharacterPowerAbility(
+          cp.characterId,
+          cp.id,
+          baseAbility || null,
+          newEffective,
+          existing.baseAbility,
+          prevEffective,
+        )
+        revalidatePath(`/characters/${cp.characterId}`)
+        revalidatePath(`/characters/${cp.characterId}/sheet`)
+      }
+    }
+
+    revalidatePath(`/powers/${id}`)
+  }
+
+  revalidatePath('/powers')
+  redirect('/powers')
+}
+
 export async function deletePower(id: number) {
   await requireAdminUser()
 

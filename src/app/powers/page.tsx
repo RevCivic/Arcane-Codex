@@ -76,6 +76,11 @@ export default async function PowersPage({
           <Link href="/powers/bulk" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:text-purple-300 whitespace-nowrap" style={{ border: '1px solid #3b1f6e', color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
             Bulk Entry
           </Link>
+          {view === 'list' && powers.length > 0 && (
+            <Link href="/powers/bulk-edit" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:text-purple-300 whitespace-nowrap" style={{ border: '1px solid #3b1f6e', color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
+              Bulk Edit
+            </Link>
+          )}
         </div>
       </div>
 
