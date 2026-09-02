@@ -67,7 +67,7 @@ export default async function EditSkillPage({ params }: { params: Promise<{ id: 
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Base Value (%)</label>
-            <input name="baseValue" type="number" min={0} max={100} defaultValue={skill.baseValue} className="arcane-input" />
+            <input name="baseValue" type="number" min={0} max={999} defaultValue={skill.baseValue} className="arcane-input" />
           </div>
         </div>
         <div>

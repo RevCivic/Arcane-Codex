@@ -123,7 +123,7 @@ function randomFlavor(rt: ResultType): string {
 function applyDifficulty(base: number, tier: DifficultyTier): number {
   if (tier === 'Impossible') return 1
   const t = TIERS.find((t) => t.tier === tier)!
-  return Math.max(1, Math.min(99, Math.floor(base * t.mult)))
+  return Math.max(1, Math.min(999, Math.floor(base * t.mult)))
 }
 
 function rollD100(): number { return Math.floor(Math.random() * 100) + 1 }

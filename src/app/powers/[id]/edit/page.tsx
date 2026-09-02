@@ -48,7 +48,7 @@ export default async function EditPowerPage({ params }: { params: Promise<{ id: 
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Base %</label>
-            <input name="basePercentage" type="number" min={0} max={100} defaultValue={power.basePercentage ?? ''} className="arcane-input" placeholder="0–100" />
+            <input name="basePercentage" type="number" min={0} max={999} defaultValue={power.basePercentage ?? ''} className="arcane-input" placeholder="0–999" />
             <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Standard skill percentage for this power</p>
           </div>
         </div>
