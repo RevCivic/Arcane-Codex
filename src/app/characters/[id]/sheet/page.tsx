@@ -31,6 +31,34 @@ function InfoBubbleIcon() {
   )
 }
 
+interface InfoTooltipButtonProps {
+  label: string
+  description: string
+  tooltipId: string
+  color: string
+}
+
+function InfoTooltipButton({ label, description, tooltipId, color }: InfoTooltipButtonProps) {
+  return (
+    <button
+      type="button"
+      className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0d0d15]"
+      style={{ color }}
+      aria-label={`${label} explanation`}
+      aria-describedby={tooltipId}
+    >
+      <InfoBubbleIcon />
+      <span
+        id={tooltipId}
+        role="tooltip"
+        className={STAT_TOOLTIP_CLASSNAME}
+      >
+        {description}
+      </span>
+    </button>
+  )
+}
+
 const PRIMARY_CHARACTERISTIC_HELP = {
   STR: 'Strength: raw physical power for lifting, grappling, and forceful actions.',
   CON: 'Constitution: stamina, endurance, and resistance to fatigue, poison, and illness.',
@@ -41,6 +69,14 @@ const PRIMARY_CHARACTERISTIC_HELP = {
   CHA: 'Charisma: force of personality, leadership, and social influence.',
   APP: 'Appearance: visual presence and first-impression impact.',
   EDU: 'Education: formal knowledge, training, and learned expertise.',
+} as const
+
+const DERIVED_STAT_HELP = {
+  HIT_POINTS: 'Hit Points: represents physical health. Typically (CON + SIZ) ÷ 2 at creation. Reduced by wounds; unconscious when reduced to 0 or below.',
+  SANITY: 'Sanity Points: resistance to supernatural horror and psychological stress. Reduced by encountering the supernatural. Critical encounters can cause temporary or permanent insanity.',
+  MAGIC_PTS: 'Magic Points: fuel for magic spells and rituals. Typically POW at creation. Spent to cast spells; regenerates slowly during rest.',
+  LUCK: 'Luck Points: fate\'s favor on your side. Can be spent to re-roll dice during critical moments. Resets between story arcs.',
+  BUILD: 'Build Modifier: affects physical damage and combat power. Positive Build adds damage; negative Build reduces it. Calculated from STR + SIZ.',
 } as const
 
 const STAT_TOOLTIP_CLASSNAME = [
@@ -70,22 +106,7 @@ function StatBox({
       <label className="text-xs uppercase tracking-wider text-center flex items-center justify-center gap-1" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
         <span>{label}</span>
         {description && (
-          <button
-            type="button"
-            className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0d0d15]"
-            style={{ color: '#fbbf24' }}
-            aria-label={`${label} explanation`}
-            aria-describedby={tooltipId}
-          >
-            <InfoBubbleIcon />
-            <span
-              id={tooltipId}
-              role="tooltip"
-              className={STAT_TOOLTIP_CLASSNAME}
-            >
-              {description}
-            </span>
-          </button>
+          <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color="#fbbf24" />
         )}
       </label>
       <input
@@ -105,6 +126,7 @@ function DerivedBox({
   label, currentName, maxName,
   current, max,
   accent,
+  description,
 }: {
   label: string
   currentName: string
@@ -112,11 +134,17 @@ function DerivedBox({
   current: number | null | undefined
   max: number | null | undefined
   accent: string
+  description?: string
 }) {
+  const tooltipId = `derived-help-${currentName}`
+
   return (
     <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: `1px solid ${accent}33` }}>
-      <div className="text-xs uppercase tracking-wider mb-2 text-center" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
-        {label}
+      <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
+        <span>{label}</span>
+        {description && (
+          <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color={accent} />
+        )}
       </div>
       <div className="flex items-center gap-2 justify-center">
         <input
@@ -145,6 +173,47 @@ function DerivedBox({
         <span className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>current</span>
         <span className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>max</span>
       </div>
+    </div>
+  )
+}
+
+function SimpleStatBox({
+  label,
+  name,
+  value,
+  accent,
+  description,
+  min = 0,
+  max = 99,
+}: {
+  label: string
+  name: string
+  value: number | null | undefined
+  accent: string
+  description?: string
+  min?: number
+  max?: number
+}) {
+  const tooltipId = `stat-help-${name}`
+
+  return (
+    <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: `1px solid ${accent}33` }}>
+      <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
+        <span>{label}</span>
+        {description && (
+          <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color={accent} />
+        )}
+      </div>
+      <input
+        name={name}
+        type="number"
+        defaultValue={value ?? ''}
+        min={min}
+        max={max}
+        className="arcane-input text-center w-full text-base font-bold"
+        style={{ color: '#e2e8f0' }}
+        placeholder="—"
+      />
     </div>
   )
 }
@@ -444,21 +513,13 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 >
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     <DerivedBox label="Hit Points" currentName="currentHp" maxName="maxHp"
-                      current={sheet?.currentHp} max={sheet?.maxHp} accent="#4ade80" />
+                      current={sheet?.currentHp} max={sheet?.maxHp} accent="#4ade80" description={DERIVED_STAT_HELP.HIT_POINTS} />
                     <DerivedBox label="Sanity"     currentName="currentSanity" maxName="maxSanity"
-                      current={sheet?.currentSanity} max={sheet?.maxSanity} accent="#a78bfa" />
+                      current={sheet?.currentSanity} max={sheet?.maxSanity} accent="#a78bfa" description={DERIVED_STAT_HELP.SANITY} />
                     <DerivedBox label="Magic Pts"  currentName="currentMp" maxName="maxMp"
-                      current={sheet?.currentMp} max={sheet?.maxMp} accent="#60a5fa" />
-                    <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #92400e33' }}>
-                      <div className="text-xs uppercase tracking-wider mb-2 text-center" style={{ color: '#f59e0b', fontFamily: 'Georgia, serif' }}>Luck</div>
-                      <input name="luck" type="number" defaultValue={sheet?.luck ?? ''} min={0} max={99}
-                        className="arcane-input text-center w-full text-base font-bold" style={{ color: '#e2e8f0' }} placeholder="—" />
-                    </div>
-                    <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #374151' }}>
-                      <div className="text-xs uppercase tracking-wider mb-2 text-center" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>Build</div>
-                      <input name="build" type="number" defaultValue={sheet?.build ?? ''} min={-2} max={4}
-                        className="arcane-input text-center w-full text-base font-bold" style={{ color: '#e2e8f0' }} placeholder="—" />
-                    </div>
+                      current={sheet?.currentMp} max={sheet?.maxMp} accent="#60a5fa" description={DERIVED_STAT_HELP.MAGIC_PTS} />
+                    <SimpleStatBox label="Luck" name="luck" value={sheet?.luck} accent="#f59e0b" description={DERIVED_STAT_HELP.LUCK} min={0} max={99} />
+                    <SimpleStatBox label="Build" name="build" value={sheet?.build} accent="#9ca3af" description={DERIVED_STAT_HELP.BUILD} min={-2} max={4} />
                   </div>
                 </CollapsibleSection>
 
