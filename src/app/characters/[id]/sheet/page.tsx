@@ -183,12 +183,16 @@ function SimpleStatBox({
   value,
   accent,
   description,
+  min = 0,
+  max = 99,
 }: {
   label: string
   name: string
   value: number | null | undefined
   accent: string
   description?: string
+  min?: number
+  max?: number
 }) {
   const tooltipId = `stat-help-${name}`
 
@@ -204,8 +208,8 @@ function SimpleStatBox({
         name={name}
         type="number"
         defaultValue={value ?? ''}
-        min={name === 'build' ? -2 : 0}
-        max={name === 'build' ? 4 : 99}
+        min={min}
+        max={max}
         className="arcane-input text-center w-full text-base font-bold"
         style={{ color: '#e2e8f0' }}
         placeholder="—"
@@ -514,8 +518,8 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                       current={sheet?.currentSanity} max={sheet?.maxSanity} accent="#a78bfa" description={DERIVED_STAT_HELP.SANITY} />
                     <DerivedBox label="Magic Pts"  currentName="currentMp" maxName="maxMp"
                       current={sheet?.currentMp} max={sheet?.maxMp} accent="#60a5fa" description={DERIVED_STAT_HELP.MAGIC_PTS} />
-                    <SimpleStatBox label="Luck" name="luck" value={sheet?.luck} accent="#f59e0b" description={DERIVED_STAT_HELP.LUCK} />
-                    <SimpleStatBox label="Build" name="build" value={sheet?.build} accent="#9ca3af" description={DERIVED_STAT_HELP.BUILD} />
+                    <SimpleStatBox label="Luck" name="luck" value={sheet?.luck} accent="#f59e0b" description={DERIVED_STAT_HELP.LUCK} min={0} max={99} />
+                    <SimpleStatBox label="Build" name="build" value={sheet?.build} accent="#9ca3af" description={DERIVED_STAT_HELP.BUILD} min={-2} max={4} />
                   </div>
                 </CollapsibleSection>
 
