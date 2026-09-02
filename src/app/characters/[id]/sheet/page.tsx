@@ -31,6 +31,34 @@ function InfoBubbleIcon() {
   )
 }
 
+interface InfoTooltipButtonProps {
+  label: string
+  description: string
+  tooltipId: string
+  color: string
+}
+
+function InfoTooltipButton({ label, description, tooltipId, color }: InfoTooltipButtonProps) {
+  return (
+    <button
+      type="button"
+      className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0d0d15]"
+      style={{ color }}
+      aria-label={`${label} explanation`}
+      aria-describedby={tooltipId}
+    >
+      <InfoBubbleIcon />
+      <span
+        id={tooltipId}
+        role="tooltip"
+        className={STAT_TOOLTIP_CLASSNAME}
+      >
+        {description}
+      </span>
+    </button>
+  )
+}
+
 const PRIMARY_CHARACTERISTIC_HELP = {
   STR: 'Strength: raw physical power for lifting, grappling, and forceful actions.',
   CON: 'Constitution: stamina, endurance, and resistance to fatigue, poison, and illness.',
@@ -78,22 +106,7 @@ function StatBox({
       <label className="text-xs uppercase tracking-wider text-center flex items-center justify-center gap-1" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
         <span>{label}</span>
         {description && (
-          <button
-            type="button"
-            className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0d0d15]"
-            style={{ color: '#fbbf24' }}
-            aria-label={`${label} explanation`}
-            aria-describedby={tooltipId}
-          >
-            <InfoBubbleIcon />
-            <span
-              id={tooltipId}
-              role="tooltip"
-              className={STAT_TOOLTIP_CLASSNAME}
-            >
-              {description}
-            </span>
-          </button>
+          <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color="#fbbf24" />
         )}
       </label>
       <input
@@ -130,22 +143,7 @@ function DerivedBox({
       <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
         <span>{label}</span>
         {description && (
-          <button
-            type="button"
-            className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0d0d15]"
-            style={{ color: accent }}
-            aria-label={`${label} explanation`}
-            aria-describedby={tooltipId}
-          >
-            <InfoBubbleIcon />
-            <span
-              id={tooltipId}
-              role="tooltip"
-              className={STAT_TOOLTIP_CLASSNAME}
-            >
-              {description}
-            </span>
-          </button>
+          <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color={accent} />
         )}
       </div>
       <div className="flex items-center gap-2 justify-center">
@@ -199,22 +197,7 @@ function SimpleStatBox({
       <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
         <span>{label}</span>
         {description && (
-          <button
-            type="button"
-            className="group relative inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-600/60 cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0d0d15]"
-            style={{ color: accent }}
-            aria-label={`${label} explanation`}
-            aria-describedby={tooltipId}
-          >
-            <InfoBubbleIcon />
-            <span
-              id={tooltipId}
-              role="tooltip"
-              className={STAT_TOOLTIP_CLASSNAME}
-            >
-              {description}
-            </span>
-          </button>
+          <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color={accent} />
         )}
       </div>
       <input
