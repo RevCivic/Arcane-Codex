@@ -21,8 +21,48 @@ export interface SheetLayoutPreferenceData {
 export async function getSheetLayoutPreference(characterId: number): Promise<SheetLayoutPreferenceData> {
   const user = await requireAuthorizedUser()
   const normalizedEmail = normalizeEmail(user.email || '')
+  if (!normalizedEmail) {
+    // Email is somehow invalid - return empty defaults
+    return {
+      hiddenModules: [],
+      moduleOrder: [],
+      moduleSizes: {},
+    }
+  }
 
   try {
+    // Verify user has access to this character
+    const character = await prisma.character.findUnique({
+      where: { id: characterId },
+      select: { claimedByEmail: true },
+    })
+
+    if (!character) {
+      // Character doesn't exist - return empty defaults
+      return {
+        hiddenModules: [],
+        moduleOrder: [],
+        moduleSizes: {},
+      }
+    }
+
+    // Check if user is owner or admin
+    const allowed = await prisma.allowedEmail.findUnique({
+      where: { email: normalizedEmail },
+    })
+
+    const isAdmin = (allowed?.role as string | undefined) === 'ADMIN'
+    const isOwner = character.claimedByEmail === normalizedEmail
+
+    if (!isAdmin && !isOwner) {
+      // User doesn't have access - return empty defaults
+      return {
+        hiddenModules: [],
+        moduleOrder: [],
+        moduleSizes: {},
+      }
+    }
+
     // Try to get user-specific preference
     const userPreference = await prisma.sheetLayoutPreference.findFirst({
       where: {
@@ -80,37 +120,69 @@ export async function saveSheetLayoutPreference(
 ): Promise<void> {
   const user = await requireAuthorizedUser()
   const normalizedEmail = normalizeEmail(user.email || '')
+  if (!normalizedEmail) {
+    throw new Error('Invalid email')
+  }
 
-  // First, try to find existing preference
-  const existing = await prisma.sheetLayoutPreference.findFirst({
-    where: {
-      userEmail: normalizedEmail,
-      characterId,
-    },
-  })
-
-  if (existing) {
-    // Update existing
-    await prisma.sheetLayoutPreference.update({
-      where: { id: existing.id },
-      data: {
-        hiddenModules: preference.hiddenModules,
-        moduleOrder: preference.moduleOrder,
-        moduleSizes: preference.moduleSizes,
-        updatedAt: new Date(),
-      },
+  try {
+    // Verify user has access to this character
+    const character = await prisma.character.findUnique({
+      where: { id: characterId },
+      select: { claimedByEmail: true },
     })
-  } else {
-    // Create new
-    await prisma.sheetLayoutPreference.create({
-      data: {
+
+    if (!character) {
+      throw new Error('Character not found')
+    }
+
+    // Check if user is owner or admin
+    const allowed = await prisma.allowedEmail.findUnique({
+      where: { email: normalizedEmail },
+    })
+
+    const isAdmin = (allowed?.role as string | undefined) === 'ADMIN'
+    const isOwner = character.claimedByEmail === normalizedEmail
+
+    if (!isAdmin && !isOwner) {
+      throw new Error('Unauthorized: insufficient permissions')
+    }
+
+    // First, try to find existing preference
+    const existing = await prisma.sheetLayoutPreference.findFirst({
+      where: {
         userEmail: normalizedEmail,
         characterId,
-        hiddenModules: preference.hiddenModules,
-        moduleOrder: preference.moduleOrder,
-        moduleSizes: preference.moduleSizes,
       },
     })
+
+    if (existing) {
+      // Update existing
+      await prisma.sheetLayoutPreference.update({
+        where: { id: existing.id },
+        data: {
+          hiddenModules: preference.hiddenModules,
+          moduleOrder: preference.moduleOrder,
+          moduleSizes: preference.moduleSizes,
+          updatedAt: new Date(),
+        },
+      })
+    } else {
+      // Create new
+      await prisma.sheetLayoutPreference.create({
+        data: {
+          userEmail: normalizedEmail,
+          characterId,
+          hiddenModules: preference.hiddenModules,
+          moduleOrder: preference.moduleOrder,
+          moduleSizes: preference.moduleSizes,
+        },
+      })
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Unauthorized')) {
+      throw error
+    }
+    throw error
   }
 }
 
@@ -198,17 +270,49 @@ export async function getAdminDefaultSheetLayout(): Promise<SheetLayoutPreferenc
 export async function resetSheetLayoutPreference(characterId: number): Promise<void> {
   const user = await requireAuthorizedUser()
   const normalizedEmail = normalizeEmail(user.email || '')
+  if (!normalizedEmail) {
+    return
+  }
 
-  const existing = await prisma.sheetLayoutPreference.findFirst({
-    where: {
-      userEmail: normalizedEmail,
-      characterId,
-    },
-  })
-
-  if (existing) {
-    await prisma.sheetLayoutPreference.delete({
-      where: { id: existing.id },
+  try {
+    // Verify user has access to this character
+    const character = await prisma.character.findUnique({
+      where: { id: characterId },
+      select: { claimedByEmail: true },
     })
+
+    if (!character) {
+      return
+    }
+
+    // Check if user is owner or admin
+    const allowed = await prisma.allowedEmail.findUnique({
+      where: { email: normalizedEmail },
+    })
+
+    const isAdmin = (allowed?.role as string | undefined) === 'ADMIN'
+    const isOwner = character.claimedByEmail === normalizedEmail
+
+    if (!isAdmin && !isOwner) {
+      throw new Error('Unauthorized: insufficient permissions')
+    }
+
+    const existing = await prisma.sheetLayoutPreference.findFirst({
+      where: {
+        userEmail: normalizedEmail,
+        characterId,
+      },
+    })
+
+    if (existing) {
+      await prisma.sheetLayoutPreference.delete({
+        where: { id: existing.id },
+      })
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Unauthorized')) {
+      throw error
+    }
+    // Silently ignore other errors (preference might not exist)
   }
 }
