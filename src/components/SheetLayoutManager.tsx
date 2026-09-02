@@ -39,7 +39,7 @@ function useStoredPreference(
 
   const cacheRef = useRef<PreferenceCache>({
     raw: null,
-    result: initialPreference || defaultRef.current,
+    result: (initialPreference && initialPreference.moduleOrder.length > 0) ? initialPreference : defaultRef.current,
   })
 
   const subscribe = useCallback(
@@ -56,7 +56,8 @@ function useStoredPreference(
 
     const defaults = defaultRef.current
     if (!raw) {
-      const result = initialPreference || defaults
+      // Use initialPreference if it has a valid moduleOrder, otherwise use defaults
+      const result = (initialPreference && initialPreference.moduleOrder.length > 0) ? initialPreference : defaults
       cacheRef.current = { raw, result }
       return result
     }
@@ -81,7 +82,7 @@ function useStoredPreference(
     }
   }, [storageKey, initialPreference])
 
-  const getServerSnapshot = useCallback(() => initialPreference || defaultRef.current, [initialPreference])
+  const getServerSnapshot = useCallback(() => (initialPreference && initialPreference.moduleOrder.length > 0) ? initialPreference : defaultRef.current, [initialPreference])
 
   const preference = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
