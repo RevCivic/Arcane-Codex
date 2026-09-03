@@ -36,17 +36,6 @@ function DiffRow({
   const changed = incoming !== (existing ?? null)
   if (!changed) return null
 
-  const incomingPreview = incoming
-    ? incoming.length > 200
-      ? incoming.slice(0, 200) + '…'
-      : incoming
-    : '—'
-  const existingPreview = existing
-    ? existing.length > 200
-      ? existing.slice(0, 200) + '…'
-      : existing
-    : '—'
-
   return (
     <tr style={{ borderTop: '1px solid #1f2937' }}>
       <td className="px-3 py-2 text-xs align-top" style={{ color: '#d97706', fontFamily: 'Georgia, serif', minWidth: '8rem' }}>

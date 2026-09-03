@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAdminUser } from './_shared'
 import { ImportQueueStatus } from '@/generated/prisma'
+import { scrapeBRPRules } from '@/lib/brpScraper'
 
 export type BRPRuleRow = {
   id: number
@@ -19,7 +20,8 @@ export type BRPRuleDetail = BRPRuleRow & { content: string }
 
 export async function getBRPRules(filters?: {
   section?: string
-}): Promise<BRPRuleRow[]> {
+  includeContent?: boolean
+}): Promise<(BRPRuleRow | BRPRuleDetail)[]> {
   const where: Record<string, unknown> = {}
   if (filters?.section) where.section = filters.section
 
@@ -33,8 +35,9 @@ export async function getBRPRules(filters?: {
       sortOrder: true,
       createdAt: true,
       updatedAt: true,
+      ...(filters?.includeContent && { content: true }),
     },
-  })
+  }) as Promise<(BRPRuleRow | BRPRuleDetail)[]>
 }
 
 export async function getBRPRuleById(id: number): Promise<BRPRuleDetail | null> {
@@ -129,7 +132,7 @@ export async function approveBRPRuleImport(importId: number) {
     await prisma.bRPRule.update({
       where: { id: importItem.ruleId },
       data: {
-        title: incomingData.title ?? incomingData.ruleName,
+        title: incomingData.title ?? importItem.ruleName,
         section: incomingData.section ?? null,
         content: incomingData.content,
         sortOrder: incomingData.sortOrder ? parseInt(incomingData.sortOrder, 10) : 0,
@@ -139,7 +142,7 @@ export async function approveBRPRuleImport(importId: number) {
     // Create new rule
     await prisma.bRPRule.create({
       data: {
-        title: incomingData.title ?? incomingData.ruleName,
+        title: incomingData.title ?? importItem.ruleName,
         section: incomingData.section ?? null,
         content: incomingData.content,
         sortOrder: incomingData.sortOrder ? parseInt(incomingData.sortOrder, 10) : 0,
@@ -185,13 +188,13 @@ export async function createBRPRuleImport(
     sortOrder: '0',
   }
 
-  let existingData = null
+  let existingData: Record<string, string> | null = null
   if (ruleId) {
     const existing = await prisma.bRPRule.findUnique({ where: { id: ruleId } })
     if (existing) {
       existingData = {
         title: existing.title,
-        section: existing.section,
+        section: existing.section ?? '',
         content: existing.content,
         sortOrder: existing.sortOrder.toString(),
       }
@@ -202,8 +205,8 @@ export async function createBRPRuleImport(
     data: {
       ruleId,
       ruleName: title,
-      incomingData,
-      existingData,
+      incomingData: incomingData as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      existingData: existingData as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       sourceUrl,
     },
   })

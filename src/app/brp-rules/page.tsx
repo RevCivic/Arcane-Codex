@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { auth } from '@/auth'
-import { getBRPRules, getBRPRuleById } from '@/app/actions'
+import { getBRPRules, type BRPRuleDetail } from '@/app/actions'
 import Link from 'next/link'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { prisma } from '@/lib/prisma'
@@ -19,11 +19,13 @@ export default async function BRPRulesPage() {
   const allowed = email ? await prisma.allowedEmail.findUnique({ where: { email } }) : null
   const isAdmin = allowed?.role === AccessRole.ADMIN
 
-  const rules = await getBRPRules()
+  // Fetch all rules with content in a single query
+  const rules = (await getBRPRules({ includeContent: true })) as (BRPRuleDetail)[]
+  const rulesWithContent = rules
 
   // Organize by section
-  const sections = Array.from(new Set(rules.filter(r => r.section).map(r => r.section!)))
-  const unsectionedRules = rules.filter(r => !r.section)
+  const sections = Array.from(new Set(rulesWithContent.filter(r => r.section).map(r => r.section!)))
+  const unsectionedRules = rulesWithContent.filter(r => !r.section)
 
   return (
     <div className="min-h-screen">
@@ -94,7 +96,7 @@ export default async function BRPRulesPage() {
                   )}
                   
                   {sections.map((section) => {
-                    const sectionRules = rules.filter(r => r.section === section)
+                    const sectionRules = rulesWithContent.filter(r => r.section === section)
                     return (
                       <div key={section} className="mb-3">
                         <p className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: '#6b7280' }}>
@@ -121,7 +123,7 @@ export default async function BRPRulesPage() {
 
             {/* Content */}
             <div className="lg:col-span-3">
-              <BRPRulesWikiClient rules={rules} isAdmin={isAdmin} />
+              <BRPRulesWikiClient rules={rulesWithContent} isAdmin={isAdmin} />
             </div>
           </div>
         )}

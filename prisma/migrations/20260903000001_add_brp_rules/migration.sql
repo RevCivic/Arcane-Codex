@@ -28,7 +28,9 @@ CREATE TABLE "BRPRuleImport" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BRPRuleImport_ruleId_status_key" ON "BRPRuleImport"("ruleId", "status");
+-- Partial index: only one PENDING import per rule at a time
+-- Previous imports (APPROVED/REJECTED) don't block new imports
+CREATE UNIQUE INDEX "BRPRuleImport_ruleId_pending_key" ON "BRPRuleImport"("ruleId") WHERE status = 'PENDING';
 
 -- AddForeignKey
 ALTER TABLE "BRPRuleImport" ADD CONSTRAINT "BRPRuleImport_ruleId_fkey" FOREIGN KEY ("ruleId") REFERENCES "BRPRule"("id") ON DELETE CASCADE ON UPDATE CASCADE;

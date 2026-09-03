@@ -143,10 +143,10 @@ function cleanText(html: string): string {
 
 /**
  * Decode common HTML entities
+ * Note: &amp; must be decoded last to avoid double-decoding issues
  */
 function decodeHTMLEntities(text: string): string {
   const entities: Record<string, string> = {
-    '&amp;': '&',
     '&lt;': '<',
     '&gt;': '>',
     '&quot;': '"',
@@ -155,9 +155,13 @@ function decodeHTMLEntities(text: string): string {
   }
 
   let result = text
+  // Decode specific entities first
   for (const [entity, char] of Object.entries(entities)) {
     result = result.replace(new RegExp(entity, 'g'), char)
   }
+  
+  // Decode &amp; last to prevent double-decoding
+  result = result.replace(/&amp;/g, '&')
 
   return result
 }

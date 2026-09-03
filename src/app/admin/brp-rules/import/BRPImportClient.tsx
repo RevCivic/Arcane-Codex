@@ -217,7 +217,7 @@ export function BRPImportClient({ existingRulesByTitle }: Props) {
           style={{ backgroundColor: '#111118', border: '1px solid #1f2937' }}
         >
           <p style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
-            Enter a URL and click "Scrape" to preview rules before importing.
+            Enter a URL and click &quot;Scrape&quot; to preview rules before importing.
           </p>
         </div>
       )}
