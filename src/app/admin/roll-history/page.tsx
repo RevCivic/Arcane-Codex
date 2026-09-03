@@ -8,6 +8,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getAllRollHistory } from '@/app/actions'
 
+const ROLL_HISTORY_LIMIT = 500
+
 export default async function AdminRollHistoryPage() {
   const session = await auth()
   const email = normalizeEmail(session?.user?.email)
@@ -16,7 +18,7 @@ export default async function AdminRollHistoryPage() {
   const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
   if (!allowed || allowed.role !== AccessRole.ADMIN) redirect('/')
 
-  const rolls = await getAllRollHistory(500)
+  const rolls = await getAllRollHistory(ROLL_HISTORY_LIMIT)
 
   // Format result type color
   function getResultColor(resultType: string | null): string {
@@ -34,14 +36,13 @@ export default async function AdminRollHistoryPage() {
     }
   }
 
+  const isLimited = rolls.length >= ROLL_HISTORY_LIMIT
+  const rollCountMessage = isLimited
+    ? `Showing the most recent ${rolls.length} rolls`
+    : `Showing all ${rolls.length} rolls`
+
   return (
     <div className="max-w-6xl">
-      <div className="mb-6">
-        <Link href="/admin/access" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
-          ← Access Control
-        </Link>
-      </div>
-
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
@@ -144,7 +145,7 @@ export default async function AdminRollHistoryPage() {
       )}
 
       <div className="mt-6 text-xs" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
-        <p>Showing the most recent {rolls.length} rolls. Sorted newest first.</p>
+        <p>{rollCountMessage}. Sorted newest first.</p>
       </div>
     </div>
   )
