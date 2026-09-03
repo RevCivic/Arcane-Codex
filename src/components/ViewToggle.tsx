@@ -17,7 +17,7 @@ export function ViewToggle() {
   return (
     <div
       className="flex items-center gap-1 p-0.5 rounded"
-      style={{ border: '1px solid #2a2a3e' }}
+      style={{ border: '1px solid #1f2937' }}
       title="Toggle view"
     >
       <button
@@ -27,7 +27,7 @@ export function ViewToggle() {
         style={{
           padding: '5px 9px',
           backgroundColor: currentView === 'card' ? '#3b1f6e' : 'transparent',
-          color: currentView === 'card' ? '#a78bfa' : '#a0a9b8',
+          color: currentView === 'card' ? '#a78bfa' : '#6b7280',
           border: 'none',
           cursor: 'pointer',
           fontSize: '15px',
@@ -43,7 +43,7 @@ export function ViewToggle() {
         style={{
           padding: '5px 9px',
           backgroundColor: currentView === 'list' ? '#3b1f6e' : 'transparent',
-          color: currentView === 'list' ? '#a78bfa' : '#a0a9b8',
+          color: currentView === 'list' ? '#a78bfa' : '#6b7280',
           border: 'none',
           cursor: 'pointer',
           fontSize: '15px',

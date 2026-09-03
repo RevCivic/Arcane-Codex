@@ -37,30 +37,30 @@ export function BulkEntryTable({
   return (
     <div>
       <div className="mb-6">
-        <Link href={backHref} className="text-sm hover:text-purple-300" style={{ color: '#a0a9b8' }}>
+        <Link href={backHref} className="text-sm hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← {backLabel}
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-2 arcane-glow" style={{ color: '#8b5cf6' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-2 arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
         {title}
       </h1>
-      <p className="text-sm mb-6" style={{ color: '#9ca3af' }}>
+      <p className="text-sm mb-6" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
         {description}
       </p>
 
-      <form action={action} className="card-arcane rounded-lg p-5 space-y-4" style={{  }}>
-        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #2a2a3e' }}>
+      <form action={action} className="card-arcane rounded-lg p-5 space-y-4" style={{ fontFamily: 'Georgia, serif' }}>
+        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #1f2937' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #2a2a3e', backgroundColor: '#0d0d1a' }}>
+              <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
                 {columns.map((column) => (
                   <th
                     key={column.name}
                     style={{
                       padding: '10px 12px',
                       textAlign: 'left',
-                      color: '#a0a9b8',
+                      color: '#6b7280',
                       fontSize: '11px',
                       fontWeight: 600,
                       textTransform: 'uppercase',

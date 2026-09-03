@@ -33,11 +33,11 @@ export default async function ImportQueuePage() {
     <div className="max-w-5xl mx-auto">
       <h1
         className="text-2xl font-bold tracking-widest uppercase mb-2 arcane-glow"
-        style={{ color: '#8b5cf6' }}
+        style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}
       >
         Import Approval Queue
       </h1>
-      <p className="text-sm mb-6" style={{ color: '#9ca3af' }}>
+      <p className="text-sm mb-6" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
         These characters were found in the Google Sheet with changes that differ from the current database.
         Review the diff and approve or reject each change before it is applied.
       </p>

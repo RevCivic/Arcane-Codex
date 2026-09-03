@@ -147,7 +147,7 @@ export default async function CharactersPage({
     })),
   )
 
-  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', whiteSpace: 'nowrap' }
+  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
   const quickCharacter = (character: (typeof charactersWithDisplayImages)[number]) => ({
     name: character.name, role: character.role, status: character.status,
@@ -162,11 +162,11 @@ export default async function CharactersPage({
         <div>
           <h1
             className="text-3xl font-bold tracking-widest uppercase arcane-glow"
-            style={{ color: '#8b5cf6' }}
+            style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}
           >
             👤 Characters
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#a0a9b8' }}>
+          <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
             Agents, suspects, and persons of interest
           </p>
         </div>
@@ -182,14 +182,14 @@ export default async function CharactersPage({
             <Link
               href="/characters/new"
               className="w-full px-4 py-2 rounded text-center text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 sm:w-auto sm:text-left sm:whitespace-nowrap"
-              style={{ backgroundColor: '#7c3aed', color: '#fff' }}
+              style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
             >
               + New Character
             </Link>
             <Link
               href="/characters/bulk"
               className="w-full px-4 py-2 rounded text-center text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:text-purple-300 sm:w-auto sm:text-left sm:whitespace-nowrap"
-              style={{ border: '1px solid #3b1f6e', color: '#a78bfa' }}
+              style={{ border: '1px solid #3b1f6e', color: '#a78bfa', fontFamily: 'Georgia, serif' }}
             >
               Bulk Entry
             </Link>
@@ -221,51 +221,51 @@ export default async function CharactersPage({
       {characters.length === 0 ? (
         <div
           className="text-center py-20 rounded-lg"
-          style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e', color: '#a0a9b8' }}
+          style={{ backgroundColor: '#111118', border: '1px solid #1f2937', color: '#6b7280', fontFamily: 'Georgia, serif' }}
         >
           No characters recorded. Begin by adding an agent or person of interest.
         </div>
       ) : view === 'list' ? (
-        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #2a2a3e' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #1f2937' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Georgia, serif' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #2a2a3e', backgroundColor: '#0d0d1a' }}>
+              <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
                 <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'name')} style={{ color: sortBy === 'name' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'name')} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <span style={{ color: '#a0a9b8', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <span style={{ color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Photo
                   </span>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'role')} style={{ color: sortBy === 'role' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'role')} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Role<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="role" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'status')} style={{ color: sortBy === 'status' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'status')} style={{ color: sortBy === 'status' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Status<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="status" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'race')} style={{ color: sortBy === 'race' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'race')} style={{ color: sortBy === 'race' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Race<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="race" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'age')} style={{ color: sortBy === 'age' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'age')} style={{ color: sortBy === 'age' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Age<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="age" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'affiliation')} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'affiliation')} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Affiliation<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="affiliation" />
                   </Link>
                 </th>
-                <th style={{ ...thStyle, textAlign: 'right', color: '#a0a9b8', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <th style={{ ...thStyle, textAlign: 'right', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Actions
                 </th>
               </tr>
@@ -273,7 +273,7 @@ export default async function CharactersPage({
             <tbody>
               {charactersWithDisplayImages.map((character) => (
                 <tr id={`character-${character.id}`} key={character.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
-                  <td style={{ padding: '10px 12px', color: '#e8eef7', fontSize: '14px' }}>
+                  <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '14px' }}>
                     <div>{character.name}</div>
                     {character.tags.length > 0 && (
                       <div className="mt-1 flex flex-wrap gap-1">
@@ -293,7 +293,7 @@ export default async function CharactersPage({
                         alt={`${character.name} thumbnail`}
                         loading="lazy"
                         className="h-12 w-12 rounded object-contain"
-                        style={{ border: '1px solid #2a2a3e', backgroundColor: '#07070d' }}
+                        style={{ border: '1px solid #1f2937', backgroundColor: '#07070d' }}
                       />
                     ) : (
                       <span style={{ color: '#374151' }}>—</span>
@@ -337,10 +337,10 @@ export default async function CharactersPage({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {charactersWithDisplayImages.map((character) => (
-            <div id={`character-${character.id}`} key={character.id} className="card-arcane rounded-lg p-5" style={{  }}>
+            <div id={`character-${character.id}`} key={character.id} className="card-arcane rounded-lg p-5" style={{ fontFamily: 'Georgia, serif' }}>
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h2 className="text-lg font-semibold" style={{ color: '#e8eef7' }}>
+                  <h2 className="text-lg font-semibold" style={{ color: '#e2e8f0' }}>
                     {character.name}
                   </h2>
                   {character.role && (
@@ -364,7 +364,7 @@ export default async function CharactersPage({
               </div>
               {character.imageUrl && (
                 <div className="mb-3">
-                  <div className="aspect-[4/3] w-full overflow-hidden rounded" style={{ border: '1px solid #2a2a3e', backgroundColor: '#07070d' }}>
+                  <div className="aspect-[4/3] w-full overflow-hidden rounded" style={{ border: '1px solid #1f2937', backgroundColor: '#07070d' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={character.displayImageUrl ?? character.imageUrl}
@@ -381,17 +381,17 @@ export default async function CharactersPage({
                 </p>
               )}
               {character.race && (
-                <p className="text-xs mb-1" style={{ color: '#a0a9b8' }}>
+                <p className="text-xs mb-1" style={{ color: '#6b7280' }}>
                   🧬 {character.race}{character.gender ? ` · ${character.gender}` : ''}{character.age !== null && character.age !== undefined ? ` · Age ${character.age.toString()}` : ''}
                 </p>
               )}
               {character.affiliation && (
-                <p className="text-xs mb-1" style={{ color: '#a0a9b8' }}>
+                <p className="text-xs mb-1" style={{ color: '#6b7280' }}>
                   📎 {character.affiliation}
                 </p>
               )}
               {character.currentCase && (
-                <p className="text-xs mb-3" style={{ color: '#a0a9b8' }}>
+                <p className="text-xs mb-3" style={{ color: '#6b7280' }}>
                   🗂 {character.currentCase}
                 </p>
               )}
@@ -404,7 +404,7 @@ export default async function CharactersPage({
                   ))}
                 </div>
               )}
-              <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #2a2a3e' }}>
+              <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link
                   href={destinationFor(character.id)}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"

@@ -35,14 +35,14 @@ export function SearchBar({ placeholder }: { placeholder?: string }) {
   )
 
   return (
-    <div className="relative w-full min-w-0 sm:flex-1" style={{  }}>
+    <div className="relative w-full min-w-0 sm:flex-1" style={{ fontFamily: 'Georgia, serif' }}>
       <span
         style={{
           position: 'absolute',
           left: '10px',
           top: '50%',
           transform: 'translateY(-50%)',
-          color: '#a0a9b8',
+          color: '#6b7280',
           pointerEvents: 'none',
           fontSize: '14px',
         }}
@@ -60,13 +60,14 @@ export function SearchBar({ placeholder }: { placeholder?: string }) {
           paddingTop: '7px',
           paddingBottom: '7px',
           backgroundColor: '#111118',
-          border: '1px solid #2a2a3e',
+          border: '1px solid #1f2937',
           borderRadius: '6px',
-          color: '#e8eef7',
+          color: '#e2e8f0',
           fontSize: '13px',
           outline: 'none',
           width: '100%',
           minWidth: '120px',
+          fontFamily: 'Georgia, serif',
         }}
       />
     </div>

@@ -90,7 +90,7 @@ export function AbilityImprovementPanel({
   }
 
   return (
-    <div style={{  }}>
+    <div style={{ fontFamily: 'Georgia, serif' }}>
       <p className="text-xs mb-4" style={{ color: '#9ca3af' }}>
         The following abilities were failed during the mission. Roll{' '}
         <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>1d4–1</span> + modifier for each
@@ -115,10 +115,10 @@ export function AbilityImprovementPanel({
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 {/* Ability info */}
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold" style={{ color: '#e8eef7' }}>
+                  <div className="text-sm font-semibold" style={{ color: '#e2e8f0' }}>
                     📌 {ability.name}
                   </div>
-                  <div className="text-xs mt-0.5" style={{ color: '#a0a9b8' }}>
+                  <div className="text-xs mt-0.5" style={{ color: '#6b7280' }}>
                     Current:{' '}
                     <span style={{ color: '#c4b5fd' }}>{ability.currentValue}%</span>
                     {alreadyRolled && result.gain > 0 && (
@@ -127,7 +127,7 @@ export function AbilityImprovementPanel({
                       </span>
                     )}
                     {alreadyRolled && result.gain === 0 && (
-                      <span style={{ color: '#a0a9b8' }}> — no improvement</span>
+                      <span style={{ color: '#6b7280' }}> — no improvement</span>
                     )}
                   </div>
                 </div>
@@ -175,7 +175,7 @@ export function AbilityImprovementPanel({
                       style={{
                         backgroundColor: result.gain > 0 ? '#052e16' : '#111118',
                         border: `1px solid ${result.gain > 0 ? '#16a34a66' : '#374151'}`,
-                        color: result.gain > 0 ? '#4ade80' : '#a0a9b8',
+                        color: result.gain > 0 ? '#4ade80' : '#6b7280',
                       }}
                     >
                       {result.gain > 0 ? (

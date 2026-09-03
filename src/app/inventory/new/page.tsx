@@ -10,14 +10,14 @@ export default async function NewInventoryPage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href="/inventory" className="text-sm hover:text-purple-300" style={{ color: '#a0a9b8' }}>
+        <Link href="/inventory" className="text-sm hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← Inventory
         </Link>
       </div>
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
         + New Item
       </h1>
-      <form action={createInventoryItem} className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
+      <form action={createInventoryItem} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Name *</label>
           <input name="name" required className="arcane-input" placeholder="e.g. Occult Grimoire" />

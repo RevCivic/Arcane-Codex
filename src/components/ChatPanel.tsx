@@ -124,7 +124,7 @@ export function ChatPanel({
   const currentSession = sessions.find((s) => s.id === activeSessionId)
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] min-h-[500px] rounded-lg overflow-hidden" style={{ border: '1px solid #2a2a3e' }}>
+    <div className="flex h-[calc(100vh-12rem)] min-h-[500px] rounded-lg overflow-hidden" style={{ border: '1px solid #1f2937' }}>
       {/* Sidebar — desktop always visible, mobile overlay */}
       <div className={`${sidebarOpen ? 'block' : 'hidden'} md:block w-64 shrink-0`}>
         <SessionSidebar
@@ -141,23 +141,23 @@ export function ChatPanel({
         {/* Chat header */}
         <div
           className="flex items-center gap-3 px-4 py-3 border-b shrink-0"
-          style={{ borderColor: '#2a2a3e', backgroundColor: '#07070d' }}
+          style={{ borderColor: '#1f2937', backgroundColor: '#07070d' }}
         >
           <button
             type="button"
             className="md:hidden p-1 rounded hover:text-purple-300"
-            style={{ color: '#a0a9b8' }}
+            style={{ color: '#6b7280' }}
             onClick={() => setSidebarOpen((v) => !v)}
             aria-label="Toggle session list"
           >
             ☰
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: '#e8eef7' }}>
+            <p className="text-sm font-medium truncate" style={{ color: '#e2e8f0', fontFamily: 'Georgia, serif' }}>
               {currentSession ? currentSession.title : '🔮 New Session'}
             </p>
             {(currentSession?.characterName ?? characterName) && (
-              <p className="text-[11px]" style={{ color: '#a0a9b8' }}>
+              <p className="text-[11px]" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
                 📋 {currentSession?.characterName ?? characterName}
               </p>
             )}

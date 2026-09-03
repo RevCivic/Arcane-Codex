@@ -142,13 +142,13 @@ export function CharacterSheetSuggestionPanel({ characterId }: Props) {
   }
 
   return (
-    <div className="rounded-lg p-4" style={{ backgroundColor: '#0d0d15', border: '1px solid #2a2a3e' }}>
+    <div className="rounded-lg p-4" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wider" style={{ color: '#a78bfa' }}>
             AI Stat & Skill Suggestions
           </p>
-          <p className="text-xs" style={{ color: '#a0a9b8' }}>
+          <p className="text-xs" style={{ color: '#6b7280' }}>
             Suggestions are not saved until you submit the sheet.
           </p>
         </div>
@@ -186,7 +186,7 @@ export function CharacterSheetSuggestionPanel({ characterId }: Props) {
               rows={3}
               placeholder="e.g. Build this as a fragile occult prodigy with excellent lore and weak endurance…"
               className="w-full rounded px-2 py-1.5 text-xs resize-y"
-              style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e8eef7' }}
+              style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' }}
             />
           </div>
         </div>

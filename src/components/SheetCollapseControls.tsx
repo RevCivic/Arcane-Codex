@@ -10,7 +10,7 @@ export function SheetCollapseControls() {
         type="button"
         onClick={expandAll}
         className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
-        style={{ color: '#9ca3af', border: '1px solid #2a2a3e' }}
+        style={{ color: '#9ca3af', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}
       >
         ▾ Expand All
       </button>
@@ -18,7 +18,7 @@ export function SheetCollapseControls() {
         type="button"
         onClick={collapseAll}
         className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
-        style={{ color: '#9ca3af', border: '1px solid #2a2a3e' }}
+        style={{ color: '#9ca3af', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}
       >
         ▸ Collapse All
       </button>

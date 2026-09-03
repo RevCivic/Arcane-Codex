@@ -16,9 +16,9 @@ export default function PowersError({
 
   return (
     <div className="max-w-2xl">
-      <div className="card-arcane rounded-lg p-6" style={{  }}>
+      <div className="card-arcane rounded-lg p-6" style={{ fontFamily: 'Georgia, serif' }}>
         <h2 className="text-xl font-bold mb-4" style={{ color: '#ef4444' }}>⚠ Error</h2>
-        <p className="text-sm mb-6" style={{ color: '#e8eef7' }}>{error.message}</p>
+        <p className="text-sm mb-6" style={{ color: '#e2e8f0' }}>{error.message}</p>
         <div className="flex gap-3">
           <button
             onClick={reset}

@@ -16,14 +16,14 @@ export default async function EditPlacePage({ params }: { params: Promise<{ id: 
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href={`/places/${place.id}`} className="text-sm hover:text-purple-300" style={{ color: '#a0a9b8' }}>
+        <Link href={`/places/${place.id}`} className="text-sm hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← {place.name}
         </Link>
       </div>
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6" style={{ color: '#d97706' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
         ✏️ Edit Place
       </h1>
-      <form action={action} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
+      <form action={action} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Name *</label>
           <input name="name" required defaultValue={place.name} className="arcane-input" />

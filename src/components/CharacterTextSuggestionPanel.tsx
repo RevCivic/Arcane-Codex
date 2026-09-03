@@ -122,7 +122,7 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
   }
 
   return (
-    <div className="rounded-lg p-4" style={{ backgroundColor: '#0d0d15', border: '1px solid #2a2a3e' }}>
+    <div className="rounded-lg p-4" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs uppercase tracking-wider" style={{ color: '#a78bfa' }}>
           AI Character Detail Suggestions
@@ -161,7 +161,7 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
               rows={3}
               placeholder="e.g. Make the character an unreliable ally whose confidence hides a recent occult failure…"
               className="w-full rounded px-2 py-1.5 text-xs resize-y"
-              style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e8eef7' }}
+              style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' }}
             />
           </div>
         </div>
@@ -185,7 +185,7 @@ export function CharacterTextSuggestionPanel({ characterId }: { characterId?: nu
             <p><strong style={{ color: '#a78bfa' }}>Demeanor:</strong> {suggestion.demeanor || '—'}</p>
             <p className="sm:col-span-2"><strong style={{ color: '#a78bfa' }}>Mechanical Focus:</strong> {suggestion.mechanicalFocus || '—'}</p>
           </div>
-          <p className="text-xs" style={{ color: '#e8eef7' }}>
+          <p className="text-xs" style={{ color: '#e2e8f0' }}>
             {suggestion.description}
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
