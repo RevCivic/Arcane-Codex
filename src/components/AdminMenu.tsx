@@ -96,6 +96,18 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             <span>Skills</span>
           </Link>
           <Link
+            href="/admin/roll-history"
+            role="menuitem"
+            tabIndex={0}
+            onClick={() => setOpen(false)}
+            onKeyDown={closeOnMenuItemKey}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+          >
+            <span>🎲</span>
+            <span>Roll History</span>
+          </Link>
+          <Link
             href="/admin/ai"
             role="menuitem"
             tabIndex={0}

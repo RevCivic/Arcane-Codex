@@ -380,3 +380,26 @@ export async function addAllowedEmail(formData: FormData) {
 
   revalidatePath('/admin/access')
 }
+
+// ─── Roll History ─────────────────────────────────────────────────────────────
+
+export async function getAllRollHistory(limit: number = 500) {
+  await requireAdminUser()
+  return prisma.rollHistory.findMany({
+    include: {
+      character: true,
+      skill: true,
+      ability: {
+        include: {
+          sourceCharacterPower: {
+            include: {
+              power: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  })
+}
