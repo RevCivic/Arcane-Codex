@@ -6,7 +6,7 @@ import { normalizeEmail } from '@/lib/normalizeEmail'
 import { AccessRole } from '@/generated/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getAllRollHistory } from '@/app/actions'
+import { getAllRollHistory, getRollHistoryCount } from '@/app/actions'
 
 const ROLL_HISTORY_LIMIT = 500
 
@@ -18,7 +18,10 @@ export default async function AdminRollHistoryPage() {
   const allowed = await prisma.allowedEmail.findUnique({ where: { email } })
   if (!allowed || allowed.role !== AccessRole.ADMIN) redirect('/')
 
-  const rolls = await getAllRollHistory(ROLL_HISTORY_LIMIT)
+  const [rolls, totalCount] = await Promise.all([
+    getAllRollHistory(ROLL_HISTORY_LIMIT),
+    getRollHistoryCount(),
+  ])
 
   // Format result type color
   function getResultColor(resultType: string | null): string {
@@ -36,10 +39,10 @@ export default async function AdminRollHistoryPage() {
     }
   }
 
-  const isLimited = rolls.length >= ROLL_HISTORY_LIMIT
+  const isLimited = totalCount > ROLL_HISTORY_LIMIT
   const rollCountMessage = isLimited
-    ? `Showing the most recent ${rolls.length} rolls`
-    : `Showing all ${rolls.length} rolls`
+    ? `Showing the most recent ${rolls.length} of ${totalCount} rolls`
+    : `Showing all ${totalCount} rolls`
 
   return (
     <div className="max-w-6xl">
@@ -53,7 +56,7 @@ export default async function AdminRollHistoryPage() {
           </p>
         </div>
         <span className="text-xs px-3 py-1 rounded-full" style={{ backgroundColor: '#1e1133', color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
-          {rolls.length} rolls
+          {totalCount} total
         </span>
       </div>
 
