@@ -1,5 +1,6 @@
 export * from './admin'
 export * from './ai'
+export * from './brp-rules'
 export * from './characters'
 export * from './chat'
 export * from './events'
