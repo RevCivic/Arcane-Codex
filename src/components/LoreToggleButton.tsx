@@ -19,10 +19,9 @@ export function LoreToggleButton({ id, isActive }: Props) {
       }}
       className="px-3 py-1.5 rounded text-xs hover:opacity-80 disabled:opacity-50"
       style={{
-        backgroundColor: isActive ? '#052e16' : '#1f2937',
+        backgroundColor: isActive ? '#052e16' : '#2a2a3e',
         color: isActive ? '#86efac' : '#9ca3af',
         border: `1px solid ${isActive ? '#16a34a44' : '#37415144'}`,
-        fontFamily: 'Georgia, serif',
       }}
       title={isActive ? 'Deactivate (remove from AI context)' : 'Activate (include in AI context)'}
     >

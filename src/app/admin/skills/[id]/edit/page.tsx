@@ -28,28 +28,28 @@ export default async function EditSkillPage({ params }: { params: Promise<{ id: 
   if (!skill) notFound()
 
   const action = updateSkill.bind(null, skill.id)
-  const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
+  const labelStyle: React.CSSProperties = { color: '#d97706' }
 
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href="/admin/skills" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href="/admin/skills" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← Skill Management
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#d97706' }}>
         ✏️ Edit Skill
       </h1>
 
       {skill._count.characterValues > 0 && (
-        <div className="rounded-lg p-4 mb-6 text-sm" style={{ backgroundColor: '#0c1a0c', border: '1px solid #14532d', color: '#4ade80', fontFamily: 'Georgia, serif' }}>
+        <div className="rounded-lg p-4 mb-6 text-sm" style={{ backgroundColor: '#0c1a0c', border: '1px solid #14532d', color: '#4ade80' }}>
           ℹ️ This skill is used on <strong>{skill._count.characterValues}</strong> character sheet{skill._count.characterValues !== 1 ? 's' : ''}.
           Renaming it will be reflected everywhere. Deleting it will remove those values.
         </div>
       )}
 
-      <form action={action} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+      <form action={action} className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>
             Name <span style={{ color: '#ef4444' }}>*</span>

@@ -5,14 +5,14 @@ export default function NewPlacePage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href="/places" className="text-sm hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href="/places" className="text-sm hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← Places
         </Link>
       </div>
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6' }}>
         + New Place
       </h1>
-      <form action={createPlace} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+      <form action={createPlace} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>
             Name <span style={{ color: '#ef4444' }}>*</span>

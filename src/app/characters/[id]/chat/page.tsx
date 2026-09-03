@@ -47,7 +47,7 @@ export default async function CharacterChatPage({ params, searchParams }: { para
         <Link
           href={entityDestination(`/characters/${character.id}`, returnTo)}
           className="text-sm transition-colors hover:text-purple-300"
-          style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}
+          style={{ color: '#a0a9b8' }}
         >
           ← {character.name}
         </Link>
@@ -56,11 +56,11 @@ export default async function CharacterChatPage({ params, searchParams }: { para
       <div className="mb-6">
         <h1
           className="text-2xl font-bold tracking-widest uppercase arcane-glow"
-          style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}
+          style={{ color: '#8b5cf6' }}
         >
           🔮 Chat — {character.name}
         </h1>
-        <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <p className="text-sm mt-1" style={{ color: '#a0a9b8' }}>
           Admin-only character chat with lore and campaign context
         </p>
       </div>

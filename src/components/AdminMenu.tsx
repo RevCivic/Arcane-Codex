@@ -39,7 +39,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
-        style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+        style={{ color: '#9ca3af' }}
       >
         <span>🛠️</span>
         <span className="hidden sm:inline">Admin</span>
@@ -66,7 +66,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
             className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+            style={{ color: '#9ca3af' }}
           >
             <span>🛡️</span>
             <span>Access</span>
@@ -78,7 +78,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
             className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+            style={{ color: '#9ca3af' }}
           >
             <span>🏷️</span>
             <span>Tags</span>
@@ -90,7 +90,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
             className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+            style={{ color: '#9ca3af' }}
           >
             <span>🎯</span>
             <span>Skills</span>
@@ -102,7 +102,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
             className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+            style={{ color: '#9ca3af' }}
           >
             <span>🤖</span>
             <span>AI / LM</span>
@@ -114,7 +114,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
             className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+            style={{ color: '#9ca3af' }}
           >
             <span>📚</span>
             <span>Lore</span>
@@ -126,7 +126,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
             className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+            style={{ color: '#9ca3af' }}
           >
             <span>📥</span>
             <span>Import Queue</span>
@@ -146,7 +146,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
             className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+            style={{ color: '#9ca3af' }}
           >
             <span>🖼️</span>
             <span>Images</span>
@@ -158,7 +158,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
             className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
-            style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
+            style={{ color: '#9ca3af' }}
           >
             <span>🔮</span>
             <span>Chat</span>

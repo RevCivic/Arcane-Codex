@@ -35,7 +35,7 @@ export function TagFilter({ tags }: TagFilterProps) {
 
   return (
     <div className="mt-3">
-      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#a0a9b8' }}>
         Filter by tags
       </p>
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -51,7 +51,6 @@ export function TagFilter({ tags }: TagFilterProps) {
                 border: '1px solid #3b1f6e',
                 backgroundColor: selectedState ? '#3b1f6e' : '#111118',
                 color: selectedState ? '#e9d5ff' : '#a78bfa',
-                fontFamily: 'Georgia, serif',
               }}
             >
               #{tag}

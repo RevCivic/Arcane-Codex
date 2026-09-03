@@ -51,7 +51,7 @@ export function EntityFilterPanel({ fields, storageKey, managedParams }: EntityF
   }
 
   return (
-    <details className="mb-4 rounded-lg p-4" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
+    <details className="mb-4 rounded-lg p-4" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}>
       <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wider" style={{ color: '#a78bfa' }}>
         Filters
       </summary>
@@ -60,7 +60,7 @@ export function EntityFilterPanel({ fields, storageKey, managedParams }: EntityF
           .filter(([name]) => !managedParams.includes(name))
           .map(([name, value]) => <input key={`${name}-${value}`} type="hidden" name={name} value={value} />)}
         {fields.map((field) => (
-          <label key={field.name} className="text-xs uppercase tracking-wider" style={{ color: '#6b7280' }}>
+          <label key={field.name} className="text-xs uppercase tracking-wider" style={{ color: '#a0a9b8' }}>
             {field.label}
             {field.type === 'number' ? (
               <input name={field.name} type="number" min="0" defaultValue={searchParams.get(field.name) ?? ''} placeholder={field.placeholder} className="arcane-input mt-1" />
@@ -79,7 +79,7 @@ export function EntityFilterPanel({ fields, storageKey, managedParams }: EntityF
           <button type="button" onClick={clearDefault} className="rounded px-3 py-2 text-xs" style={{ border: '1px solid #374151', color: '#9ca3af' }}>Remove default</button>
         </div>
       </form>
-      {message && <p className="mt-2 text-xs" role="status" style={{ color: '#6b7280' }}>{message}</p>}
+      {message && <p className="mt-2 text-xs" role="status" style={{ color: '#a0a9b8' }}>{message}</p>}
     </details>
   )
 }

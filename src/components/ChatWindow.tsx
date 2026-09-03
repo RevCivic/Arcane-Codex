@@ -23,7 +23,7 @@ export function ChatWindow({ messages, isLoading = false }: Props) {
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
+      <div className="flex-1 flex items-center justify-center p-8" style={{ color: '#6b7380' }}>
         <div className="text-center">
           <p className="text-3xl mb-4">🔮</p>
           <p className="text-sm">Ask the Arcanist anything about your campaign —</p>
@@ -43,18 +43,17 @@ export function ChatWindow({ messages, isLoading = false }: Props) {
           <div
             className="max-w-[80%] rounded-lg px-4 py-3 text-sm"
             style={{
-              fontFamily: 'Georgia, serif',
               lineHeight: '1.6',
               ...(msg.role === 'user'
                 ? {
                     backgroundColor: '#3b1f7a',
-                    color: '#e2e8f0',
+                    color: '#e8eef7',
                     borderBottomRightRadius: '4px',
                   }
                 : {
                     backgroundColor: '#111118',
                     color: '#d1d5db',
-                    border: '1px solid #1f2937',
+                    border: '1px solid #2a2a3e',
                     borderBottomLeftRadius: '4px',
                   }),
             }}
@@ -75,9 +74,8 @@ export function ChatWindow({ messages, isLoading = false }: Props) {
             className="rounded-lg px-4 py-3 text-sm"
             style={{
               backgroundColor: '#111118',
-              border: '1px solid #1f2937',
+              border: '1px solid #2a2a3e',
               color: '#7c3aed',
-              fontFamily: 'Georgia, serif',
             }}
           >
             <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: '#7c3aed' }}>

@@ -29,16 +29,16 @@ export default async function EditCharacterPage({ params, searchParams }: { para
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href={entityDestination(`/characters/${character.id}`, returnTo)} className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
+        <Link href={entityDestination(`/characters/${character.id}`, returnTo)} className="text-sm transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
           ← {character.name}
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6" style={{ color: '#d97706' }}>
         ✏️ Edit Character
       </h1>
 
-      <form action={action} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
+      <form action={action} encType="multipart/form-data" className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
         <input type="hidden" name="returnTo" value={returnTo} />
         <CharacterTextSuggestionPanel characterId={character.id} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -104,12 +104,12 @@ export default async function EditCharacterPage({ params, searchParams }: { para
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Image URL or Local Path</label>
           <input name="imageUrl" type="text" defaultValue={character.imageUrl ?? ''} className="arcane-input" placeholder="https://example.com/image.png or /uploads/characters/image.png" />
-          <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>Enter an http(s) URL or a path under /uploads/.</p>
+          <p className="mt-1 text-xs" style={{ color: '#a0a9b8' }}>Enter an http(s) URL or a path under /uploads/.</p>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Upload Replacement Image</label>
           <input name="imageFile" type="file" accept="image/*" className="arcane-input" />
-          <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>A selected file replaces the URL or local path above when you save (maximum 5 MB).</p>
+          <p className="mt-1 text-xs" style={{ color: '#a0a9b8' }}>A selected file replaces the URL or local path above when you save (maximum 5 MB).</p>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
