@@ -387,7 +387,12 @@ export async function getAllRollHistory(limit: number = 500) {
   await requireAdminUser()
   return prisma.rollHistory.findMany({
     include: {
-      character: true,
+      character: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       skill: true,
       ability: {
         include: {
