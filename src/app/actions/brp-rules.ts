@@ -212,6 +212,58 @@ export async function createBRPRuleImport(
   })
 }
 
+export async function createBRPRuleImportBatch(
+  rules: Array<{
+    title: string
+    section: string | null
+    content: string
+    sourceUrl?: string
+    ruleId?: number
+  }>
+) {
+  await requireAdminUser()
+
+  // Create all imports in a single batched operation
+  const imports = await Promise.all(
+    rules.map(async (rule) => {
+      const incomingData = {
+        title: rule.title,
+        section: rule.section,
+        content: rule.content,
+        sortOrder: '0',
+      }
+
+      let existingData: Record<string, string> | null = null
+      if (rule.ruleId) {
+        const existing = await prisma.bRPRule.findUnique({ where: { id: rule.ruleId } })
+        if (existing) {
+          existingData = {
+            title: existing.title,
+            section: existing.section ?? '',
+            content: existing.content,
+            sortOrder: existing.sortOrder.toString(),
+          }
+        }
+      }
+
+      return {
+        ruleId: rule.ruleId,
+        ruleName: rule.title,
+        incomingData: incomingData as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        existingData: existingData as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        sourceUrl: rule.sourceUrl,
+      }
+    })
+  )
+
+  // Insert all in a single batch
+  return Promise.all(
+    imports.map((data) =>
+      prisma.bRPRuleImport.create({ data })
+    )
+  )
+}
+
 export async function scrapeBRPRulesFromWeb(url: string = 'https://brp.chaosium.com/basic-roleplaying/') {
   await requireAdminUser()
 

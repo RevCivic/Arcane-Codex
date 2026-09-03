@@ -132,9 +132,8 @@ function cleanText(html: string): string {
   // Decode HTML entities
   text = decodeHTMLEntities(text)
 
-  // Clean up whitespace
+  // Clean up whitespace (includes converting non-breaking spaces to regular spaces)
   text = text
-    .replace(/&nbsp;/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 
@@ -144,6 +143,7 @@ function cleanText(html: string): string {
 /**
  * Decode common HTML entities
  * Note: &amp; must be decoded last to avoid double-decoding issues
+ * Handles both named entities and common special characters
  */
 function decodeHTMLEntities(text: string): string {
   const entities: Record<string, string> = {
@@ -152,6 +152,15 @@ function decodeHTMLEntities(text: string): string {
     '&quot;': '"',
     '&#39;': "'",
     '&apos;': "'",
+    '&nbsp;': ' ',
+    '&mdash;': '—',
+    '&ndash;': '–',
+    '&hellip;': '…',
+    '&bull;': '•',
+    '&euro;': '€',
+    '&copy;': '©',
+    '&reg;': '®',
+    '&trade;': '™',
   }
 
   let result = text

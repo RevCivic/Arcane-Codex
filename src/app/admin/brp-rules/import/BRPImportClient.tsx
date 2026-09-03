@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { scrapeBRPRulesFromWeb, createBRPRuleImport } from '@/app/actions'
+import { scrapeBRPRulesFromWeb, createBRPRuleImportBatch } from '@/app/actions'
 
 type ScrapedRule = {
   title: string
@@ -53,14 +53,23 @@ export function BRPImportClient({ existingRulesByTitle }: Props) {
     setSuccess(null)
     startTransition(async () => {
       try {
-        let imported = 0
-        for (const index of selectedRules) {
+        // Collect all selected rules to import
+        const rulesToImport = Array.from(selectedRules).map((index) => {
           const rule = scrapedRules[index]
           const existingId = existingRulesByTitle[rule.title.toLowerCase()]
-          await createBRPRuleImport(rule.title, rule.section, rule.content, rule.sourceUrl, existingId)
-          imported++
-        }
-        setSuccess(`✓ ${imported} rule${imported !== 1 ? 's' : ''} queued for review`)
+          return {
+            title: rule.title,
+            section: rule.section,
+            content: rule.content,
+            sourceUrl: rule.sourceUrl,
+            ruleId: existingId,
+          }
+        })
+
+        // Batch import all selected rules
+        await createBRPRuleImportBatch(rulesToImport)
+        
+        setSuccess(`✓ ${rulesToImport.length} rule${rulesToImport.length !== 1 ? 's' : ''} queued for review`)
         setScrapedRules([])
         setSelectedRules(new Set())
       } catch (err) {
