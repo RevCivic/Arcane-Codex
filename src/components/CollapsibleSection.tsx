@@ -79,7 +79,7 @@ export function CollapsibleSection({
         {title}
         <span
           style={{
-            color: '#a0a9b8',
+            color: '#6b7280',
             fontSize: '14px',
             transition: 'transform 0.2s',
             transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',

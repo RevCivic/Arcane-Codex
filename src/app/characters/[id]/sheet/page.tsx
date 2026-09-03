@@ -104,7 +104,7 @@ function StatBox({
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs uppercase tracking-wider text-center flex items-center justify-center gap-1" style={{ color: '#d97706' }}>
+      <label className="text-xs uppercase tracking-wider text-center flex items-center justify-center gap-1" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
         <span>{label}</span>
         {description && (
           <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color="#fbbf24" />
@@ -141,7 +141,7 @@ function DerivedBox({
 
   return (
     <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: `1px solid ${accent}33` }}>
-      <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent }}>
+      <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
         <span>{label}</span>
         {description && (
           <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color={accent} />
@@ -155,10 +155,10 @@ function DerivedBox({
           min={0}
           max={999}
           className="arcane-input text-center w-16 text-base font-bold"
-          style={{ color: '#e8eef7' }}
+          style={{ color: '#e2e8f0' }}
           placeholder="—"
         />
-        <span style={{ color: '#a0a9b8' }}>/</span>
+        <span style={{ color: '#6b7280' }}>/</span>
         <input
           name={maxName}
           type="number"
@@ -166,13 +166,13 @@ function DerivedBox({
           min={0}
           max={999}
           className="arcane-input text-center w-16 text-base font-bold"
-          style={{ color: '#a0a9b8' }}
+          style={{ color: '#6b7280' }}
           placeholder="—"
         />
       </div>
       <div className="flex justify-between mt-1">
-        <span className="text-xs" style={{ color: '#6b7380' }}>current</span>
-        <span className="text-xs" style={{ color: '#6b7380' }}>max</span>
+        <span className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>current</span>
+        <span className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>max</span>
       </div>
     </div>
   )
@@ -199,7 +199,7 @@ function SimpleStatBox({
 
   return (
     <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: `1px solid ${accent}33` }}>
-      <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent }}>
+      <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
         <span>{label}</span>
         {description && (
           <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color={accent} />
@@ -212,7 +212,7 @@ function SimpleStatBox({
         min={min}
         max={max}
         className="arcane-input text-center w-full text-base font-bold"
-        style={{ color: '#e8eef7' }}
+        style={{ color: '#e2e8f0' }}
         placeholder="—"
       />
     </div>
@@ -384,17 +384,17 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
     createdAt:  r.createdAt.toISOString(),
   }))
 
-  const labelStyle: React.CSSProperties = { color: '#d97706' }
-  const sectionHead: React.CSSProperties = { color: '#d97706', letterSpacing: '0.1em' }
+  const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
+  const sectionHead: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif', letterSpacing: '0.1em' }
   return (
     <div className="max-w-5xl">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-6 text-sm" style={{  }}>
-        <Link href={returnTo} className="transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
+      <div className="flex items-center gap-2 mb-6 text-sm" style={{ fontFamily: 'Georgia, serif' }}>
+        <Link href={returnTo} className="transition-colors hover:text-purple-300" style={{ color: '#6b7280' }}>
           Characters
         </Link>
         <span style={{ color: '#374151' }}>›</span>
-        <Link href={entityDestination(`/characters/${characterId}`, returnTo)} className="transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
+        <Link href={entityDestination(`/characters/${characterId}`, returnTo)} className="transition-colors hover:text-purple-300" style={{ color: '#6b7280' }}>
           {character.name}
         </Link>
         <span style={{ color: '#374151' }}>›</span>
@@ -404,7 +404,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold mb-1" style={{ color: '#e8eef7' }}>
+          <h1 className="text-3xl font-bold mb-1" style={{ color: '#e2e8f0', fontFamily: 'Georgia, serif' }}>
             {character.name}
           </h1>
           <div className="flex items-center gap-2 flex-wrap">
@@ -443,14 +443,14 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 storageKey="import-foundry"
                 defaultOpen={false}
                 className="card-arcane rounded-lg p-6"
-                style={{  }}
+                style={{ fontFamily: 'Georgia, serif' }}
                 title={
                   <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
                     ✦ Import FoundryVTT JSON
                   </h2>
                 }
               >
-                <p className="text-xs mb-4" style={{ color: '#a0a9b8' }}>
+                <p className="text-xs mb-4" style={{ color: '#6b7280' }}>
                   Paste a FoundryVTT actor export JSON to import stats and skills. Missing skills are created automatically.
                 </p>
                 <form action={importAction} className="space-y-3">
@@ -464,7 +464,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                   <button
                     type="submit"
                     className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
-                    style={{ backgroundColor: '#7c3aed', color: '#fff' }}
+                    style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
                   >
                     ⬇ Import JSON
                   </button>
@@ -489,7 +489,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 <CollapsibleSection
                   storageKey="primary-characteristics"
                   className="card-arcane rounded-lg p-6"
-                  style={{  }}
+                  style={{ fontFamily: 'Georgia, serif' }}
                   title={
                     <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
                       ✦ Primary Characteristics
@@ -513,7 +513,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 <CollapsibleSection
                   storageKey="derived-statistics"
                   className="card-arcane rounded-lg p-6"
-                  style={{  }}
+                  style={{ fontFamily: 'Georgia, serif' }}
                   title={
                     <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
                       ✦ Derived Statistics
@@ -537,32 +537,32 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                   <CollapsibleSection
                     storageKey="skills"
                     className="card-arcane rounded-lg p-6"
-                    style={{  }}
+                    style={{ fontFamily: 'Georgia, serif' }}
                     title={
                       <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
                         ✦ Skills
                       </h2>
                     }
                   >
-                    <p className="text-xs mb-5" style={{ color: '#a0a9b8' }}>
+                    <p className="text-xs mb-5" style={{ color: '#6b7280' }}>
                       Leave blank to use the skill&apos;s default base value. Enter a value to override.
                     </p>
                     <div className="space-y-6">
                       {Array.from(skillsByCategory.entries()).map(([category, skills]) => (
                         <div key={category}>
-                          <h3 className="text-xs uppercase tracking-widest mb-3 pb-1" style={{ color: '#a0a9b8', borderBottom: '1px solid #2a2a3e' }}>
+                          <h3 className="text-xs uppercase tracking-widest mb-3 pb-1" style={{ color: '#6b7280', borderBottom: '1px solid #1f2937' }}>
                             {category}
                           </h3>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                             {skills.map((skill) => {
                               const customValue = skillValueMap.get(skill.id)
                               return (
-                                <div key={skill.id} className="flex items-center gap-2 rounded px-3 py-2" style={{ backgroundColor: '#0d0d15', border: '1px solid #2a2a3e' }}>
+                                <div key={skill.id} className="flex items-center gap-2 rounded px-3 py-2" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-medium truncate" style={{ color: '#e8eef7' }} title={skill.name}>
+                                    <div className="text-xs font-medium truncate" style={{ color: '#e2e8f0' }} title={skill.name}>
                                       {skill.name}
                                     </div>
-                                    <div className="text-xs" style={{ color: '#6b7380' }}>base {skill.baseValue}%</div>
+                                    <div className="text-xs" style={{ color: '#4b5563' }}>base {skill.baseValue}%</div>
                                   </div>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <input
@@ -573,9 +573,9 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                                       max={999}
                                       placeholder={String(skill.baseValue)}
                                       className="arcane-input text-center font-bold"
-                                      style={{ width: '60px', color: customValue !== undefined ? '#a78bfa' : '#a0a9b8' }}
+                                      style={{ width: '60px', color: customValue !== undefined ? '#a78bfa' : '#6b7280' }}
                                     />
-                                    <span className="text-xs" style={{ color: '#6b7380' }}>%</span>
+                                    <span className="text-xs" style={{ color: '#4b5563' }}>%</span>
                                   </div>
                                 </div>
                               )
@@ -591,7 +591,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 <CollapsibleSection
                   storageKey="wounds-notes"
                   className="card-arcane rounded-lg p-6"
-                  style={{  }}
+                  style={{ fontFamily: 'Georgia, serif' }}
                   title={
                     <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
                       ✦ Wounds & Notes
@@ -617,14 +617,14 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                   <button
                     type="submit"
                     className="px-8 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
-                    style={{ backgroundColor: '#7c3aed', color: '#fff' }}
+                    style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}
                   >
                     💾 Save Sheet
                   </button>
                   <Link
                     href={entityDestination(`/characters/${characterId}`, returnTo)}
                     className="px-6 py-2 rounded text-sm font-semibold uppercase tracking-wider"
-                    style={{ border: '1px solid #374151', color: '#9ca3af' }}
+                    style={{ border: '1px solid #374151', color: '#9ca3af', fontFamily: 'Georgia, serif' }}
                   >
                     Cancel
                   </Link>
@@ -642,7 +642,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 storageKey="skill-improvement"
                 defaultOpen={markedSkills.length > 0}
                 title={
-                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706' }}>
+                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
                     📌 Skill Improvement
                     {markedSkills.length > 0 && (
                       <span
@@ -656,7 +656,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 }
               >
                 {markedSkills.length === 0 ? (
-                  <p className="text-xs" style={{ color: '#6b7380' }}>
+                  <p className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
                     No skills are marked for improvement. Skills are marked automatically when you roll a
                     Failure or Fumble on a skill check.
                   </p>
@@ -679,7 +679,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 storageKey="ability-improvement"
                 defaultOpen={markedAbilities.length > 0}
                 title={
-                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706' }}>
+                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
                     ✨ Ability Improvement
                     {markedAbilities.length > 0 && (
                       <span
@@ -693,7 +693,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                 }
               >
                 {markedAbilities.length === 0 ? (
-                  <p className="text-xs" style={{ color: '#6b7380' }}>
+                  <p className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
                     No abilities are marked for improvement. Abilities are marked automatically when you roll a
                     Failure or Fumble on a power check.
                   </p>
@@ -715,7 +715,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
               <CollapsibleSection
                 storageKey="dice-console"
                 title={
-                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706' }}>
+                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
                     🎲 Dice Console
                   </h2>
                 }
@@ -742,16 +742,16 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                     <CollapsibleSection
                       storageKey="carried-items"
                       title={
-                        <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706' }}>
+                        <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
                           🎒 Carried Items
                         </h2>
                       }
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {character.inventoryItems.map((item) => (
-                          <div key={item.id} className="card-arcane rounded-lg p-4" style={{  }}>
+                          <div key={item.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-semibold text-sm" style={{ color: '#e8eef7' }}>{item.name}</span>
+                              <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>{item.name}</span>
                               {item.category && (
                                 <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1c1407', color: '#f59e0b' }}>{item.category}</span>
                               )}
@@ -777,7 +777,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                     <CollapsibleSection
                       storageKey="powers"
                       title={
-                        <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706' }}>
+                        <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
                           ⚡ Powers &amp; Abilities
                         </h2>
                       }
@@ -793,8 +793,8 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                                 ? cp.power.basePercentage + cp.modifier
                                 : undefined
                             return (
-                              <div key={cp.id} className="card-arcane rounded-lg p-4" style={{  }}>
-                                <h3 className="font-semibold text-sm mb-1" style={{ color: '#e8eef7' }}>{cp.power.name}</h3>
+                              <div key={cp.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
+                                <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{cp.power.name}</h3>
                                 {cp.power.baseAbility && (
                                   <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
                                     🎲 {cp.power.baseAbility}
@@ -811,7 +811,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                                     )}
                                   </p>
                                 )}
-                                {cp.notes && <p className="text-xs italic mt-1" style={{ color: '#a0a9b8' }}>{cp.notes}</p>}
+                                {cp.notes && <p className="text-xs italic mt-1" style={{ color: '#6b7280' }}>{cp.notes}</p>}
                               </div>
                             )
                           })}
@@ -823,16 +823,16 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                         (ca) => !character.characterPowers.some((cp) => cp.power.baseAbility === ca.name)
                       ).length > 0 && (
                         <>
-                          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#a0a9b8' }}>
+                          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
                             Additional Abilities
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {character.characterAbilities
                               .filter((ca) => !character.characterPowers.some((cp) => cp.power.baseAbility === ca.name))
                               .map((ca) => (
-                                <div key={ca.id} className="card-arcane rounded-lg p-4" style={{  }}>
+                                <div key={ca.id} className="card-arcane rounded-lg p-4" style={{ fontFamily: 'Georgia, serif' }}>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-sm" style={{ color: '#e8eef7' }}>{ca.name}</span>
+                                    <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>{ca.name}</span>
                                     <span className="font-mono px-1 rounded text-xs" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{ca.currentValue}%</span>
                                     {ca.markedForImprovement && <span title="Marked for improvement">📌</span>}
                                   </div>

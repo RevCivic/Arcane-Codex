@@ -38,7 +38,7 @@ export function SyncFromSheetButton() {
 
   const buttonBase =
     'rounded px-4 py-2 text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 disabled:opacity-50'
-  const buttonStyle = { backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857' }
+  const buttonStyle = { backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857', fontFamily: 'Georgia, serif' }
 
   const activeResult = fromResult ?? toResult
   let resultMessage: string | null = null
@@ -83,6 +83,7 @@ export function SyncFromSheetButton() {
           className="text-xs text-left sm:text-right"
           style={{
             color: activeResult?.error ? '#f87171' : '#4ade80',
+            fontFamily: 'Georgia, serif',
           }}
         >
           {resultMessage}
@@ -92,7 +93,7 @@ export function SyncFromSheetButton() {
         <a
           href="/admin/import-queue"
           className="text-xs text-left sm:text-right hover:underline"
-          style={{ color: '#d97706' }}
+          style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}
         >
           → Review {fromResult.queued} pending change{fromResult.queued !== 1 ? 's' : ''} in Import Queue
         </a>

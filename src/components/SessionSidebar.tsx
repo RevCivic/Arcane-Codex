@@ -53,14 +53,14 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
       {/* Header */}
       <div className="p-3 border-b" style={{ borderColor: '#1a1a2e' }}>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs uppercase tracking-widest" style={{ color: '#d97706' }}>
+          <span className="text-xs uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
             Sessions
           </span>
           <button
             type="button"
             onClick={onNewSession}
             className="text-xs px-2 py-1 rounded hover:opacity-80"
-            style={{ backgroundColor: '#2a2a3e', color: '#a78bfa' }}
+            style={{ backgroundColor: '#1f2937', color: '#a78bfa', fontFamily: 'Georgia, serif' }}
             title="New chat session"
           >
             + New
@@ -71,7 +71,7 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
       {/* Session list */}
       <div className="flex-1 overflow-y-auto">
         {sessions.length === 0 ? (
-          <p className="text-xs p-3" style={{ color: '#6b7380' }}>
+          <p className="text-xs p-3" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
             No sessions yet. Start a new conversation.
           </p>
         ) : (
@@ -98,7 +98,8 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
                     style={{
                       backgroundColor: '#111118',
                       border: '1px solid #374151',
-                      color: '#e8eef7',
+                      color: '#e2e8f0',
+                      fontFamily: 'Georgia, serif',
                     }}
                   />
                   <div className="flex gap-1 mt-1">
@@ -115,7 +116,7 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
                       type="button"
                       onClick={() => setEditingId(null)}
                       className="text-[10px] px-2 py-0.5 rounded"
-                      style={{ color: '#a0a9b8', border: '1px solid #374151' }}
+                      style={{ color: '#6b7280', border: '1px solid #374151' }}
                     >
                       Cancel
                     </button>
@@ -130,12 +131,13 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
                   <p
                     className="text-xs font-medium truncate pr-12"
                     style={{
-                      color: s.id === activeSessionId ? '#e8eef7' : '#9ca3af',
+                      color: s.id === activeSessionId ? '#e2e8f0' : '#9ca3af',
+                      fontFamily: 'Georgia, serif',
                     }}
                   >
                     {s.title}
                   </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: '#6b7380' }}>
+                  <p className="text-[10px] mt-0.5" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>
                     {s.characterName ? `📋 ${s.characterName} · ` : ''}
                     {s.messageCount} msg{s.messageCount !== 1 ? 's' : ''}
                   </p>
@@ -150,7 +152,7 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
                     onClick={() => startRename(s)}
                     title="Rename"
                     className="p-1 rounded hover:text-purple-300"
-                    style={{ color: '#a0a9b8' }}
+                    style={{ color: '#6b7280' }}
                   >
                     ✏️
                   </button>
@@ -160,7 +162,7 @@ export function SessionSidebar({ sessions, activeSessionId, onSelectSession, onN
                     disabled={isPending}
                     title="Delete"
                     className="p-1 rounded hover:text-red-400"
-                    style={{ color: '#a0a9b8' }}
+                    style={{ color: '#6b7280' }}
                   >
                     🗑️
                   </button>

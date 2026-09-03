@@ -50,7 +50,7 @@ export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputP
       <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Tags</label>
       <div
         className="rounded-md p-2.5"
-        style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}
+        style={{ backgroundColor: '#111118', border: '1px solid #1f2937' }}
       >
         {/* Selected tag pills */}
         <div className="flex flex-wrap gap-2 mb-2">
@@ -80,7 +80,7 @@ export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputP
             <fieldset style={{ border: 'none', margin: 0, padding: 0 }}>
               <legend
                 className="text-xs uppercase tracking-wider mb-1"
-                style={{ color: '#a0a9b8' }}
+                style={{ color: '#6b7280' }}
               >
                 Existing tags
               </legend>
@@ -89,7 +89,7 @@ export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputP
                 style={{
                   maxHeight: '9rem',
                   backgroundColor: '#0d0d14',
-                  border: '1px solid #2a2a3e',
+                  border: '1px solid #1f2937',
                   padding: '0.375rem 0.5rem',
                 }}
               >
@@ -141,7 +141,7 @@ export function TagInput({ allTags, initialTags = [], name = 'tags' }: TagInputP
           ))}
         </datalist>
       </div>
-      <p className="mt-1 text-xs" style={{ color: '#a0a9b8' }}>
+      <p className="mt-1 text-xs" style={{ color: '#6b7280' }}>
         Select existing tags above or type a new one and press Enter or comma.
       </p>
       <input type="hidden" name={name} value={JSON.stringify(tags)} />

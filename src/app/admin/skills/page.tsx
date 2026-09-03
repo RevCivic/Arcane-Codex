@@ -32,33 +32,33 @@ export default async function AdminSkillsPage() {
     skillsByCategory.get(cat)!.push(skill)
   }
 
-  const labelStyle: React.CSSProperties = { color: '#d97706' }
+  const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif' }
   const inputClass = 'arcane-input'
 
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
-        <Link href="/admin/access" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#a0a9b8' }}>
+        <Link href="/admin/access" className="text-sm transition-colors hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← Access Control
         </Link>
       </div>
 
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6' }}>
+          <h1 className="text-2xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
             🎯 Skill Management
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#a0a9b8' }}>
+          <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
             Define and manage the BRP skills available on character sheets
           </p>
         </div>
-        <span className="text-xs px-3 py-1 rounded-full" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
+        <span className="text-xs px-3 py-1 rounded-full" style={{ backgroundColor: '#1e1133', color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
           {skills.length} skills
         </span>
       </div>
 
       {/* ── Add Skill Form ─────────────────────────────────────────────────── */}
-      <div className="card-arcane rounded-lg p-6 mb-8" style={{  }}>
+      <div className="card-arcane rounded-lg p-6 mb-8" style={{ fontFamily: 'Georgia, serif' }}>
         <h2 className="text-sm uppercase tracking-widest mb-4" style={labelStyle}>
           + Add New Skill
         </h2>
@@ -103,22 +103,22 @@ export default async function AdminSkillsPage() {
 
       {/* ── Skill List ─────────────────────────────────────────────────────── */}
       {skills.length === 0 ? (
-        <div className="text-center py-16 rounded-lg" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e', color: '#a0a9b8' }}>
+        <div className="text-center py-16 rounded-lg" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           No skills defined yet. Add the first skill above.
         </div>
       ) : (
         <div className="space-y-6">
           {Array.from(skillsByCategory.entries()).map(([category, catSkills]) => (
             <div key={category}>
-              <h3 className="text-xs uppercase tracking-widest mb-3 pb-1 font-semibold" style={{ color: '#a0a9b8', borderBottom: '1px solid #2a2a3e' }}>
+              <h3 className="text-xs uppercase tracking-widest mb-3 pb-1 font-semibold" style={{ color: '#6b7280', borderBottom: '1px solid #1f2937', fontFamily: 'Georgia, serif' }}>
                 {category}
               </h3>
-              <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #2a2a3e' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #1f2937' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Georgia, serif' }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#0d0d1a', borderBottom: '2px solid #2a2a3e' }}>
+                    <tr style={{ backgroundColor: '#0d0d1a', borderBottom: '2px solid #1f2937' }}>
                       {(['Name', 'Base %', 'Sort', 'Description', 'Used by', 'Actions'] as const).map((h) => (
-                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a0a9b8', whiteSpace: 'nowrap' }}>
+                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', whiteSpace: 'nowrap' }}>
                           {h}
                         </th>
                       ))}
@@ -127,13 +127,13 @@ export default async function AdminSkillsPage() {
                   <tbody>
                     {catSkills.map((skill) => (
                       <tr key={skill.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
-                        <td style={{ padding: '10px 12px', color: '#e8eef7', fontSize: '13px', fontWeight: 500 }}>
+                        <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '13px', fontWeight: 500 }}>
                           {skill.name}
                         </td>
                         <td style={{ padding: '10px 12px', color: '#a78bfa', fontSize: '13px', fontFamily: 'monospace' }}>
                           {skill.baseValue}%
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#a0a9b8', fontSize: '12px' }}>
+                        <td style={{ padding: '10px 12px', color: '#6b7280', fontSize: '12px' }}>
                           {skill.sortOrder}
                         </td>
                         <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: '12px', maxWidth: '280px' }}>

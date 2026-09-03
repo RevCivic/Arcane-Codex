@@ -55,7 +55,7 @@ function DiffRow({
   if (!changed) return null
 
   return (
-    <tr style={{ borderTop: '1px solid #2a2a3e', opacity: lineByLine && !checked ? 0.4 : 1 }}>
+    <tr style={{ borderTop: '1px solid #1f2937', opacity: lineByLine && !checked ? 0.4 : 1 }}>
       {lineByLine && (
         <td className="pl-3 pr-1 py-2 align-top" style={{ width: '2rem' }}>
           <input
@@ -68,14 +68,14 @@ function DiffRow({
           />
         </td>
       )}
-      <td className="px-3 py-2 text-xs align-top" style={{ color: '#d97706', minWidth: '8rem' }}>
+      <td className="px-3 py-2 text-xs align-top" style={{ color: '#d97706', fontFamily: 'Georgia, serif', minWidth: '8rem' }}>
         {label}
       </td>
       <td className="px-3 py-2 text-xs align-top max-w-xs break-words" style={{ color: '#f87171' }}>
-        {existing ?? <span className="italic" style={{ color: '#a0a9b8' }}>—</span>}
+        {existing ?? <span className="italic" style={{ color: '#6b7280' }}>—</span>}
       </td>
       <td className="px-3 py-2 text-xs align-top max-w-xs break-words" style={{ color: '#4ade80' }}>
-        {incoming ?? <span className="italic" style={{ color: '#a0a9b8' }}>—</span>}
+        {incoming ?? <span className="italic" style={{ color: '#6b7280' }}>—</span>}
       </td>
     </tr>
   )
@@ -137,14 +137,14 @@ function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: num
   return (
     <div
       className="rounded-lg mb-4"
-      style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}
+      style={{ backgroundColor: '#111118', border: '1px solid #1f2937' }}
     >
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #2a2a3e' }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #1f2937' }}>
         <div>
-          <span className="font-semibold" style={{ color: '#e8eef7' }}>
+          <span className="font-semibold" style={{ color: '#e2e8f0', fontFamily: 'Georgia, serif' }}>
             {item.characterName}
           </span>
-          <span className="ml-2 text-xs" style={{ color: '#a0a9b8' }}>
+          <span className="ml-2 text-xs" style={{ color: '#6b7280' }}>
             {changedFields.length} field{changedFields.length !== 1 ? 's' : ''} changed · queued{' '}
             {new Date(item.createdAt).toLocaleString()}
           </span>
@@ -172,7 +172,7 @@ function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: num
                 onClick={() => setLineByLine(false)}
                 disabled={isPending}
                 className={buttonBase}
-                style={{ backgroundColor: '#2a2a3e', color: '#9ca3af', border: '1px solid #374151' }}
+                style={{ backgroundColor: '#1f2937', color: '#9ca3af', border: '1px solid #374151' }}
               >
                 ← All Fields
               </button>
@@ -213,7 +213,7 @@ function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: num
           <thead>
             <tr style={{ backgroundColor: '#0d0d14' }}>
               {lineByLine && <th className="pl-3 pr-1 py-2" style={{ width: '2rem' }} />}
-              <th className="px-3 py-2 text-left text-xs uppercase tracking-wider" style={{ color: '#a0a9b8' }}>Field</th>
+              <th className="px-3 py-2 text-left text-xs uppercase tracking-wider" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>Field</th>
               <th className="px-3 py-2 text-left text-xs uppercase tracking-wider" style={{ color: '#f87171' }}>Current (DB)</th>
               <th className="px-3 py-2 text-left text-xs uppercase tracking-wider" style={{ color: '#4ade80' }}>Incoming (Sheet)</th>
             </tr>
@@ -235,7 +235,7 @@ function QueueCard({ item, onReviewed }: { item: QueueItem; onReviewed: (id: num
       </div>
 
       {error && (
-        <p className="px-4 py-2 text-xs" style={{ color: '#f87171', borderTop: '1px solid #2a2a3e' }}>
+        <p className="px-4 py-2 text-xs" style={{ color: '#f87171', borderTop: '1px solid #1f2937' }}>
           ⚠ {error}
         </p>
       )}
@@ -274,12 +274,12 @@ export function ImportQueueClient({ items: initialItems }: { items: QueueItem[] 
     return (
       <div
         className="rounded-lg p-8 text-center"
-        style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e' }}
+        style={{ backgroundColor: '#111118', border: '1px solid #1f2937' }}
       >
         {bulkMessage ? (
-          <p style={{ color: '#4ade80' }}>{bulkMessage}</p>
+          <p style={{ color: '#4ade80', fontFamily: 'Georgia, serif' }}>{bulkMessage}</p>
         ) : (
-          <p style={{ color: '#a0a9b8' }}>
+          <p style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
             No pending import changes. Sync from the sheet to populate this queue.
           </p>
         )}
@@ -290,7 +290,7 @@ export function ImportQueueClient({ items: initialItems }: { items: QueueItem[] 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm" style={{ color: '#9ca3af' }}>
+        <p className="text-sm" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
           {items.length} pending change{items.length !== 1 ? 's' : ''}
         </p>
         <div className="flex gap-2">
@@ -298,7 +298,7 @@ export function ImportQueueClient({ items: initialItems }: { items: QueueItem[] 
             onClick={() => handleBulk(approveAllImportQueueItems, 'approved')}
             disabled={bulkPending}
             className={buttonBase}
-            style={{ backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857' }}
+            style={{ backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857', fontFamily: 'Georgia, serif' }}
           >
             ✓ Approve All
           </button>
@@ -306,7 +306,7 @@ export function ImportQueueClient({ items: initialItems }: { items: QueueItem[] 
             onClick={() => handleBulk(rejectAllImportQueueItems, 'rejected')}
             disabled={bulkPending}
             className={buttonBase}
-            style={{ backgroundColor: '#450a0a', color: '#f87171', border: '1px solid #7f1d1d' }}
+            style={{ backgroundColor: '#450a0a', color: '#f87171', border: '1px solid #7f1d1d', fontFamily: 'Georgia, serif' }}
           >
             ✗ Reject All
           </button>
@@ -314,7 +314,7 @@ export function ImportQueueClient({ items: initialItems }: { items: QueueItem[] 
       </div>
 
       {bulkError && (
-        <p className="mb-4 text-sm" style={{ color: '#f87171' }}>
+        <p className="mb-4 text-sm" style={{ color: '#f87171', fontFamily: 'Georgia, serif' }}>
           ⚠ {bulkError}
         </p>
       )}

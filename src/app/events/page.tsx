@@ -46,16 +46,16 @@ export default async function EventsPage({
 
   const events = await prisma.event.findMany({ where, orderBy: { [sortBy]: sortOrder }, include: { people: true } })
 
-  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', whiteSpace: 'nowrap' }
+  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6' }}>
+          <h1 className="text-3xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
             📜 Events
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#a0a9b8' }}>Case incidents and milestones</p>
+          <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>Case incidents and milestones</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Suspense fallback={null}>
@@ -64,43 +64,43 @@ export default async function EventsPage({
           <Suspense fallback={null}>
             <ViewToggle />
           </Suspense>
-          <Link href="/events/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90 whitespace-nowrap" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>
+          <Link href="/events/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90 whitespace-nowrap" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
             + New Event
           </Link>
-          <Link href="/events/bulk" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:text-purple-300 whitespace-nowrap" style={{ border: '1px solid #3b1f6e', color: '#a78bfa' }}>
+          <Link href="/events/bulk" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:text-purple-300 whitespace-nowrap" style={{ border: '1px solid #3b1f6e', color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
             Bulk Entry
           </Link>
         </div>
       </div>
 
       {events.length === 0 ? (
-        <div className="text-center py-20 rounded-lg" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e', color: '#a0a9b8' }}>
+        <div className="text-center py-20 rounded-lg" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           No events recorded.
         </div>
       ) : view === 'list' ? (
-        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #2a2a3e' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #1f2937' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Georgia, serif' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #2a2a3e', backgroundColor: '#0d0d1a' }}>
+              <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'date', search)} style={{ color: sortBy === 'date' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'date', search)} style={{ color: sortBy === 'date' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Date<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="date" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'significance', search)} style={{ color: sortBy === 'significance' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'significance', search)} style={{ color: sortBy === 'significance' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Significance<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="significance" />
                   </Link>
                 </th>
-                <th style={{ ...thStyle, color: '#a0a9b8', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <th style={{ ...thStyle, color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   People
                 </th>
-                <th style={{ ...thStyle, textAlign: 'right', color: '#a0a9b8', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <th style={{ ...thStyle, textAlign: 'right', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Actions
                 </th>
               </tr>
@@ -108,7 +108,7 @@ export default async function EventsPage({
             <tbody>
               {events.map((event) => (
                 <tr key={event.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
-                  <td style={{ padding: '10px 12px', color: '#e8eef7', fontSize: '14px' }}>{event.name}</td>
+                  <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '14px' }}>{event.name}</td>
                   <td style={{ padding: '10px 12px', color: '#f59e0b', fontSize: '13px' }}>
                     {event.date ?? <span style={{ color: '#374151' }}>—</span>}
                   </td>
@@ -117,7 +117,7 @@ export default async function EventsPage({
                   </td>
                   <td style={{ padding: '10px 12px', fontSize: '13px' }}>
                     {event.people.length > 0
-                      ? <span className="flex flex-wrap gap-1">{event.people.map((p, i) => <span key={p.id}><Link href={`/characters/${p.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>{p.name}</Link>{i < event.people.length - 1 && <span style={{ color: '#a0a9b8' }}>,</span>}</span>)}</span>
+                      ? <span className="flex flex-wrap gap-1">{event.people.map((p, i) => <span key={p.id}><Link href={`/characters/${p.id}`} className="hover:text-purple-300" style={{ color: '#a78bfa' }}>{p.name}</Link>{i < event.people.length - 1 && <span style={{ color: '#6b7280' }}>,</span>}</span>)}</span>
                       : <span style={{ color: '#374151' }}>—</span>}
                   </td>
                   <td style={{ padding: '10px 12px', textAlign: 'right' }}>
@@ -135,9 +135,9 @@ export default async function EventsPage({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {events.map((event) => (
-            <div key={event.id} className="card-arcane rounded-lg p-5" style={{  }}>
+            <div key={event.id} className="card-arcane rounded-lg p-5" style={{ fontFamily: 'Georgia, serif' }}>
               <div className="flex items-start justify-between mb-2">
-                <h2 className="text-lg font-semibold" style={{ color: '#e8eef7' }}>{event.name}</h2>
+                <h2 className="text-lg font-semibold" style={{ color: '#e2e8f0' }}>{event.name}</h2>
               </div>
               {event.date && <p className="text-xs mb-2" style={{ color: '#f59e0b' }}>🗓 {event.date}</p>}
               {event.description && <p className="text-sm mb-2 line-clamp-2" style={{ color: '#9ca3af' }}>{event.description}</p>}
@@ -151,7 +151,7 @@ export default async function EventsPage({
                   ))}
                 </p>
               )}
-              <div className="flex flex-wrap items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #2a2a3e' }}>
+              <div className="flex flex-wrap items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link href={`/events/${event.id}`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                 <Link href={`/events/${event.id}/edit`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                 <div className="ml-auto">

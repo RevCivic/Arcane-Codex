@@ -27,8 +27,8 @@ type Props = {
 }
 
 export function LoreDocumentForm({ action, defaultValues = {}, submitLabel = 'Save Document', cancelHref = '/admin/lore' }: Props) {
-  const labelStyle: React.CSSProperties = { color: '#d97706', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em' }
-  const inputStyle: React.CSSProperties = { fontSize: '13px' }
+  const labelStyle: React.CSSProperties = { color: '#d97706', fontFamily: 'Georgia, serif', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em' }
+  const inputStyle: React.CSSProperties = { fontFamily: 'Georgia, serif', fontSize: '13px' }
 
   return (
     <form action={action} className="space-y-5">
@@ -73,7 +73,7 @@ export function LoreDocumentForm({ action, defaultValues = {}, submitLabel = 'Sa
           placeholder="1–3 sentences that capture the key facts for the AI to reference…"
           style={inputStyle}
         />
-        <p className="text-[11px] mt-1" style={{ color: '#a0a9b8' }}>
+        <p className="text-[11px] mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           Keep this concise — it is directly embedded in every AI request context.
         </p>
       </div>
@@ -90,7 +90,7 @@ export function LoreDocumentForm({ action, defaultValues = {}, submitLabel = 'Sa
           placeholder="Write the full lore document here. Markdown is supported."
           style={inputStyle}
         />
-        <p className="text-[11px] mt-1" style={{ color: '#a0a9b8' }}>
+        <p className="text-[11px] mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           Markdown is supported. The full content is available to the chat assistant.
         </p>
       </div>
@@ -118,7 +118,7 @@ export function LoreDocumentForm({ action, defaultValues = {}, submitLabel = 'Sa
             className="arcane-input w-full"
             style={inputStyle}
           />
-          <p className="text-[11px] mt-1" style={{ color: '#a0a9b8' }}>
+          <p className="text-[11px] mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
             Lower = appears first in AI context
           </p>
         </div>
@@ -148,7 +148,7 @@ export function LoreDocumentForm({ action, defaultValues = {}, submitLabel = 'Sa
         <a
           href={cancelHref}
           className="px-4 py-2 rounded text-xs hover:opacity-80"
-          style={{ color: '#9ca3af', border: '1px solid #374151' }}
+          style={{ color: '#9ca3af', border: '1px solid #374151', fontFamily: 'Georgia, serif' }}
         >
           Cancel
         </a>

@@ -94,7 +94,7 @@ export function BulkCharacterEnrichmentButton() {
         </button>
       </div>
       {showPrompt && (
-        <div className="mt-2 rounded-lg p-3 space-y-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #2a2a3e' }}>
+        <div className="mt-2 rounded-lg p-3 space-y-3" style={{ backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>
           <AIPromptContextFields value={promptContext} onChange={setPromptContext} />
           <div>
             <label className="block text-xs mb-1" style={{ color: '#9ca3af' }}>
@@ -106,7 +106,7 @@ export function BulkCharacterEnrichmentButton() {
               rows={2}
               placeholder="e.g. Make these six entries feel like rival cult lieutenants instead of investigators."
               className="w-full rounded px-2 py-1.5 text-xs resize-y"
-              style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e8eef7' }}
+              style={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#e2e8f0' }}
             />
           </div>
         </div>

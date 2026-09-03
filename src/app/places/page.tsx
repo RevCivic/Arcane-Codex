@@ -46,16 +46,16 @@ export default async function PlacesPage({
 
   const places = await prisma.place.findMany({ where, orderBy: { [sortBy]: sortOrder } })
 
-  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', whiteSpace: 'nowrap' }
+  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6' }}>
+          <h1 className="text-3xl font-bold tracking-widest uppercase arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
             🗺️ Places
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#a0a9b8' }}>Locations under investigation</p>
+          <p className="text-sm mt-1" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>Locations under investigation</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Suspense fallback={null}>
@@ -64,40 +64,40 @@ export default async function PlacesPage({
           <Suspense fallback={null}>
             <ViewToggle />
           </Suspense>
-          <Link href="/places/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90 whitespace-nowrap" style={{ backgroundColor: '#7c3aed', color: '#fff' }}>
+          <Link href="/places/new" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90 whitespace-nowrap" style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
             + New Place
           </Link>
-          <Link href="/places/bulk" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:text-purple-300 whitespace-nowrap" style={{ border: '1px solid #3b1f6e', color: '#a78bfa' }}>
+          <Link href="/places/bulk" className="px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider hover:text-purple-300 whitespace-nowrap" style={{ border: '1px solid #3b1f6e', color: '#a78bfa', fontFamily: 'Georgia, serif' }}>
             Bulk Entry
           </Link>
         </div>
       </div>
 
       {places.length === 0 ? (
-        <div className="text-center py-20 rounded-lg" style={{ backgroundColor: '#111118', border: '1px solid #2a2a3e', color: '#a0a9b8' }}>
+        <div className="text-center py-20 rounded-lg" style={{ backgroundColor: '#111118', border: '1px solid #1f2937', color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           No places recorded.
         </div>
       ) : view === 'list' ? (
-        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #2a2a3e' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #1f2937' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Georgia, serif' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #2a2a3e', backgroundColor: '#0d0d1a' }}>
+              <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'name', search)} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'type', search)} style={{ color: sortBy === 'type' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'type', search)} style={{ color: sortBy === 'type' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Type<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="type" />
                   </Link>
                 </th>
                 <th style={thStyle}>
-                  <Link href={sortLink(view, sortBy, sortOrder, 'region', search)} style={{ color: sortBy === 'region' ? '#a78bfa' : '#a0a9b8', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Link href={sortLink(view, sortBy, sortOrder, 'region', search)} style={{ color: sortBy === 'region' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Region<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="region" />
                   </Link>
                 </th>
-                <th style={{ ...thStyle, textAlign: 'right', color: '#a0a9b8', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <th style={{ ...thStyle, textAlign: 'right', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Actions
                 </th>
               </tr>
@@ -105,7 +105,7 @@ export default async function PlacesPage({
             <tbody>
               {places.map((place) => (
                 <tr key={place.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
-                  <td style={{ padding: '10px 12px', color: '#e8eef7', fontSize: '14px' }}>{place.name}</td>
+                  <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '14px' }}>{place.name}</td>
                   <td style={{ padding: '10px 12px', fontSize: '12px' }}>
                     {place.type ? (
                       <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1c1407', color: '#f59e0b' }}>{place.type}</span>
@@ -129,18 +129,18 @@ export default async function PlacesPage({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {places.map((place) => (
-            <div key={place.id} className="card-arcane rounded-lg p-5" style={{  }}>
+            <div key={place.id} className="card-arcane rounded-lg p-5" style={{ fontFamily: 'Georgia, serif' }}>
               <div className="flex items-start justify-between mb-2">
-                <h2 className="text-lg font-semibold" style={{ color: '#e8eef7' }}>{place.name}</h2>
+                <h2 className="text-lg font-semibold" style={{ color: '#e2e8f0' }}>{place.name}</h2>
                 {place.type && (
                   <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1c1407', color: '#f59e0b' }}>
                     {place.type}
                   </span>
                 )}
               </div>
-              {place.region && <p className="text-xs mb-2" style={{ color: '#a0a9b8' }}>📍 {place.region}</p>}
+              {place.region && <p className="text-xs mb-2" style={{ color: '#6b7280' }}>📍 {place.region}</p>}
               {place.description && <p className="text-sm mb-3 line-clamp-2" style={{ color: '#9ca3af' }}>{place.description}</p>}
-              <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #2a2a3e' }}>
+              <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link href={`/places/${place.id}`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
                 <Link href={`/places/${place.id}/edit`} className="text-xs px-3 py-1.5 rounded" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
                 <div className="ml-auto">

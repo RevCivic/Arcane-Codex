@@ -20,14 +20,14 @@ export default async function EditPowerPage({ params }: { params: Promise<{ id: 
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href={`/powers/${power.id}`} className="text-sm hover:text-purple-300" style={{ color: '#a0a9b8' }}>
+        <Link href={`/powers/${power.id}`} className="text-sm hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← {power.name}
         </Link>
       </div>
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6" style={{ color: '#d97706' }}>
+      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
         ✏️ Edit Power
       </h1>
-      <form action={action} className="card-arcane rounded-lg p-6 space-y-5" style={{  }}>
+      <form action={action} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Name *</label>
           <input name="name" required defaultValue={power.name} className="arcane-input" />
@@ -44,12 +44,12 @@ export default async function EditPowerPage({ params }: { params: Promise<{ id: 
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Base Ability</label>
             <AbilitySelector skills={skills} defaultValue={power.baseAbility} />
-            <p className="text-xs mt-1" style={{ color: '#a0a9b8' }}>Skill linked to this power, or none if passive</p>
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Skill linked to this power, or none if passive</p>
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Base %</label>
             <input name="basePercentage" type="number" min={0} max={999} defaultValue={power.basePercentage ?? ''} className="arcane-input" placeholder="0–999" />
-            <p className="text-xs mt-1" style={{ color: '#a0a9b8' }}>Standard skill percentage for this power</p>
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Standard skill percentage for this power</p>
           </div>
         </div>
         <div>

@@ -266,13 +266,13 @@ export function SheetLayoutManager({
       {/* ── Controls bar ────────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-2 mb-6 flex-wrap"
-        style={{  }}
+        style={{ fontFamily: 'Georgia, serif' }}
       >
         {isEditing ? (
           <>
             <span
               className="text-xs flex-1"
-              style={{ color: '#a78bfa' }}
+              style={{ color: '#a78bfa', fontFamily: 'Georgia, serif' }}
             >
               {`✦ ${isTouchDevice ? 'Use ▲ ▼ buttons to reorder' : 'Drag modules to reorder'} — ${
                 hiddenModules.length > 0 ? `${hiddenModules.length} hidden` : 'check visibility'
@@ -301,7 +301,7 @@ export function SheetLayoutManager({
               type="button"
               onClick={expandAll}
               className={BTN_BASE}
-              style={{ color: '#9ca3af', border: '1px solid #2a2a3e' }}
+              style={{ color: '#9ca3af', border: '1px solid #1f2937' }}
             >
               ▾ Expand All
             </button>
@@ -309,7 +309,7 @@ export function SheetLayoutManager({
               type="button"
               onClick={collapseAll}
               className={BTN_BASE}
-              style={{ color: '#9ca3af', border: '1px solid #2a2a3e' }}
+              style={{ color: '#9ca3af', border: '1px solid #1f2937' }}
             >
               ▸ Collapse All
             </button>
@@ -358,6 +358,7 @@ export function SheetLayoutManager({
                           color: '#a78bfa',
                           fontSize: '12px',
                           cursor: 'pointer',
+                          fontFamily: 'Georgia, serif',
                           textTransform: 'uppercase',
                           letterSpacing: '0.08em',
                           transition: 'background-color 0.2s',
@@ -435,12 +436,13 @@ export function SheetLayoutManager({
                     fontSize: '11px',
                     userSelect: 'none',
                     cursor: isTouchDevice ? 'default' : isHidden ? 'default' : 'grab',
+                    fontFamily: 'Georgia, serif',
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                   }}
                 >
                   {!isTouchDevice && !isHidden && (
-                    <span style={{ fontSize: '16px', lineHeight: 1, color: '#a0a9b8' }}>⠿</span>
+                    <span style={{ fontSize: '16px', lineHeight: 1, color: '#6b7280' }}>⠿</span>
                   )}
                   <span style={{ flex: 1 }}>{module.label}</span>
                   <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
@@ -460,7 +462,7 @@ export function SheetLayoutManager({
                             borderRadius: '4px',
                             border: '1px solid #3b1f6e',
                             backgroundColor: moduleIndex === 0 ? '#12091f' : '#2d1a4e',
-                            color: moduleIndex === 0 ? '#6b7380' : '#a78bfa',
+                            color: moduleIndex === 0 ? '#4b5563' : '#a78bfa',
                             fontSize: '14px',
                             cursor: moduleIndex === 0 ? 'not-allowed' : 'pointer',
                             flexShrink: 0,
@@ -482,7 +484,7 @@ export function SheetLayoutManager({
                             borderRadius: '4px',
                             border: '1px solid #3b1f6e',
                             backgroundColor: moduleIndex === orderedModules.length - 1 ? '#12091f' : '#2d1a4e',
-                            color: moduleIndex === orderedModules.length - 1 ? '#6b7380' : '#a78bfa',
+                            color: moduleIndex === orderedModules.length - 1 ? '#4b5563' : '#a78bfa',
                             fontSize: '14px',
                             cursor: moduleIndex === orderedModules.length - 1 ? 'not-allowed' : 'pointer',
                             flexShrink: 0,

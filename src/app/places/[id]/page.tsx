@@ -17,14 +17,14 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="max-w-3xl">
       <div className="mb-6">
-        <Link href="/places" className="text-sm hover:text-purple-300" style={{ color: '#a0a9b8' }}>
+        <Link href="/places" className="text-sm hover:text-purple-300" style={{ color: '#6b7280', fontFamily: 'Georgia, serif' }}>
           ← Places
         </Link>
       </div>
-      <div className="card-arcane rounded-lg p-6" style={{  }}>
+      <div className="card-arcane rounded-lg p-6" style={{ fontFamily: 'Georgia, serif' }}>
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2" style={{ color: '#e8eef7' }}>{place.name}</h1>
+            <h1 className="text-3xl font-bold mb-2" style={{ color: '#e2e8f0' }}>{place.name}</h1>
             {place.type && (
               <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1c1407', color: '#f59e0b' }}>{place.type}</span>
             )}
@@ -34,7 +34,7 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
             <DeleteButton action={deletePlace.bind(null, place.id)} label={place.name} />
           </div>
         </div>
-        <hr style={{ borderColor: '#2a2a3e', margin: '1rem 0' }} />
+        <hr style={{ borderColor: '#1f2937', margin: '1rem 0' }} />
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {place.imageUrl && (
             <div className="sm:col-span-2">
@@ -47,7 +47,7 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
                   loading="lazy"
                   referrerPolicy="no-referrer"
                   className="w-full max-w-xl rounded border"
-                  style={{ borderColor: '#2a2a3e' }}
+                  style={{ borderColor: '#1f2937' }}
                 />
               </dd>
             </div>
@@ -55,13 +55,13 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
           {place.region && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Region</dt>
-              <dd className="text-sm" style={{ color: '#e8eef7' }}>{place.region}</dd>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{place.region}</dd>
             </div>
           )}
           {place.coordinates && (
             <div>
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Coordinates</dt>
-              <dd className="text-sm" style={{ color: '#e8eef7' }}>{place.coordinates}</dd>
+              <dd className="text-sm" style={{ color: '#e2e8f0' }}>{place.coordinates}</dd>
             </div>
           )}
           {place.mapsLink && (
@@ -77,13 +77,13 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
           {place.description && (
             <div className="sm:col-span-2">
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Description</dt>
-              <dd className="text-sm leading-6" style={{ color: '#e8eef7' }}>{place.description}</dd>
+              <dd className="text-sm leading-6" style={{ color: '#e2e8f0' }}>{place.description}</dd>
             </div>
           )}
           {place.notes && (
             <div className="sm:col-span-2">
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Notes</dt>
-              <dd className="text-sm leading-6 p-3 rounded" style={{ color: '#a78bfa', backgroundColor: '#0d0d15', border: '1px solid #2a2a3e' }}>{place.notes}</dd>
+              <dd className="text-sm leading-6 p-3 rounded" style={{ color: '#a78bfa', backgroundColor: '#0d0d15', border: '1px solid #1f2937' }}>{place.notes}</dd>
             </div>
           )}
           {referenceLinks.length > 0 && (
@@ -91,7 +91,7 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ id
               <dt className="text-xs uppercase tracking-wider mb-1" style={{ color: '#d97706' }}>Reference Links</dt>
               <dd className="space-y-2">
                 {referenceLinks.map((link) => (
-                  <p key={`${link.url}-${link.note}`} className="text-sm" style={{ color: '#e8eef7' }}>
+                  <p key={`${link.url}-${link.note}`} className="text-sm" style={{ color: '#e2e8f0' }}>
                     <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 break-all" style={{ color: '#a78bfa' }}>
                       {link.url}
                     </a>
