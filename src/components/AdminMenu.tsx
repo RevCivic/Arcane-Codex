@@ -43,7 +43,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
       >
         <span>🛠️</span>
         <span className="hidden sm:inline">Admin</span>
-        <span aria-hidden="true" className="text-xs transition-transform" style={open ? { transform: 'rotate(180deg)' } : {}}>
+        <span aria-hidden="true" className={`text-xs transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
           ▾
         </span>
         {pendingImportCount > 0 && (
