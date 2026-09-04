@@ -35,14 +35,17 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
     >
       <button
         type="button"
-        aria-haspopup="true"
+        aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400"
+        className="flex items-center gap-1.5 px-3 py-2 rounded text-sm transition-all duration-200 hover:text-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
         style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
       >
         <span>🛠️</span>
         <span className="hidden sm:inline">Admin</span>
+        <span aria-hidden="true" className={`text-xs transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+          ▾
+        </span>
         {pendingImportCount > 0 && (
           <span
             className="rounded-full px-1.5 py-0.5 text-xs font-bold leading-none"
@@ -56,7 +59,7 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-1 min-w-36 rounded border shadow-lg z-20"
+          className="absolute right-0 mt-1 min-w-48 rounded border shadow-lg z-20 overflow-hidden"
           style={{ backgroundColor: '#07070d', borderColor: '#1a1a2e' }}
         >
           <Link
@@ -65,11 +68,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>🛡️</span>
-            <span>Access</span>
+            <span className="flex items-center gap-1.5">
+              <span>🛡️</span>
+              <span>Access</span>
+            </span>
           </Link>
           <Link
             href="/admin/tags"
@@ -77,11 +82,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>🏷️</span>
-            <span>Tags</span>
+            <span className="flex items-center gap-1.5">
+              <span>🏷️</span>
+              <span>Tags</span>
+            </span>
           </Link>
           <Link
             href="/admin/skills"
@@ -89,11 +96,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>🎯</span>
-            <span>Skills</span>
+            <span className="flex items-center gap-1.5">
+              <span>🎯</span>
+              <span>Skills</span>
+            </span>
           </Link>
           <Link
             href="/admin/roll-history"
@@ -101,11 +110,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>🎲</span>
-            <span>Roll History</span>
+            <span className="flex items-center gap-1.5">
+              <span>🎲</span>
+              <span>Roll History</span>
+            </span>
           </Link>
           <Link
             href="/admin/ai"
@@ -113,11 +124,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>🤖</span>
-            <span>AI / LM</span>
+            <span className="flex items-center gap-1.5">
+              <span>🤖</span>
+              <span>AI / LM</span>
+            </span>
           </Link>
           <Link
             href="/admin/lore"
@@ -125,11 +138,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>📚</span>
-            <span>Lore</span>
+            <span className="flex items-center gap-1.5">
+              <span>📚</span>
+              <span>Lore</span>
+            </span>
           </Link>
           <Link
             href="/admin/brp-rules"
@@ -137,11 +152,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>📖</span>
-            <span>BRP Rules</span>
+            <span className="flex items-center gap-1.5">
+              <span>📖</span>
+              <span>BRP Rules</span>
+            </span>
           </Link>
           <Link
             href="/admin/import-queue"
@@ -149,19 +166,23 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>📥</span>
-            <span>Import Queue</span>
-            {pendingImportCount > 0 && (
-              <span
-                className="ml-auto rounded-full px-1.5 py-0.5 text-xs font-bold leading-none"
-                style={{ backgroundColor: '#d97706', color: '#07070d' }}
-              >
-                {pendingImportCount}
+            <span className="flex items-center justify-between gap-1.5">
+              <span className="flex items-center gap-1.5">
+                <span>📥</span>
+                <span>Import Queue</span>
               </span>
-            )}
+              {pendingImportCount > 0 && (
+                <span
+                  className="rounded-full px-1.5 py-0.5 text-xs font-bold leading-none flex-shrink-0"
+                  style={{ backgroundColor: '#d97706', color: '#07070d' }}
+                >
+                  {pendingImportCount}
+                </span>
+              )}
+            </span>
           </Link>
           <Link
             href="/admin/images"
@@ -169,11 +190,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>🖼️</span>
-            <span>Images</span>
+            <span className="flex items-center gap-1.5">
+              <span>🖼️</span>
+              <span>Images</span>
+            </span>
           </Link>
           <Link
             href="/chat"
@@ -181,11 +204,13 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-all duration-200 hover:text-purple-400"
+            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
-            <span>🔮</span>
-            <span>Chat</span>
+            <span className="flex items-center gap-1.5">
+              <span>🔮</span>
+              <span>Chat</span>
+            </span>
           </Link>
         </div>
       )}
