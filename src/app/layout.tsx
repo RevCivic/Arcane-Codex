@@ -19,6 +19,7 @@ const navLinks = [
   { href: '/inventory', label: 'Inventory', icon: '🎒' },
   { href: '/events', label: 'Events', icon: '📜' },
   { href: '/powers', label: 'Powers', icon: '⚡' },
+  { href: '/brp-rules', label: 'BRP Rules', icon: '📖' },
 ]
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isAdmin = access?.role === AccessRole.ADMIN
 
   const playerCharacters = email && !isAdmin
+    ? await prisma.character.findMany({
+        where: { claimedByEmail: email },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true },
+      })
+    : []
+
+  const adminCharacters = email && isAdmin
     ? await prisma.character.findMany({
         where: { claimedByEmail: email },
         orderBy: { name: 'asc' },
@@ -78,6 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               isSignedIn={isSignedIn}
               isAdmin={isAdmin}
               playerCharacters={playerCharacters}
+              adminCharacters={adminCharacters}
               pendingImportCount={pendingImportCount}
             />
           </div>
