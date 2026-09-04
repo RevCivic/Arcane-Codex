@@ -166,21 +166,21 @@ export function AdminMenu({ pendingImportCount = 0 }: AdminMenuProps) {
             tabIndex={0}
             onClick={() => setOpen(false)}
             onKeyDown={closeOnMenuItemKey}
-            className="block px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400 w-full justify-between"
             style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}
           >
             <span className="flex items-center gap-1.5">
               <span>📥</span>
               <span>Import Queue</span>
-              {pendingImportCount > 0 && (
-                <span
-                  className="ml-auto rounded-full px-1.5 py-0.5 text-xs font-bold leading-none"
-                  style={{ backgroundColor: '#d97706', color: '#07070d' }}
-                >
-                  {pendingImportCount}
-                </span>
-              )}
             </span>
+            {pendingImportCount > 0 && (
+              <span
+                className="rounded-full px-1.5 py-0.5 text-xs font-bold leading-none flex-shrink-0"
+                style={{ backgroundColor: '#d97706', color: '#07070d' }}
+              >
+                {pendingImportCount}
+              </span>
+            )}
           </Link>
           <Link
             href="/admin/images"
