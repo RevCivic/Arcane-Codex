@@ -99,7 +99,7 @@ export function ResponsiveNav({ navLinks, isSignedIn, isAdmin, playerCharacters 
                 <Link
                   key={character.id}
                   href={`/characters/${character.id}/sheet`}
-                  className="block px-4 py-2 text-sm whitespace-nowrap transition-colors hover:bg-purple-950 hover:text-purple-300"
+                  className="block px-4 py-2 text-sm whitespace-nowrap transition-colors hover:bg-purple-950 hover:text-purple-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-purple-400"
                   style={navItemStyle}
                 >
                   {character.name}
