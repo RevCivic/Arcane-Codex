@@ -1,7 +1,5 @@
 'use client'
 
-'use client'
-
 import { generateInventoryItemSuggestion, captureAIFeedback } from '@/app/actions'
 import { AI_ITEM_RARITY_OPTIONS, AI_ITEM_PURPOSE_OPTIONS, AI_TONE_OPTIONS, AI_MECHANICAL_FOCUS_OPTIONS } from '@/lib/aiPromptContext'
 import { InventoryItemSuggestion } from '@/lib/aiClient'

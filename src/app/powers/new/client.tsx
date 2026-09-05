@@ -26,7 +26,7 @@ export default function NewPowerPageClient({ skills }: NewPowerPageClientProps) 
       if (nameInput) nameInput.value = suggestion.name
       if (descriptionInput) descriptionInput.value = suggestion.description
       if (effectInput) effectInput.value = suggestion.effect
-      if (basePercentageInput && suggestion.basePercentage) basePercentageInput.value = String(suggestion.basePercentage)
+      if (basePercentageInput) basePercentageInput.value = String(suggestion.basePercentage)
       if (abilitySelector && suggestion.baseAbility) abilitySelector.value = suggestion.baseAbility
     }
   }

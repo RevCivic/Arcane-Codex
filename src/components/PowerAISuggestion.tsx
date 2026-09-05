@@ -1,7 +1,5 @@
 'use client'
 
-'use client'
-
 import { generatePowerSuggestion, captureAIFeedback } from '@/app/actions'
 import { AI_TONE_OPTIONS, AI_MECHANICAL_FOCUS_OPTIONS, AI_POWER_COST_OPTIONS, AI_POWER_RARITY_OPTIONS } from '@/lib/aiPromptContext'
 import { PowerSuggestion } from '@/lib/aiClient'

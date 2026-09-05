@@ -6,6 +6,8 @@ import {
   generateCharacterBulkTextFromAI,
   generateCharacterStatsSkillsFromAI,
   generateCharacterTextFromAI,
+  generateInventoryItemFromAI,
+  generatePowerFromAI,
   InventoryItemSuggestion,
   PowerSuggestion,
 } from '@/lib/aiClient'
@@ -416,7 +418,6 @@ export async function generateInventoryItemSuggestion(
     ])
     const systemPrompt = [primaryPromptConfig?.value ?? '', loreContext].filter(Boolean).join('\n\n')
 
-    const { generateInventoryItemFromAI } = await import('@/lib/aiClient')
     const ai = await generateInventoryItemFromAI({ ...aiPayload, systemPrompt })
     const generation = await prisma.aIGeneration.create({
       data: {
@@ -457,7 +458,6 @@ export async function generatePowerSuggestion(
     ])
     const systemPrompt = [primaryPromptConfig?.value ?? '', loreContext].filter(Boolean).join('\n\n')
 
-    const { generatePowerFromAI } = await import('@/lib/aiClient')
     const ai = await generatePowerFromAI({ ...aiPayload, systemPrompt })
     const generation = await prisma.aIGeneration.create({
       data: {
