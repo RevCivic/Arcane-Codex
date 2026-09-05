@@ -3,13 +3,19 @@ FROM node:20-slim AS deps
 
 # Required for native modules and Prisma migrations
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 make g++ openssl \
+    python3 make g++ openssl curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+
+# Install dependencies with retry logic and improved network configuration
+RUN npm config set fetch-timeout 60000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm ci --no-audit --no-fund --prefer-offline || npm ci
 
 # ---- Stage 2: Build the application ----
 FROM node:20-slim AS builder
