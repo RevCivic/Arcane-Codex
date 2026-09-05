@@ -1,19 +1,22 @@
 'use client'
 
+'use client'
+
 import { generatePowerSuggestion, captureAIFeedback } from '@/app/actions'
 import { AI_TONE_OPTIONS, AI_MECHANICAL_FOCUS_OPTIONS, AI_POWER_COST_OPTIONS, AI_POWER_RARITY_OPTIONS } from '@/lib/aiPromptContext'
+import { PowerSuggestion } from '@/lib/aiClient'
 import { useState } from 'react'
 
 export interface PowerAISuggestionProps {
   initialName?: string
   initialDescription?: string
-  onSuggestion?: (suggestion: any) => void
+  onSuggestion?: (suggestion: PowerSuggestion) => void
 }
 
 export function PowerAISuggestion({ initialName = '', initialDescription = '', onSuggestion }: PowerAISuggestionProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [suggestion, setSuggestion] = useState<any>(null)
+  const [suggestion, setSuggestion] = useState<PowerSuggestion | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
@@ -60,12 +63,12 @@ export function PowerAISuggestion({ initialName = '', initialDescription = '', o
   }
 
   const handleAccept = async () => {
-    if (!generationId) return
+    if (!generationId || !suggestion) return
     try {
       await captureAIFeedback({
         generationId,
         status: 'ACCEPTED',
-        finalValues: suggestion,
+        finalValues: suggestion as Record<string, unknown>,
       })
       if (onSuggestion) {
         onSuggestion(suggestion)

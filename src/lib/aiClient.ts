@@ -325,8 +325,8 @@ export async function generatePowerFromAI(input: {
     effect: asString(raw.effect),
     baseAbility: asString(raw.baseAbility),
     basePercentage: clamp(asInt(raw.basePercentage, 0), 0, 100),
-    narrativeRole: asString((raw as Record<string, unknown>).narrativeRole),
-    mechanicalFocus: asString((raw as Record<string, unknown>).mechanicalFocus),
+    narrativeRole: asString(raw.narrativeRole),
+    mechanicalFocus: asString(raw.mechanicalFocus),
   }
   return { modelName: result.modelName, modelVersion: result.modelVersion, suggestion }
 }

@@ -6,6 +6,8 @@ import {
   generateCharacterBulkTextFromAI,
   generateCharacterStatsSkillsFromAI,
   generateCharacterTextFromAI,
+  InventoryItemSuggestion,
+  PowerSuggestion,
 } from '@/lib/aiClient'
 import type { AIPromptContext } from '@/lib/aiPromptContext'
 import { revalidatePath } from 'next/cache'
@@ -396,7 +398,7 @@ export async function captureAIFeedback(input: AIFeedbackInput): Promise<{ ok: b
 
 export async function generateInventoryItemSuggestion(
   input: { name?: string; category?: string; description?: string; additionalPrompt?: string; promptContext?: Record<string, unknown> }
-): Promise<{ ok: boolean; generationId?: string; suggestion?: any; error?: string }> {
+): Promise<{ ok: boolean; generationId?: string; suggestion?: InventoryItemSuggestion; error?: string }> {
   const user = await requireAuthorizedUser()
 
   try {
@@ -438,7 +440,7 @@ export async function generateInventoryItemSuggestion(
 
 export async function generatePowerSuggestion(
   input: { name?: string; description?: string; additionalPrompt?: string; promptContext?: Record<string, unknown> }
-): Promise<{ ok: boolean; generationId?: string; suggestion?: any; error?: string }> {
+): Promise<{ ok: boolean; generationId?: string; suggestion?: PowerSuggestion; error?: string }> {
   const user = await requireAuthorizedUser()
 
   try {

@@ -1,20 +1,23 @@
 'use client'
 
+'use client'
+
 import { generateInventoryItemSuggestion, captureAIFeedback } from '@/app/actions'
 import { AI_ITEM_RARITY_OPTIONS, AI_ITEM_PURPOSE_OPTIONS, AI_TONE_OPTIONS, AI_MECHANICAL_FOCUS_OPTIONS } from '@/lib/aiPromptContext'
+import { InventoryItemSuggestion } from '@/lib/aiClient'
 import { useState } from 'react'
 
 export interface InventoryItemAISuggestionProps {
   initialName?: string
   initialCategory?: string
   initialDescription?: string
-  onSuggestion?: (suggestion: any) => void
+  onSuggestion?: (suggestion: InventoryItemSuggestion) => void
 }
 
 export function InventoryItemAISuggestion({ initialName = '', initialCategory = '', initialDescription = '', onSuggestion }: InventoryItemAISuggestionProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [suggestion, setSuggestion] = useState<any>(null)
+  const [suggestion, setSuggestion] = useState<InventoryItemSuggestion | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
@@ -63,12 +66,12 @@ export function InventoryItemAISuggestion({ initialName = '', initialCategory = 
   }
 
   const handleAccept = async () => {
-    if (!generationId) return
+    if (!generationId || !suggestion) return
     try {
       await captureAIFeedback({
         generationId,
         status: 'ACCEPTED',
-        finalValues: suggestion,
+        finalValues: suggestion as Record<string, unknown>,
       })
       if (onSuggestion) {
         onSuggestion(suggestion)
