@@ -10,7 +10,7 @@
     "lint": "eslint",
     "test:ai": "tsx --test src/lib/aiClient.test.ts",
     "db:migrate:sqlite-to-postgres": "tsx scripts/migrate-sqlite-to-postgres.ts",
-    "postinstall": "npx prisma generate || true"
+    "postinstall": "npx prisma generate"
   },
   "prisma": {
     "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
