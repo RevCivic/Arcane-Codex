@@ -19,6 +19,8 @@ enum AIGenerationType {
   CHARACTER_TEXT
   CHARACTER_STATS_SKILLS
   CHARACTER_BULK_TEXT
+  INVENTORY_ITEM
+  POWER
 }
 
 enum AIFeedbackStatus {

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
 import { createInventoryItem } from '@/app/actions'
+import { InventoryItemAISuggestion } from '@/components/InventoryItemAISuggestion'
 import Link from 'next/link'
 
 export default async function NewInventoryPage() {
@@ -14,9 +15,12 @@ export default async function NewInventoryPage() {
           ← Inventory
         </Link>
       </div>
-      <h1 className="text-2xl font-bold uppercase tracking-widest mb-6 arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
-        + New Item
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold uppercase tracking-widest arcane-glow" style={{ color: '#8b5cf6', fontFamily: 'Georgia, serif' }}>
+          + New Item
+        </h1>
+        <InventoryItemAISuggestion />
+      </div>
       <form action={createInventoryItem} className="card-arcane rounded-lg p-6 space-y-5" style={{ fontFamily: 'Georgia, serif' }}>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Name *</label>
