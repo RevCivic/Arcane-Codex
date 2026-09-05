@@ -11,11 +11,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies with retry logic and improved network configuration
-RUN npm config set fetch-timeout 60000 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-retries 5 && \
-    npm ci --no-audit --no-fund --prefer-offline || npm ci
+RUN npm config set fetch-timeout 60000 fetch-retry-mintimeout 20000 fetch-retry-maxtimeout 120000 fetch-retries 5 && \
+    npm ci --no-audit --no-fund --prefer-offline || npm ci --no-audit --no-fund --prefer-online
 
 # ---- Stage 2: Build the application ----
 FROM node:20-slim AS builder
