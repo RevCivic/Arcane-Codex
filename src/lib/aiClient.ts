@@ -277,10 +277,68 @@ export async function chatWithAI(input: { messages: ChatMessageInput[]; context?
   return { modelName: result.modelName, modelVersion: result.modelVersion, response: asString(result.value) }
 }
 
+export type InventoryItemSuggestion = {
+  name: string
+  category: string
+  description: string
+  effect: string
+  location: string
+  narrativeRole: string
+  mechanicalFocus: string
+}
+
+export type PowerSuggestion = {
+  name: string
+  description: string
+  effect: string
+  baseAbility: string
+  basePercentage: number
+  narrativeRole: string
+  mechanicalFocus: string
+}
+
+export async function generateInventoryItemFromAI(input: {
+  name: string; category: string; description: string; additionalPrompt: string
+  systemPrompt?: string; promptContext?: Record<string, unknown>
+}): Promise<Omit<GatewayResult<InventoryItemSuggestion>, 'value'> & { suggestion: InventoryItemSuggestion }> {
+  const result = await complete([
+    { role: 'system', content: `${contextMessage(input.systemPrompt)}\n\nReturn only a JSON object with these string fields: name, category, description, effect, location, narrativeRole, mechanicalFocus. Keep descriptions evocative and mechanically relevant.` },
+    { role: 'user', content: `Create or enrich a BRP campaign artifact/item. Preserve supplied facts.\n${JSON.stringify({ ...input, systemPrompt: undefined }, null, 2)}` },
+  ], true)
+  const raw = asObject(result.value)
+  const suggestion = Object.fromEntries(['name', 'category', 'description', 'effect', 'location', 'narrativeRole', 'mechanicalFocus'].map((key) => [key, asString(raw[key])])) as InventoryItemSuggestion
+  return { modelName: result.modelName, modelVersion: result.modelVersion, suggestion }
+}
+
+export async function generatePowerFromAI(input: {
+  name: string; description: string; additionalPrompt: string
+  systemPrompt?: string; promptContext?: Record<string, unknown>
+}): Promise<Omit<GatewayResult<PowerSuggestion>, 'value'> & { suggestion: PowerSuggestion }> {
+  const result = await complete([
+    { role: 'system', content: `${contextMessage(input.systemPrompt)}\n\nReturn only JSON: {"name":string,"description":string,"effect":string,"baseAbility":string,"basePercentage":number,"narrativeRole":string,"mechanicalFocus":string}. basePercentage must be 0-100. baseAbility is the name of the ability roll (e.g. "Telepathy", "Arcane Sight") or empty string for passive powers.` },
+    { role: 'user', content: `Suggest a BRP supernatural power for the campaign:\n${JSON.stringify({ ...input, systemPrompt: undefined }, null, 2)}` },
+  ], true)
+  const raw = asObject(result.value)
+  const suggestion: PowerSuggestion = {
+    name: asString(raw.name),
+    description: asString(raw.description),
+    effect: asString(raw.effect),
+    baseAbility: asString(raw.baseAbility),
+    basePercentage: clamp(asInt(raw.basePercentage, 0), 0, 100),
+    narrativeRole: asString(raw.narrativeRole),
+    mechanicalFocus: asString(raw.mechanicalFocus),
+  }
+  return { modelName: result.modelName, modelVersion: result.modelVersion, suggestion }
+}
+
 export type CharacterTextSuggestionInput = Parameters<typeof generateCharacterTextFromAI>[0] & { characterId?: number | null; description?: string }
 export type CharacterTextSuggestionResult = { ok: boolean; generationId?: string; suggestion?: CharacterTextSuggestion; error?: string }
 export type CharacterStatsSkillsSuggestionInput = { characterId?: number | null; name?: string; role?: string; race?: string; description?: string; additionalPrompt?: string; promptContext?: Partial<AIPromptContext> }
 export type CharacterStatsSkillsSuggestionResult = { ok: boolean; generationId?: string; suggestion?: { stats: CharacterStatsSuggestion; skills: CharacterSkillSuggestion[] }; error?: string }
 export type CharacterBulkSuggestionInput = { additionalPrompt?: string; promptContext?: Partial<AIPromptContext>; rows: Array<{ rowIndex: number; name?: string; firstName?: string; lastName?: string; role?: string; status?: string }> }
 export type CharacterBulkSuggestionResult = { ok: boolean; generationId?: string; suggestions?: CharacterBulkTextSuggestion[]; error?: string }
+export type InventoryItemSuggestionInput = { name?: string; category?: string; description?: string; additionalPrompt?: string; promptContext?: Record<string, unknown> }
+export type InventoryItemSuggestionResult = { ok: boolean; generationId?: string; suggestion?: InventoryItemSuggestion; error?: string }
+export type PowerSuggestionInput = { name?: string; description?: string; additionalPrompt?: string; promptContext?: Record<string, unknown> }
+export type PowerSuggestionResult = { ok: boolean; generationId?: string; suggestion?: PowerSuggestion; error?: string }
 export type AIFeedbackInput = { generationId: string; status: 'ACCEPTED' | 'EDITED' | 'REJECTED'; finalValues?: Record<string, unknown>; note?: string }

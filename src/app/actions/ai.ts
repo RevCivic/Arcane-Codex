@@ -6,6 +6,10 @@ import {
   generateCharacterBulkTextFromAI,
   generateCharacterStatsSkillsFromAI,
   generateCharacterTextFromAI,
+  generateInventoryItemFromAI,
+  generatePowerFromAI,
+  InventoryItemSuggestion,
+  PowerSuggestion,
 } from '@/lib/aiClient'
 import type { AIPromptContext } from '@/lib/aiPromptContext'
 import { revalidatePath } from 'next/cache'
@@ -390,6 +394,87 @@ export async function captureAIFeedback(input: AIFeedbackInput): Promise<{ ok: b
     return { ok: true }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to capture AI feedback'
+    return { ok: false, error: message }
+  }
+}
+
+export async function generateInventoryItemSuggestion(
+  input: { name?: string; category?: string; description?: string; additionalPrompt?: string; promptContext?: Record<string, unknown> }
+): Promise<{ ok: boolean; generationId?: string; suggestion?: InventoryItemSuggestion; error?: string }> {
+  const user = await requireAuthorizedUser()
+
+  try {
+    const aiPayload = {
+      name: (input.name ?? '').trim(),
+      category: (input.category ?? '').trim(),
+      description: (input.description ?? '').trim(),
+      additionalPrompt: (input.additionalPrompt ?? '').trim(),
+      promptContext: input.promptContext ?? {},
+    }
+
+    const [primaryPromptConfig, loreContext] = await Promise.all([
+      prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } }),
+      getActiveLoreContext(),
+    ])
+    const systemPrompt = [primaryPromptConfig?.value ?? '', loreContext].filter(Boolean).join('\n\n')
+
+    const ai = await generateInventoryItemFromAI({ ...aiPayload, systemPrompt })
+    const generation = await prisma.aIGeneration.create({
+      data: {
+        type: AIGenerationType.INVENTORY_ITEM,
+        createdByEmail: user.email,
+        modelName: ai.modelName,
+        modelVersion: ai.modelVersion,
+        inputPayload: aiPayload as Prisma.InputJsonValue,
+        suggestion: ai.suggestion as Prisma.InputJsonValue,
+      },
+      select: { id: true },
+    })
+
+    return { ok: true, generationId: generation.id, suggestion: ai.suggestion }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to generate inventory item suggestion'
+    console.error('[ai] inventory item suggestion failed', error)
+    return { ok: false, error: message }
+  }
+}
+
+export async function generatePowerSuggestion(
+  input: { name?: string; description?: string; additionalPrompt?: string; promptContext?: Record<string, unknown> }
+): Promise<{ ok: boolean; generationId?: string; suggestion?: PowerSuggestion; error?: string }> {
+  const user = await requireAuthorizedUser()
+
+  try {
+    const aiPayload = {
+      name: (input.name ?? '').trim(),
+      description: (input.description ?? '').trim(),
+      additionalPrompt: (input.additionalPrompt ?? '').trim(),
+      promptContext: input.promptContext ?? {},
+    }
+
+    const [primaryPromptConfig, loreContext] = await Promise.all([
+      prisma.aIConfig.findUnique({ where: { key: 'primaryPrompt' } }),
+      getActiveLoreContext(),
+    ])
+    const systemPrompt = [primaryPromptConfig?.value ?? '', loreContext].filter(Boolean).join('\n\n')
+
+    const ai = await generatePowerFromAI({ ...aiPayload, systemPrompt })
+    const generation = await prisma.aIGeneration.create({
+      data: {
+        type: AIGenerationType.POWER,
+        createdByEmail: user.email,
+        modelName: ai.modelName,
+        modelVersion: ai.modelVersion,
+        inputPayload: aiPayload as Prisma.InputJsonValue,
+        suggestion: ai.suggestion as Prisma.InputJsonValue,
+      },
+      select: { id: true },
+    })
+
+    return { ok: true, generationId: generation.id, suggestion: ai.suggestion }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to generate power suggestion'
+    console.error('[ai] power suggestion failed', error)
     return { ok: false, error: message }
   }
 }

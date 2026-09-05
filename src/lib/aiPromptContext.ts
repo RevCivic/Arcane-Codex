@@ -70,7 +70,48 @@ export const AI_MECHANICAL_FOCUS_OPTIONS = [
   { value: 'knowledge', label: 'Knowledge / Investigation' },
 ] as const
 
+export const AI_ITEM_RARITY_OPTIONS = [
+  { value: '', label: 'Infer from prompt' },
+  { value: 'common', label: 'Common' },
+  { value: 'uncommon', label: 'Uncommon' },
+  { value: 'rare', label: 'Rare' },
+  { value: 'legendary', label: 'Legendary' },
+  { value: 'artifact', label: 'Artifact' },
+] as const
+
+export const AI_ITEM_PURPOSE_OPTIONS = [
+  { value: '', label: 'Infer from prompt' },
+  { value: 'weapon', label: 'Weapon / Combat' },
+  { value: 'protective', label: 'Protective / Defensive' },
+  { value: 'utility', label: 'Utility / Tool' },
+  { value: 'knowledge', label: 'Knowledge / Reference' },
+  { value: 'magical', label: 'Magical / Arcane' },
+  { value: 'cursed', label: 'Cursed / Dangerous' },
+] as const
+
+export const AI_POWER_COST_OPTIONS = [
+  { value: '', label: 'Infer from prompt' },
+  { value: 'free', label: 'Free / No Cost' },
+  { value: 'sanity', label: 'Sanity Cost' },
+  { value: 'mp', label: 'Magic Points Cost' },
+  { value: 'hp', label: 'Hit Points Cost' },
+  { value: 'complex', label: 'Complex / Ritual' },
+] as const
+
+export const AI_POWER_RARITY_OPTIONS = [
+  { value: '', label: 'Infer from prompt' },
+  { value: 'common', label: 'Common' },
+  { value: 'uncommon', label: 'Uncommon' },
+  { value: 'rare', label: 'Rare' },
+  { value: 'legendary', label: 'Legendary' },
+  { value: 'unique', label: 'Unique' },
+] as const
+
 export type AIEntityType = (typeof AI_ENTITY_TYPE_OPTIONS)[number]['value']
+export type AIItemRarity = (typeof AI_ITEM_RARITY_OPTIONS)[number]['value']
+export type AIItemPurpose = (typeof AI_ITEM_PURPOSE_OPTIONS)[number]['value']
+export type AIPowerCost = (typeof AI_POWER_COST_OPTIONS)[number]['value']
+export type AIPowerRarity = (typeof AI_POWER_RARITY_OPTIONS)[number]['value']
 
 export type AIPromptContext = {
   entityType: AIEntityType | ''
@@ -83,6 +124,22 @@ export type AIPromptContext = {
   mechanicalFocus: string
 }
 
+export type AIInventoryItemPromptContext = {
+  rarity: AIItemRarity | ''
+  purpose: AIItemPurpose | ''
+  tone: string
+  mechanicalFocus: string
+  narrativeRole: string
+}
+
+export type AIPowerPromptContext = {
+  cost: AIPowerCost | ''
+  rarity: AIPowerRarity | ''
+  tone: string
+  mechanicalFocus: string
+  narrativeRole: string
+}
+
 export const DEFAULT_AI_PROMPT_CONTEXT: AIPromptContext = {
   entityType: '',
   narrativeRole: '',
@@ -92,4 +149,20 @@ export const DEFAULT_AI_PROMPT_CONTEXT: AIPromptContext = {
   factionAlignment: '',
   metaphysicalNature: '',
   mechanicalFocus: '',
+}
+
+export const DEFAULT_AI_INVENTORY_ITEM_CONTEXT: AIInventoryItemPromptContext = {
+  rarity: '',
+  purpose: '',
+  tone: '',
+  mechanicalFocus: '',
+  narrativeRole: '',
+}
+
+export const DEFAULT_AI_POWER_CONTEXT: AIPowerPromptContext = {
+  cost: '',
+  rarity: '',
+  tone: '',
+  mechanicalFocus: '',
+  narrativeRole: '',
 }
