@@ -1,7 +1,7 @@
 'use client'
 
 import { generateInventoryItemSuggestion, captureAIFeedback } from '@/app/actions'
-import { DEFAULT_AI_INVENTORY_ITEM_CONTEXT, AI_ITEM_RARITY_OPTIONS, AI_ITEM_PURPOSE_OPTIONS, AI_TONE_OPTIONS, AI_MECHANICAL_FOCUS_OPTIONS } from '@/lib/aiPromptContext'
+import { AI_ITEM_RARITY_OPTIONS, AI_ITEM_PURPOSE_OPTIONS, AI_TONE_OPTIONS, AI_MECHANICAL_FOCUS_OPTIONS } from '@/lib/aiPromptContext'
 import { useState } from 'react'
 
 export interface InventoryItemAISuggestionProps {
@@ -154,7 +154,6 @@ export function InventoryItemAISuggestion({ initialName = '', initialCategory = 
                   Rarity
                 </label>
                 <select name="rarity" value={formData.rarity} onChange={handleInputChange} className="arcane-input w-full">
-                  <option value="">Infer from context</option>
                   {AI_ITEM_RARITY_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -170,7 +169,6 @@ export function InventoryItemAISuggestion({ initialName = '', initialCategory = 
                   Purpose
                 </label>
                 <select name="purpose" value={formData.purpose} onChange={handleInputChange} className="arcane-input w-full">
-                  <option value="">Infer from context</option>
                   {AI_ITEM_PURPOSE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -183,7 +181,6 @@ export function InventoryItemAISuggestion({ initialName = '', initialCategory = 
                   Tone
                 </label>
                 <select name="tone" value={formData.tone} onChange={handleInputChange} className="arcane-input w-full">
-                  <option value="">Infer from context</option>
                   {AI_TONE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}

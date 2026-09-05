@@ -139,7 +139,6 @@ export function PowerAISuggestion({ initialName = '', initialDescription = '', o
                   Cost
                 </label>
                 <select name="cost" value={formData.cost} onChange={handleInputChange} className="arcane-input w-full">
-                  <option value="">Infer from context</option>
                   {AI_POWER_COST_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -152,7 +151,6 @@ export function PowerAISuggestion({ initialName = '', initialDescription = '', o
                   Rarity
                 </label>
                 <select name="rarity" value={formData.rarity} onChange={handleInputChange} className="arcane-input w-full">
-                  <option value="">Infer from context</option>
                   {AI_POWER_RARITY_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -168,7 +166,6 @@ export function PowerAISuggestion({ initialName = '', initialDescription = '', o
                   Tone
                 </label>
                 <select name="tone" value={formData.tone} onChange={handleInputChange} className="arcane-input w-full">
-                  <option value="">Infer from context</option>
                   {AI_TONE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -181,7 +178,6 @@ export function PowerAISuggestion({ initialName = '', initialDescription = '', o
                   Mechanical Focus
                 </label>
                 <select name="mechanicalFocus" value={formData.mechanicalFocus} onChange={handleInputChange} className="arcane-input w-full">
-                  <option value="">Infer from context</option>
                   {AI_MECHANICAL_FOCUS_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}

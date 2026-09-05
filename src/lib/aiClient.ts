@@ -315,7 +315,7 @@ export async function generatePowerFromAI(input: {
   systemPrompt?: string; promptContext?: Record<string, unknown>
 }): Promise<Omit<GatewayResult<PowerSuggestion>, 'value'> & { suggestion: PowerSuggestion }> {
   const result = await complete([
-    { role: 'system', content: `${contextMessage(input.systemPrompt)}\n\nReturn only JSON: {"name":string,"description":string,"effect":string,"baseAbility":string,"basePercentage":number}. basePercentage must be 0-100. baseAbility is the name of the ability roll (e.g. "Telepathy", "Arcane Sight") or empty string for passive powers.` },
+    { role: 'system', content: `${contextMessage(input.systemPrompt)}\n\nReturn only JSON: {"name":string,"description":string,"effect":string,"baseAbility":string,"basePercentage":number,"narrativeRole":string,"mechanicalFocus":string}. basePercentage must be 0-100. baseAbility is the name of the ability roll (e.g. "Telepathy", "Arcane Sight") or empty string for passive powers.` },
     { role: 'user', content: `Suggest a BRP supernatural power for the campaign:\n${JSON.stringify({ ...input, systemPrompt: undefined }, null, 2)}` },
   ], true)
   const raw = asObject(result.value)
