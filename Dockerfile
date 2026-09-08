@@ -25,10 +25,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# npm automatically executes prebuild → prisma generate
 RUN npm run build
 
 # ---- Stage 3: Production runner ----
