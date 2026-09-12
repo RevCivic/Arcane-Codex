@@ -432,6 +432,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                   maxHp={sheet?.maxHp ?? null}
                   maxMp={sheet?.maxMp ?? null}
                   maxSanity={sheet?.maxSanity ?? null}
+                  initialBuild={sheet?.build ?? null}
                   initialHistory={initialHistory}
                 />
 

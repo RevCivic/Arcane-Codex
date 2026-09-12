@@ -18,6 +18,7 @@ interface DiceConsoleWithResourceDisplayProps {
   maxHp: number | null
   maxMp: number | null
   maxSanity: number | null
+  initialBuild: number | null
   initialHistory: HistoryEntry[]
 }
 
@@ -39,6 +40,7 @@ export function DiceConsoleWithResourceDisplay({
   maxHp,
   maxMp,
   maxSanity,
+  initialBuild,
   initialHistory,
 }: DiceConsoleWithResourceDisplayProps) {
   // Track live resource values
@@ -86,6 +88,7 @@ export function DiceConsoleWithResourceDisplay({
           initialMp={currentMp}
           maxMp={maxMp}
           initialLuck={currentLuck}
+          initialBuild={initialBuild}
         />
       </CollapsibleSection>
 

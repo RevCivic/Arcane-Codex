@@ -141,19 +141,10 @@ function SimpleStatBox({
 /**
  * ResourcePoolDisplay
  *
- * Live-updating display of character resource pools (HP, Sanity, MP, Luck).
- * Accepts initial values and provides methods to update them when resources are spent.
- *
- * This is a client component that maintains reactive state, allowing the display
- * to update immediately when resources are spent in the DiceConsole.
+ * Renders the resource pool display boxes (HP, Sanity, MP, Luck) with live-updating values.
+ * When DiceConsole spends a resource, it calls the onUpdate callback on this component
+ * to immediately reflect the change in the display.
  */
-export interface ResourcePoolDisplayHandle {
-  updateLuck: (newValue: number) => void
-  updateMp: (newValue: number) => void
-  updateSanity: (newValue: number) => void
-  updateHp: (newValue: number) => void
-}
-
 interface ResourcePoolDisplayProps {
   initialHp: number | null | undefined
   maxHp: number | null | undefined
@@ -162,6 +153,7 @@ interface ResourcePoolDisplayProps {
   initialMp: number | null | undefined
   maxMp: number | null | undefined
   initialLuck: number | null | undefined
+  initialBuild: number | null | undefined
   onUpdate?: (resources: {
     hp: number | null
     sanity: number | null
@@ -169,19 +161,12 @@ interface ResourcePoolDisplayProps {
     luck: number | null
   }) => void
 }
-
-/**
- * ResourcePoolDisplay
- *
- * Renders the resource pool display boxes (HP, Sanity, MP, Luck) with live-updating values.
- * When DiceConsole spends a resource, it calls the update methods on this component
- * to immediately reflect the change in the display.
- */
 export const ResourcePoolDisplay = ({
   initialHp, maxHp,
   initialSanity, maxSanity,
   initialMp, maxMp,
   initialLuck,
+  initialBuild,
   onUpdate,
 }: ResourcePoolDisplayProps) => {
   const [currentHp, setCurrentHp] = useState<number | null | undefined>(initialHp)
@@ -229,29 +214,8 @@ export const ResourcePoolDisplay = ({
         description="Current and maximum magic points. Spend to cast powers. Recovers with rest." />
       <SimpleStatBox label="Luck" name="luck" value={currentLuck} accent="#f59e0b"
         description="Luck points remaining. Spend to convert a Failed roll to a Success. Recovers with time." min={0} max={99} />
-      <SimpleStatBox label="Build" name="build" value={undefined} accent="#9ca3af"
+      <SimpleStatBox label="Build" name="build" value={initialBuild} accent="#9ca3af"
         description="Modifier for damage dice based on STR and SIZ. Positive builds add dice; negative builds subtract." min={-2} max={4} />
     </div>
   )
-}
-
-/**
- * Hook to get an updater function for ResourcePoolDisplay
- * Used by DiceConsole to notify the display of resource spending
- */
-export const useResourcePoolUpdater = () => {
-  const [updateCallback, setUpdateCallback] = useState<{
-    updateLuck?: (newValue: number) => void
-    updateMp?: (newValue: number) => void
-    updateSanity?: (newValue: number) => void
-    updateHp?: (newValue: number) => void
-  }>({})
-
-  return {
-    spendLuck: (amount: number) => updateCallback.updateLuck?.(amount),
-    spendMp: (amount: number) => updateCallback.updateMp?.(amount),
-    spendSanity: (amount: number) => updateCallback.updateSanity?.(amount),
-    spendHp: (amount: number) => updateCallback.updateHp?.(amount),
-    setCallbacks: setUpdateCallback,
-  }
 }
