@@ -154,12 +154,6 @@ interface ResourcePoolDisplayProps {
   maxMp: number | null | undefined
   initialLuck: number | null | undefined
   initialBuild: number | null | undefined
-  onUpdate?: (resources: {
-    hp: number | null
-    sanity: number | null
-    mp: number | null
-    luck: number | null
-  }) => void
 }
 export const ResourcePoolDisplay = ({
   initialHp, maxHp,
@@ -167,7 +161,6 @@ export const ResourcePoolDisplay = ({
   initialMp, maxMp,
   initialLuck,
   initialBuild,
-  onUpdate,
 }: ResourcePoolDisplayProps) => {
   const [currentHp, setCurrentHp] = useState<number | null | undefined>(initialHp)
   const [currentSanity, setCurrentSanity] = useState<number | null | undefined>(initialSanity)
@@ -190,16 +183,6 @@ export const ResourcePoolDisplay = ({
   useEffect(() => {
     setCurrentLuck(initialLuck)
   }, [initialLuck])
-
-  // Notify parent of updates
-  useEffect(() => {
-    onUpdate?.({
-      hp: currentHp ?? null,
-      sanity: currentSanity ?? null,
-      mp: currentMp ?? null,
-      luck: currentLuck ?? null,
-    })
-  }, [currentHp, currentSanity, currentMp, currentLuck, onUpdate])
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">

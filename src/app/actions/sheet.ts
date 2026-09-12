@@ -452,6 +452,7 @@ export async function spendMpOnRoll(
   const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
   if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
   if (roll.rollType !== 'power') throw new Error('Can only spend MP on power rolls')
+  if (roll.mpSpent !== null) throw new Error('MP already spent on this roll')
 
   const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
   const currentMp = sheet?.currentMp ?? 0
@@ -482,6 +483,7 @@ export async function spendSanityOnRoll(
   const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
   if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
   if (roll.rollType !== 'power') throw new Error('Can only spend Sanity on power rolls')
+  if (roll.sanitySpent !== null) throw new Error('Sanity already spent on this roll')
 
   const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
   const currentSanity = sheet?.currentSanity ?? 0
@@ -512,6 +514,7 @@ export async function spendHpOnRoll(
   const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
   if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
   if (roll.rollType !== 'power') throw new Error('Can only spend HP on power rolls')
+  if (roll.hpSpent !== null) throw new Error('HP already spent on this roll')
 
   const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
   const currentHp = sheet?.currentHp ?? 0
