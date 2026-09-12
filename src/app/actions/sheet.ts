@@ -454,21 +454,22 @@ export async function spendMpOnRoll(
   if (roll.rollType !== 'power') throw new Error('Can only spend MP on power rolls')
   if (roll.mpSpent !== null) throw new Error('MP already spent on this roll')
 
-  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
-  if (!sheet) throw new Error('Character sheet not found')
-  if (sheet.currentMp === null) throw new Error('Character MP not initialized')
-  if (sheet.currentMp < mpToSpend) throw new Error('Not enough Magic Points')
+  // Use interactive transaction to atomically read, check, and update
+  await prisma.$transaction(async (tx) => {
+    const sheet = await tx.characterSheet.findUnique({ where: { characterId } })
+    if (!sheet) throw new Error('Character sheet not found')
+    if (sheet.currentMp === null) throw new Error('Character MP not initialized')
+    if (sheet.currentMp < mpToSpend) throw new Error('Not enough Magic Points')
 
-  await prisma.$transaction([
-    prisma.rollHistory.update({
+    await tx.rollHistory.update({
       where: { id: rollHistoryId },
       data: { mpSpent: mpToSpend },
-    }),
-    prisma.characterSheet.update({
+    })
+    await tx.characterSheet.update({
       where: { characterId },
       data: { currentMp: sheet.currentMp - mpToSpend },
-    }),
-  ])
+    })
+  })
 
   revalidatePath(`/characters/${characterId}/sheet`)
 }
@@ -486,21 +487,22 @@ export async function spendSanityOnRoll(
   if (roll.rollType !== 'power') throw new Error('Can only spend Sanity on power rolls')
   if (roll.sanitySpent !== null) throw new Error('Sanity already spent on this roll')
 
-  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
-  if (!sheet) throw new Error('Character sheet not found')
-  if (sheet.currentSanity === null) throw new Error('Character Sanity not initialized')
-  if (sheet.currentSanity < sanityToSpend) throw new Error('Not enough Sanity Points')
+  // Use interactive transaction to atomically read, check, and update
+  await prisma.$transaction(async (tx) => {
+    const sheet = await tx.characterSheet.findUnique({ where: { characterId } })
+    if (!sheet) throw new Error('Character sheet not found')
+    if (sheet.currentSanity === null) throw new Error('Character Sanity not initialized')
+    if (sheet.currentSanity < sanityToSpend) throw new Error('Not enough Sanity Points')
 
-  await prisma.$transaction([
-    prisma.rollHistory.update({
+    await tx.rollHistory.update({
       where: { id: rollHistoryId },
       data: { sanitySpent: sanityToSpend },
-    }),
-    prisma.characterSheet.update({
+    })
+    await tx.characterSheet.update({
       where: { characterId },
       data: { currentSanity: sheet.currentSanity - sanityToSpend },
-    }),
-  ])
+    })
+  })
 
   revalidatePath(`/characters/${characterId}/sheet`)
 }
@@ -518,21 +520,22 @@ export async function spendHpOnRoll(
   if (roll.rollType !== 'power') throw new Error('Can only spend HP on power rolls')
   if (roll.hpSpent !== null) throw new Error('HP already spent on this roll')
 
-  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
-  if (!sheet) throw new Error('Character sheet not found')
-  if (sheet.currentHp === null) throw new Error('Character HP not initialized')
-  if (sheet.currentHp < hpToSpend) throw new Error('Not enough Hit Points')
+  // Use interactive transaction to atomically read, check, and update
+  await prisma.$transaction(async (tx) => {
+    const sheet = await tx.characterSheet.findUnique({ where: { characterId } })
+    if (!sheet) throw new Error('Character sheet not found')
+    if (sheet.currentHp === null) throw new Error('Character HP not initialized')
+    if (sheet.currentHp < hpToSpend) throw new Error('Not enough Hit Points')
 
-  await prisma.$transaction([
-    prisma.rollHistory.update({
+    await tx.rollHistory.update({
       where: { id: rollHistoryId },
       data: { hpSpent: hpToSpend },
-    }),
-    prisma.characterSheet.update({
+    })
+    await tx.characterSheet.update({
       where: { characterId },
       data: { currentHp: sheet.currentHp - hpToSpend },
-    }),
-  ])
+    })
+  })
 
   revalidatePath(`/characters/${characterId}/sheet`)
 }
