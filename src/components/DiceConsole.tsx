@@ -417,10 +417,14 @@ export function DiceConsole({
 
   // ── Roll handlers ─────────────────────────────────────────────────────────
 
+  /** Stats that should NOT be multiplied by 5 when rolling (they use face value directly) */
+  const statsNoMultiply = new Set(['luck', 'sanity'])
+
   const handleAbilityRoll = () => {
     const stat = availableStats.find((s) => s.key === selectedStat)
     if (!stat?.value) return
-    const base   = stat.value * 5
+    // Luck and Sanity use their face value directly; other stats are multiplied by 5
+    const base   = statsNoMultiply.has(stat.key) ? stat.value : stat.value * 5
     const target = applyDifficulty(base, abilityTier)
     const roll   = rollD100()
     dispatchRoll(
@@ -580,7 +584,7 @@ export function DiceConsole({
                           >
                             <div className="text-xs uppercase" style={{ color: '#d97706' }}>{s.label}</div>
                             <div className="text-lg font-bold" style={{ color: '#a78bfa' }}>{s.value}</div>
-                            <div className="text-xs" style={{ color: '#4b5563' }}>→ {(s.value ?? 0) * 5}%</div>
+                            <div className="text-xs" style={{ color: '#4b5563' }}>→ {statsNoMultiply.has(s.key) ? (s.value ?? 0) : (s.value ?? 0) * 5}%</div>
                           </button>
                         ))}
                       </div>
@@ -592,7 +596,9 @@ export function DiceConsole({
                     onChange={setAbilityTier}
                     baseTarget={
                       availableStats.find((s) => s.key === selectedStat)?.value != null
-                        ? availableStats.find((s) => s.key === selectedStat)!.value! * 5
+                        ? statsNoMultiply.has(selectedStat)
+                          ? availableStats.find((s) => s.key === selectedStat)!.value!
+                          : availableStats.find((s) => s.key === selectedStat)!.value! * 5
                         : null
                     }
                   />
