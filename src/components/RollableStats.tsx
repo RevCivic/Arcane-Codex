@@ -37,7 +37,8 @@ const RESULT_CONFIG: Record<
 const ARCANE_RUNES = ['ᚱ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᛏ', 'ᚲ', 'ᛉ', 'ᛊ', 'ᛒ', 'ᛗ', 'ᛚ', 'ᚾ', 'ᚹ', 'ᚷ', 'ᛞ', 'ᛟ']
 
 // Set of stats that don't get multiplied by 5 for BRP percentiles
-const statsNoMultiply = new Set(['luck', 'sanity'])
+// (kept for reference; currently all stats use the multiplier)
+// const statsNoMultiply = new Set(['luck', 'sanity'])
 
 // ─── Helper Functions ─────────────────────────────────────────────────────
 
@@ -89,7 +90,6 @@ interface RollableStatsProps {
   characterId: number
   stats: StatEntry[]
   initialHistory: HistoryEntry[]
-  onResourceSpent?: (type: 'luck', newValue: number | null) => void
 }
 
 /**
@@ -102,7 +102,6 @@ export function RollableStats({
   characterId,
   stats,
   initialHistory,
-  onResourceSpent,
 }: RollableStatsProps) {
   const availableStats = stats.filter((s) => s.value !== null && s.value > 0)
   const [selectedStat, setSelectedStat] = useState(availableStats[0]?.key ?? '')
