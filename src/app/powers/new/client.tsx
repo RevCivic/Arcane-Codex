@@ -69,6 +69,23 @@ export default function NewPowerPageClient({ skills }: NewPowerPageClientProps) 
             <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Standard skill percentage for this power</p>
           </div>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>MP Cost</label>
+            <input name="mpCost" type="number" min={0} max={999} className="arcane-input" placeholder="0" />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Magic Points cost to use this power</p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Sanity Cost</label>
+            <input name="sanityCost" type="number" min={0} max={999} className="arcane-input" placeholder="0" />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Sanity Points cost to use this power</p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>HP Cost</label>
+            <input name="hpCost" type="number" min={0} max={999} className="arcane-input" placeholder="0" />
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Hit Points cost to use this power</p>
+          </div>
+        </div>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
           <textarea name="referenceLinks" rows={4} className="arcane-input" placeholder={'One per line: URL | Note\nhttps://example.com/spell-lore | Lore source'} />

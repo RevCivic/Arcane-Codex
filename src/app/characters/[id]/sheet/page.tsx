@@ -237,7 +237,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
       include: {
         sheet: { include: { skillValues: { include: { skill: true } } } },
         characterPowers: {
-          include: { power: { select: { id: true, name: true, baseAbility: true, basePercentage: true } } },
+          include: { power: { select: { id: true, name: true, baseAbility: true, basePercentage: true, mpCost: true, sanityCost: true, hpCost: true } } },
           orderBy: { power: { name: 'asc' } },
         },
         characterAbilities: {
@@ -341,6 +341,9 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
         effectiveValue: effectivePct,
         abilityId: ability?.id ?? null,
         markedForImprovement: ability?.markedForImprovement ?? false,
+        mpCost: cp.power.mpCost ?? null,
+        sanityCost: cp.power.sanityCost ?? null,
+        hpCost: cp.power.hpCost ?? null,
       }]
     })
 
@@ -726,6 +729,9 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                   skills={consoleSkills}
                   powers={consolePowers}
                   initialLuck={sheet?.luck ?? null}
+                  initialMp={sheet?.currentMp ?? null}
+                  initialSanity={sheet?.currentSanity ?? null}
+                  initialHp={sheet?.currentHp ?? null}
                   initialHistory={initialHistory}
                 />
               </CollapsibleSection>

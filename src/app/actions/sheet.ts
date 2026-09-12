@@ -441,6 +441,96 @@ export async function spendLuckOnRoll(
   revalidatePath(`/characters/${characterId}/sheet`)
 }
 
+export async function spendMpOnRoll(
+  characterId: number,
+  rollHistoryId: number,
+  mpToSpend: number
+) {
+  const user = await requireAuthorizedUser()
+  await requireCharacterOwner(characterId, user)
+
+  const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
+  if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
+  if (roll.rollType !== 'power') throw new Error('Can only spend MP on power rolls')
+
+  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
+  const currentMp = sheet?.currentMp ?? 0
+  if (currentMp < mpToSpend) throw new Error('Not enough Magic Points')
+
+  await prisma.$transaction([
+    prisma.rollHistory.update({
+      where: { id: rollHistoryId },
+      data: { mpSpent: mpToSpend },
+    }),
+    prisma.characterSheet.update({
+      where: { characterId },
+      data: { currentMp: currentMp - mpToSpend },
+    }),
+  ])
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
+
+export async function spendSanityOnRoll(
+  characterId: number,
+  rollHistoryId: number,
+  sanityToSpend: number
+) {
+  const user = await requireAuthorizedUser()
+  await requireCharacterOwner(characterId, user)
+
+  const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
+  if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
+  if (roll.rollType !== 'power') throw new Error('Can only spend Sanity on power rolls')
+
+  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
+  const currentSanity = sheet?.currentSanity ?? 0
+  if (currentSanity < sanityToSpend) throw new Error('Not enough Sanity Points')
+
+  await prisma.$transaction([
+    prisma.rollHistory.update({
+      where: { id: rollHistoryId },
+      data: { sanitySpent: sanityToSpend },
+    }),
+    prisma.characterSheet.update({
+      where: { characterId },
+      data: { currentSanity: currentSanity - sanityToSpend },
+    }),
+  ])
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
+
+export async function spendHpOnRoll(
+  characterId: number,
+  rollHistoryId: number,
+  hpToSpend: number
+) {
+  const user = await requireAuthorizedUser()
+  await requireCharacterOwner(characterId, user)
+
+  const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
+  if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
+  if (roll.rollType !== 'power') throw new Error('Can only spend HP on power rolls')
+
+  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
+  const currentHp = sheet?.currentHp ?? 0
+  if (currentHp < hpToSpend) throw new Error('Not enough Hit Points')
+
+  await prisma.$transaction([
+    prisma.rollHistory.update({
+      where: { id: rollHistoryId },
+      data: { hpSpent: hpToSpend },
+    }),
+    prisma.characterSheet.update({
+      where: { characterId },
+      data: { currentHp: currentHp - hpToSpend },
+    }),
+  ])
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
+
 // ─── Skill Improvement ────────────────────────────────────────────────────────
 
 /**

@@ -268,6 +268,12 @@ model Power {
   baseAbility     String?
   /// Base percentile skill value (1–100) for the ability roll. Null or 0 = passive / auto-success.
   basePercentage  Int?
+  /// Magic Points cost to use this power (null or 0 = no cost)
+  mpCost          Int?             @default(0)
+  /// Sanity Points cost to use this power (null or 0 = no cost)
+  sanityCost      Int?             @default(0)
+  /// Hit Points cost to use this power (null or 0 = no cost)
+  hpCost          Int?             @default(0)
   referenceLinks  Json?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -339,6 +345,12 @@ model RollHistory {
   modifier    Int?
   /// Luck points spent to convert this roll to a SUCCESS (null if none)
   luckSpent   Int?
+  /// Magic Points spent to use this power (null if none or not applicable)
+  mpSpent     Int?
+  /// Sanity Points spent to use this power (null if none or not applicable)
+  sanitySpent Int?
+  /// Hit Points spent to use this power (null if none or not applicable)
+  hpSpent     Int?
   /// Skill linked to this roll (skill rolls only); used for improvement tracking
   skillId     Int?
   skill       Skill?            @relation(fields: [skillId], references: [id], onDelete: SetNull)

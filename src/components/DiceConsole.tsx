@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useTransition, useCallback, useEffect } from 'react'
-import { saveRoll, spendLuckOnRoll } from '@/app/actions'
+import { saveRoll, spendLuckOnRoll, spendMpOnRoll, spendSanityOnRoll, spendHpOnRoll } from '@/app/actions'
 import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -32,6 +32,12 @@ export interface PowerEntry {
   /** CharacterAbility.id linked to this power entry; null if no ability record exists */
   abilityId: number | null
   markedForImprovement: boolean
+  /** Magic Points cost to use this power (null or 0 = no cost) */
+  mpCost: number | null
+  /** Sanity Points cost to use this power (null or 0 = no cost) */
+  sanityCost: number | null
+  /** Hit Points cost to use this power (null or 0 = no cost) */
+  hpCost: number | null
 }
 
 export interface HistoryEntry {
@@ -258,6 +264,9 @@ export function DiceConsole({
   skills,
   powers,
   initialLuck,
+  initialMp,
+  initialSanity,
+  initialHp,
   initialHistory,
 }: {
   characterId: number
@@ -265,6 +274,9 @@ export function DiceConsole({
   skills: SkillEntry[]
   powers: PowerEntry[]
   initialLuck: number | null
+  initialMp: number | null
+  initialSanity: number | null
+  initialHp: number | null
   initialHistory: HistoryEntry[]
 }) {
   const [tab, setTab]             = useState<ActiveTab>('ability')
@@ -291,6 +303,18 @@ export function DiceConsole({
   // Luck (optimistic)
   const [clientLuck, setClientLuck]   = useState<number | null>(initialLuck)
   const [pendingLuck, setPendingLuck] = useState<{ rollHistoryId: number; cost: number } | null>(null)
+
+  // MP (optimistic)
+  const [clientMp, setClientMp]       = useState<number | null>(initialMp)
+  
+  // Sanity (optimistic)
+  const [clientSanity, setClientSanity] = useState<number | null>(initialSanity)
+  
+  // HP (optimistic)
+  const [clientHp, setClientHp]       = useState<number | null>(initialHp)
+  
+  // Pending power cost spending
+  const [pendingPowerCost, setPendingPowerCost] = useState<{ rollHistoryId: number; type: 'mp' | 'sanity' | 'hp'; cost: number } | null>(null)
 
   // Improvement marks (optimistic): set of skillIds marked during this session
   const [markedSkillIds, setMarkedSkillIds] = useState<Set<number>>(
