@@ -501,16 +501,18 @@ export function DiceConsole({
         }
 
         // Handle power cost spending for power rolls
+        // NOTE: Only one cost type per power is supported. Cost priority: MP > Sanity > HP.
+        // If a power has multiple cost types defined, only the first will be prompted.
         if (entry.rollType === 'power' && powerData) {
-          // Check for MP cost
+          // Check for MP cost (highest priority)
           if (powerData.mpCost && powerData.mpCost > 0) {
             setPendingPowerCost({ rollHistoryId: saved.id, type: 'mp', cost: powerData.mpCost })
           }
-          // Check for Sanity cost
+          // Check for Sanity cost (medium priority)
           else if (powerData.sanityCost && powerData.sanityCost > 0) {
             setPendingPowerCost({ rollHistoryId: saved.id, type: 'sanity', cost: powerData.sanityCost })
           }
-          // Check for HP cost
+          // Check for HP cost (lowest priority)
           else if (powerData.hpCost && powerData.hpCost > 0) {
             setPendingPowerCost({ rollHistoryId: saved.id, type: 'hp', cost: powerData.hpCost })
           }

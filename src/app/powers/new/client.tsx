@@ -86,6 +86,7 @@ export default function NewPowerPageClient({ skills }: NewPowerPageClientProps) 
             <p className="text-xs mt-1" style={{ color: '#6b7280' }}>Hit Points cost to use this power</p>
           </div>
         </div>
+        <p className="text-xs" style={{ color: '#6b7280', marginTop: '1rem' }}>⚠️ Only one cost type per power is supported. If multiple costs are defined, the highest priority (MP → Sanity → HP) will be used.</p>
         <div>
           <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: '#d97706' }}>Reference Links</label>
           <textarea name="referenceLinks" rows={4} className="arcane-input" placeholder={'One per line: URL | Note\nhttps://example.com/spell-lore | Lore source'} />
