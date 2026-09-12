@@ -331,6 +331,7 @@ export function DiceConsole({
   initialSanity,
   initialHp,
   initialHistory,
+  onResourceSpent,
 }: {
   characterId: number
   stats: StatEntry[]
@@ -341,6 +342,7 @@ export function DiceConsole({
   initialSanity: number | null
   initialHp: number | null
   initialHistory: HistoryEntry[]
+  onResourceSpent?: (type: 'luck' | 'mp' | 'sanity' | 'hp', newValue: number | null) => void
 }) {
   const [tab, setTab]             = useState<ActiveTab>('ability')
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -587,12 +589,14 @@ export function DiceConsole({
     startSpendTransition(async () => {
       try {
         await spendLuckOnRoll(characterId, rollHistoryId, cost)
-        setClientLuck((prev) => (prev !== null ? prev - cost : null))
+        const newLuck = clientLuck !== null ? clientLuck - cost : null
+        setClientLuck(newLuck)
         setHistory((prev) =>
           prev.map((r) =>
             r.id === rollHistoryId ? { ...r, resultType: 'SUCCESS', luckSpent: cost } : r
           )
         )
+        onResourceSpent?.('luck', newLuck)
         setPendingLuck(null)
         setFlavorText(randomFlavor('SUCCESS'))
       } catch {
@@ -606,28 +610,34 @@ export function DiceConsole({
       try {
         if (costType === 'mp') {
           await spendMpOnRoll(characterId, rollHistoryId, cost)
-          setClientMp((prev) => (prev !== null ? prev - cost : null))
+          const newMp = clientMp !== null ? clientMp - cost : null
+          setClientMp(newMp)
           setHistory((prev) =>
             prev.map((r) =>
               r.id === rollHistoryId ? { ...r, mpSpent: cost } : r
             )
           )
+          onResourceSpent?.('mp', newMp)
         } else if (costType === 'sanity') {
           await spendSanityOnRoll(characterId, rollHistoryId, cost)
-          setClientSanity((prev) => (prev !== null ? prev - cost : null))
+          const newSanity = clientSanity !== null ? clientSanity - cost : null
+          setClientSanity(newSanity)
           setHistory((prev) =>
             prev.map((r) =>
               r.id === rollHistoryId ? { ...r, sanitySpent: cost } : r
             )
           )
+          onResourceSpent?.('sanity', newSanity)
         } else if (costType === 'hp') {
           await spendHpOnRoll(characterId, rollHistoryId, cost)
-          setClientHp((prev) => (prev !== null ? prev - cost : null))
+          const newHp = clientHp !== null ? clientHp - cost : null
+          setClientHp(newHp)
           setHistory((prev) =>
             prev.map((r) =>
               r.id === rollHistoryId ? { ...r, hpSpent: cost } : r
             )
           )
+          onResourceSpent?.('hp', newHp)
         }
         setPendingPowerCost(null)
       } catch {
