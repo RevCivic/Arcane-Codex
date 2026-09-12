@@ -455,8 +455,9 @@ export async function spendMpOnRoll(
   if (roll.mpSpent !== null) throw new Error('MP already spent on this roll')
 
   const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
-  const currentMp = sheet?.currentMp ?? 0
-  if (currentMp < mpToSpend) throw new Error('Not enough Magic Points')
+  if (!sheet) throw new Error('Character sheet not found')
+  if (sheet.currentMp === null) throw new Error('Character MP not initialized')
+  if (sheet.currentMp < mpToSpend) throw new Error('Not enough Magic Points')
 
   await prisma.$transaction([
     prisma.rollHistory.update({
@@ -465,7 +466,7 @@ export async function spendMpOnRoll(
     }),
     prisma.characterSheet.update({
       where: { characterId },
-      data: { currentMp: currentMp - mpToSpend },
+      data: { currentMp: sheet.currentMp - mpToSpend },
     }),
   ])
 
@@ -486,8 +487,9 @@ export async function spendSanityOnRoll(
   if (roll.sanitySpent !== null) throw new Error('Sanity already spent on this roll')
 
   const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
-  const currentSanity = sheet?.currentSanity ?? 0
-  if (currentSanity < sanityToSpend) throw new Error('Not enough Sanity Points')
+  if (!sheet) throw new Error('Character sheet not found')
+  if (sheet.currentSanity === null) throw new Error('Character Sanity not initialized')
+  if (sheet.currentSanity < sanityToSpend) throw new Error('Not enough Sanity Points')
 
   await prisma.$transaction([
     prisma.rollHistory.update({
@@ -496,7 +498,7 @@ export async function spendSanityOnRoll(
     }),
     prisma.characterSheet.update({
       where: { characterId },
-      data: { currentSanity: currentSanity - sanityToSpend },
+      data: { currentSanity: sheet.currentSanity - sanityToSpend },
     }),
   ])
 
@@ -517,8 +519,9 @@ export async function spendHpOnRoll(
   if (roll.hpSpent !== null) throw new Error('HP already spent on this roll')
 
   const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
-  const currentHp = sheet?.currentHp ?? 0
-  if (currentHp < hpToSpend) throw new Error('Not enough Hit Points')
+  if (!sheet) throw new Error('Character sheet not found')
+  if (sheet.currentHp === null) throw new Error('Character HP not initialized')
+  if (sheet.currentHp < hpToSpend) throw new Error('Not enough Hit Points')
 
   await prisma.$transaction([
     prisma.rollHistory.update({
@@ -527,7 +530,7 @@ export async function spendHpOnRoll(
     }),
     prisma.characterSheet.update({
       where: { characterId },
-      data: { currentHp: currentHp - hpToSpend },
+      data: { currentHp: sheet.currentHp - hpToSpend },
     }),
   ])
 

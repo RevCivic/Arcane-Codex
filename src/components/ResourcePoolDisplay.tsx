@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 
 interface DerivedBoxProps {
@@ -141,9 +140,9 @@ function SimpleStatBox({
 /**
  * ResourcePoolDisplay
  *
- * Renders the resource pool display boxes (HP, Sanity, MP, Luck) with live-updating values.
- * When DiceConsole spends a resource, it calls the onUpdate callback on this component
- * to immediately reflect the change in the display.
+ * Renders the resource pool display boxes (HP, Sanity, MP, Luck, Build) with current values.
+ * This is a pure display component that receives live-updated values from its parent.
+ * State is managed entirely in the parent component (DiceConsoleWithResourceDisplay).
  */
 interface ResourcePoolDisplayProps {
   initialHp: number | null | undefined
@@ -155,6 +154,7 @@ interface ResourcePoolDisplayProps {
   initialLuck: number | null | undefined
   initialBuild: number | null | undefined
 }
+
 export const ResourcePoolDisplay = ({
   initialHp, maxHp,
   initialSanity, maxSanity,
@@ -162,40 +162,18 @@ export const ResourcePoolDisplay = ({
   initialLuck,
   initialBuild,
 }: ResourcePoolDisplayProps) => {
-  const [currentHp, setCurrentHp] = useState<number | null | undefined>(initialHp)
-  const [currentSanity, setCurrentSanity] = useState<number | null | undefined>(initialSanity)
-  const [currentMp, setCurrentMp] = useState<number | null | undefined>(initialMp)
-  const [currentLuck, setCurrentLuck] = useState<number | null | undefined>(initialLuck)
-
-  // Sync with initial values if they change
-  useEffect(() => {
-    setCurrentHp(initialHp)
-  }, [initialHp])
-
-  useEffect(() => {
-    setCurrentSanity(initialSanity)
-  }, [initialSanity])
-
-  useEffect(() => {
-    setCurrentMp(initialMp)
-  }, [initialMp])
-
-  useEffect(() => {
-    setCurrentLuck(initialLuck)
-  }, [initialLuck])
-
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       <DerivedBox label="Hit Points" currentName="currentHp" maxName="maxHp"
-        current={currentHp} max={maxHp} accent="#4ade80"
+        current={initialHp} max={maxHp} accent="#4ade80"
         description="Current and maximum hit points. Lose HP when damaged. Unconscious or dead at 0 or below." />
       <DerivedBox label="Sanity"     currentName="currentSanity" maxName="maxSanity"
-        current={currentSanity} max={maxSanity} accent="#a78bfa"
+        current={initialSanity} max={maxSanity} accent="#a78bfa"
         description="Current and maximum sanity points. Lose Sanity from witnessing horrific events. Phobias and manias form at 0." />
       <DerivedBox label="Magic Pts"  currentName="currentMp" maxName="maxMp"
-        current={currentMp} max={maxMp} accent="#60a5fa"
+        current={initialMp} max={maxMp} accent="#60a5fa"
         description="Current and maximum magic points. Spend to cast powers. Recovers with rest." />
-      <SimpleStatBox label="Luck" name="luck" value={currentLuck} accent="#f59e0b"
+      <SimpleStatBox label="Luck" name="luck" value={initialLuck} accent="#f59e0b"
         description="Luck points remaining. Spend to convert a Failed roll to a Success. Recovers with time." min={0} max={99} />
       <SimpleStatBox label="Build" name="build" value={initialBuild} accent="#9ca3af"
         description="Modifier for damage dice based on STR and SIZ. Positive builds add dice; negative builds subtract." min={-2} max={4} />
