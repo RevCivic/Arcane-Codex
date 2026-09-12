@@ -52,6 +52,12 @@ export interface HistoryEntry {
   dice: string | null
   modifier: number | null
   luckSpent: number | null
+  /** Magic Points spent to use this power, null if none or not applicable */
+  mpSpent: number | null
+  /** Sanity Points spent to use this power, null if none or not applicable */
+  sanitySpent: number | null
+  /** Hit Points spent to use this power, null if none or not applicable */
+  hpSpent: number | null
   /** Skill ID for skill rolls, null otherwise */
   skillId: number | null
   /** CharacterAbility ID for power rolls, null otherwise */
@@ -256,6 +262,63 @@ function LuckSpendPrompt({
   )
 }
 
+function PowerCostPrompt({
+  rollHistoryId,
+  costType,
+  cost,
+  currentValue,
+  onSpend,
+  onDismiss,
+  isPending,
+}: {
+  rollHistoryId: number
+  costType: 'mp' | 'sanity' | 'hp'
+  cost: number
+  currentValue: number | null
+  onSpend: (id: number, type: 'mp' | 'sanity' | 'hp', cost: number) => void
+  onDismiss: () => void
+  isPending: boolean
+}) {
+  const affordable = (currentValue ?? 0) >= cost
+  const costLabel = costType === 'mp' ? '✨ Magic Points' : costType === 'sanity' ? '🧠 Sanity' : '❤️ Hit Points'
+  const costColor = costType === 'mp' ? '#8b5cf6' : costType === 'sanity' ? '#60a5fa' : '#f87171'
+  
+  return (
+    <div className="rounded-lg p-4" style={{ backgroundColor: '#1a1a2e', border: `1px solid ${costColor}66` }}>
+      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: costColor, fontFamily: 'Georgia, serif' }}>
+        {costLabel} Cost
+      </div>
+      <p className="text-xs mb-3" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
+        Spend{' '}
+        <span style={{ color: costColor, fontWeight: 'bold' }}>{cost}</span>{' '}
+        {costType === 'mp' ? 'Magic Points' : costType === 'sanity' ? 'Sanity Points' : 'Hit Points'} to use this power.
+        {!affordable && (
+          <span style={{ color: '#f87171' }}> (Not enough — you have {currentValue ?? 0})</span>
+        )}
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={!affordable || isPending}
+          onClick={() => onSpend(rollHistoryId, costType, cost)}
+          className="px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: costColor, color: '#fff', fontFamily: 'Georgia, serif' }}
+        >
+          {isPending ? '…' : `Spend ${cost}`}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="px-3 py-1.5 rounded text-xs uppercase tracking-wider"
+          style={{ border: '1px solid #374151', color: '#6b7280', fontFamily: 'Georgia, serif' }}
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── DiceConsole ──────────────────────────────────────────────────────────────
 
 export function DiceConsole({
@@ -378,7 +441,8 @@ export function DiceConsole({
   function dispatchRoll(
     entry: Omit<HistoryEntry, 'id' | 'createdAt'>,
     rawRoll: number,
-    effectiveTarget: number | null
+    effectiveTarget: number | null,
+    powerData?: PowerEntry
   ) {
     startScramble(entry.resultType as ResultType | null)
     const tempId = tempIdRef.current--
@@ -433,6 +497,28 @@ export function DiceConsole({
             setPendingLuck({ rollHistoryId: saved.id, cost })
           }
         }
+
+        // Handle power cost spending for power rolls
+        if (entry.rollType === 'power' && powerData) {
+          // Check for MP cost
+          if (powerData.mpCost && powerData.mpCost > 0) {
+            if (clientMp !== null && clientMp >= powerData.mpCost) {
+              setPendingPowerCost({ rollHistoryId: saved.id, type: 'mp', cost: powerData.mpCost })
+            }
+          }
+          // Check for Sanity cost
+          else if (powerData.sanityCost && powerData.sanityCost > 0) {
+            if (clientSanity !== null && clientSanity >= powerData.sanityCost) {
+              setPendingPowerCost({ rollHistoryId: saved.id, type: 'sanity', cost: powerData.sanityCost })
+            }
+          }
+          // Check for HP cost
+          else if (powerData.hpCost && powerData.hpCost > 0) {
+            if (clientHp !== null && clientHp >= powerData.hpCost) {
+              setPendingPowerCost({ rollHistoryId: saved.id, type: 'hp', cost: powerData.hpCost })
+            }
+          }
+        }
       } catch {
         // Keep optimistic entry; luck-spend prompt won't appear (no real id)
       }
@@ -478,7 +564,7 @@ export function DiceConsole({
     dispatchRoll(
       { rollType: 'power', label: power.name, roll, target, difficulty: powerTier,
         resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null, abilityId: power.abilityId },
-      roll, target
+      roll, target, power
     )
   }
 
@@ -509,6 +595,41 @@ export function DiceConsole({
         )
         setPendingLuck(null)
         setFlavorText(randomFlavor('SUCCESS'))
+      } catch {
+        // State unchanged; user can retry
+      }
+    })
+  }
+
+  const handleSpendPowerCost = (rollHistoryId: number, costType: 'mp' | 'sanity' | 'hp', cost: number) => {
+    startSpendTransition(async () => {
+      try {
+        if (costType === 'mp') {
+          await spendMpOnRoll(characterId, rollHistoryId, cost)
+          setClientMp((prev) => (prev !== null ? prev - cost : null))
+          setHistory((prev) =>
+            prev.map((r) =>
+              r.id === rollHistoryId ? { ...r, mpSpent: cost } : r
+            )
+          )
+        } else if (costType === 'sanity') {
+          await spendSanityOnRoll(characterId, rollHistoryId, cost)
+          setClientSanity((prev) => (prev !== null ? prev - cost : null))
+          setHistory((prev) =>
+            prev.map((r) =>
+              r.id === rollHistoryId ? { ...r, sanitySpent: cost } : r
+            )
+          )
+        } else if (costType === 'hp') {
+          await spendHpOnRoll(characterId, rollHistoryId, cost)
+          setClientHp((prev) => (prev !== null ? prev - cost : null))
+          setHistory((prev) =>
+            prev.map((r) =>
+              r.id === rollHistoryId ? { ...r, hpSpent: cost } : r
+            )
+          )
+        }
+        setPendingPowerCost(null)
       } catch {
         // State unchanged; user can retry
       }
@@ -832,6 +953,25 @@ export function DiceConsole({
                   currentLuck={clientLuck}
                   onSpend={handleSpendLuck}
                   onDismiss={() => setPendingLuck(null)}
+                  isPending={isSpending}
+                />
+              )}
+
+              {/* Power cost spend prompt */}
+              {pendingPowerCost && (
+                <PowerCostPrompt
+                  rollHistoryId={pendingPowerCost.rollHistoryId}
+                  costType={pendingPowerCost.type}
+                  cost={pendingPowerCost.cost}
+                  currentValue={
+                    pendingPowerCost.type === 'mp'
+                      ? clientMp
+                      : pendingPowerCost.type === 'sanity'
+                        ? clientSanity
+                        : clientHp
+                  }
+                  onSpend={handleSpendPowerCost}
+                  onDismiss={() => setPendingPowerCost(null)}
                   isPending={isSpending}
                 />
               )}
