@@ -6,8 +6,9 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
+import type { D100ResultType } from '@/lib/diceRules'
 
+export type { D100ResultType }
 export type DifficultyTier = 'Easy' | 'Average' | 'Difficult' | 'Hard' | 'Extreme' | 'Impossible'
 
 export const TIERS: {
