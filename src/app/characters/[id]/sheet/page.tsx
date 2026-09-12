@@ -9,6 +9,10 @@ import Link from 'next/link'
 import { importFoundryCharacterSheet, updateCharacterSheet } from '@/app/actions'
 import { getSheetLayoutPreference } from '@/app/actions/sheetLayout'
 import { DiceConsoleWithResourceDisplay } from '@/components/DiceConsoleWithResourceDisplay'
+import { ResourcePoolDisplay } from '@/components/ResourcePoolDisplay'
+import { RollableStats } from '@/components/RollableStats'
+import { RollableSkills } from '@/components/RollableSkills'
+import { RollablePowers } from '@/components/RollablePowers'
 import type { StatEntry, SkillEntry, PowerEntry } from '@/components/DiceConsole'
 import { SkillImprovementPanel } from '@/components/SkillImprovementPanel'
 import type { MarkedSkill } from '@/components/SkillImprovementPanel'
@@ -611,7 +615,112 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
             ),
           } satisfies SheetModule,
 
-          // ── Carried Items (conditional) ─────────────────────────────────
+          // ── Granular Dice Console Modules (for flexible layout) ───────────
+
+          // Resource Pools (Derived Statistics) - standalone
+          {
+            key: 'resource-pools',
+            label: '✦ Resource Pools',
+            content: (
+              <CollapsibleSection
+                storageKey="resource-pools"
+                className="card-arcane rounded-lg p-6"
+                style={{ fontFamily: 'Georgia, serif' }}
+                title={
+                  <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                    ✦ Resource Pools
+                  </h2>
+                }
+              >
+                <ResourcePoolDisplay
+                  initialHp={sheet?.currentHp}
+                  maxHp={sheet?.maxHp}
+                  initialSanity={sheet?.currentSanity}
+                  maxSanity={sheet?.maxSanity}
+                  initialMp={sheet?.currentMp}
+                  maxMp={sheet?.maxMp}
+                  initialLuck={sheet?.luck}
+                  initialBuild={sheet?.build}
+                />
+              </CollapsibleSection>
+            ),
+          } satisfies SheetModule,
+
+          // Rollable Stats (Abilities) - standalone
+          {
+            key: 'rollable-stats',
+            label: '📊 Roll Abilities',
+            content: (
+              <CollapsibleSection
+                storageKey="rollable-stats"
+                className="card-arcane rounded-lg p-6"
+                style={{ fontFamily: 'Georgia, serif' }}
+                title={
+                  <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                    📊 Roll Abilities
+                  </h2>
+                }
+              >
+                <RollableStats
+                  characterId={characterId}
+                  stats={consoleStats}
+                  initialHistory={initialHistory}
+                />
+              </CollapsibleSection>
+            ),
+          } satisfies SheetModule,
+
+          // Rollable Skills - standalone
+          {
+            key: 'rollable-skills',
+            label: '⚔️ Roll Skills',
+            content: (
+              <CollapsibleSection
+                storageKey="rollable-skills"
+                className="card-arcane rounded-lg p-6"
+                style={{ fontFamily: 'Georgia, serif' }}
+                title={
+                  <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                    ⚔️ Roll Skills
+                  </h2>
+                }
+              >
+                <RollableSkills
+                  characterId={characterId}
+                  skills={consoleSkills}
+                  initialHistory={initialHistory}
+                />
+              </CollapsibleSection>
+            ),
+          } satisfies SheetModule,
+
+          // Rollable Powers - standalone (conditional)
+          ...(consolePowers.length > 0
+            ? [
+                {
+                  key: 'rollable-powers',
+                  label: '✨ Roll Powers',
+                  content: (
+                    <CollapsibleSection
+                      storageKey="rollable-powers"
+                      className="card-arcane rounded-lg p-6"
+                      style={{ fontFamily: 'Georgia, serif' }}
+                      title={
+                        <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                          ✨ Roll Powers
+                        </h2>
+                      }
+                    >
+                      <RollablePowers
+                        characterId={characterId}
+                        powers={consolePowers}
+                        initialHistory={initialHistory}
+                      />
+                    </CollapsibleSection>
+                  ),
+                } satisfies SheetModule,
+              ]
+            : []),
           ...(character.inventoryItems.length > 0
             ? [
                 {
