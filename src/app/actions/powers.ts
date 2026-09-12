@@ -95,9 +95,12 @@ export async function createPower(formData: FormData) {
   const effect = formData.get('effect') as string
   const baseAbility = getNullableString((formData.get('baseAbility') as string | null)?.trim() ?? '')
   const basePercentage = toNullableInt(formData.get('basePercentage') as string | null)
+  const mpCost = toNullableInt(formData.get('mpCost') as string | null)
+  const sanityCost = toNullableInt(formData.get('sanityCost') as string | null)
+  const hpCost = toNullableInt(formData.get('hpCost') as string | null)
   const referenceLinks = getReferenceLinksFromForm(formData)
 
-  await prisma.power.create({ data: { name, description, effect, baseAbility, basePercentage, referenceLinks } })
+  await prisma.power.create({ data: { name, description, effect, baseAbility, basePercentage, mpCost, sanityCost, hpCost, referenceLinks } })
   revalidatePath('/powers')
   redirect('/powers')
 }
@@ -154,6 +157,9 @@ export async function updatePower(id: number, formData: FormData) {
   const effect = formData.get('effect') as string
   const baseAbility = getNullableString((formData.get('baseAbility') as string | null)?.trim() ?? '')
   const basePercentage = toNullableInt(formData.get('basePercentage') as string | null)
+  const mpCost = toNullableInt(formData.get('mpCost') as string | null)
+  const sanityCost = toNullableInt(formData.get('sanityCost') as string | null)
+  const hpCost = toNullableInt(formData.get('hpCost') as string | null)
   const referenceLinks = getReferenceLinksFromForm(formData)
 
   const existing = await prisma.power.findUnique({
@@ -167,7 +173,7 @@ export async function updatePower(id: number, formData: FormData) {
 
   await prisma.power.update({
     where: { id },
-    data: { name, description, effect, baseAbility, basePercentage, referenceLinks },
+    data: { name, description, effect, baseAbility, basePercentage, mpCost, sanityCost, hpCost, referenceLinks },
   })
 
   if (existing) {

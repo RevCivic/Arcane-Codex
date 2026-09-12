@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useTransition, useCallback, useEffect } from 'react'
-import { saveRoll, spendLuckOnRoll } from '@/app/actions'
+import { saveRoll, spendLuckOnRoll, spendMpOnRoll, spendSanityOnRoll, spendHpOnRoll } from '@/app/actions'
 import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -32,6 +32,12 @@ export interface PowerEntry {
   /** CharacterAbility.id linked to this power entry; null if no ability record exists */
   abilityId: number | null
   markedForImprovement: boolean
+  /** Magic Points cost to use this power (null or 0 = no cost) */
+  mpCost: number | null
+  /** Sanity Points cost to use this power (null or 0 = no cost) */
+  sanityCost: number | null
+  /** Hit Points cost to use this power (null or 0 = no cost) */
+  hpCost: number | null
 }
 
 export interface HistoryEntry {
@@ -46,6 +52,12 @@ export interface HistoryEntry {
   dice: string | null
   modifier: number | null
   luckSpent: number | null
+  /** Magic Points spent to use this power, null if none or not applicable */
+  mpSpent: number | null
+  /** Sanity Points spent to use this power, null if none or not applicable */
+  sanitySpent: number | null
+  /** Hit Points spent to use this power, null if none or not applicable */
+  hpSpent: number | null
   /** Skill ID for skill rolls, null otherwise */
   skillId: number | null
   /** CharacterAbility ID for power rolls, null otherwise */
@@ -250,6 +262,63 @@ function LuckSpendPrompt({
   )
 }
 
+function PowerCostPrompt({
+  rollHistoryId,
+  costType,
+  cost,
+  currentValue,
+  onSpend,
+  onDismiss,
+  isPending,
+}: {
+  rollHistoryId: number
+  costType: 'mp' | 'sanity' | 'hp'
+  cost: number
+  currentValue: number | null
+  onSpend: (id: number, type: 'mp' | 'sanity' | 'hp', cost: number) => void
+  onDismiss: () => void
+  isPending: boolean
+}) {
+  const affordable = (currentValue ?? 0) >= cost
+  const costLabel = costType === 'mp' ? '✨ Magic Points' : costType === 'sanity' ? '🧠 Sanity' : '❤️ Hit Points'
+  const costColor = costType === 'mp' ? '#8b5cf6' : costType === 'sanity' ? '#60a5fa' : '#f87171'
+  
+  return (
+    <div className="rounded-lg p-4" style={{ backgroundColor: '#1a1a2e', border: `1px solid ${costColor}66` }}>
+      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: costColor, fontFamily: 'Georgia, serif' }}>
+        {costLabel} Cost
+      </div>
+      <p className="text-xs mb-3" style={{ color: '#9ca3af', fontFamily: 'Georgia, serif' }}>
+        Spend{' '}
+        <span style={{ color: costColor, fontWeight: 'bold' }}>{cost}</span>{' '}
+        {costType === 'mp' ? 'Magic Points' : costType === 'sanity' ? 'Sanity Points' : 'Hit Points'} to use this power.
+        {!affordable && (
+          <span style={{ color: '#f87171' }}> (Not enough — you have {currentValue ?? 0})</span>
+        )}
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={!affordable || isPending}
+          onClick={() => onSpend(rollHistoryId, costType, cost)}
+          className="px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: costColor, color: '#fff', fontFamily: 'Georgia, serif' }}
+        >
+          {isPending ? '…' : `Spend ${cost}`}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="px-3 py-1.5 rounded text-xs uppercase tracking-wider"
+          style={{ border: '1px solid #374151', color: '#6b7280', fontFamily: 'Georgia, serif' }}
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── DiceConsole ──────────────────────────────────────────────────────────────
 
 export function DiceConsole({
@@ -258,14 +327,22 @@ export function DiceConsole({
   skills,
   powers,
   initialLuck,
+  initialMp,
+  initialSanity,
+  initialHp,
   initialHistory,
+  onResourceSpent,
 }: {
   characterId: number
   stats: StatEntry[]
   skills: SkillEntry[]
   powers: PowerEntry[]
   initialLuck: number | null
+  initialMp: number | null
+  initialSanity: number | null
+  initialHp: number | null
   initialHistory: HistoryEntry[]
+  onResourceSpent?: (type: 'luck' | 'mp' | 'sanity' | 'hp', newValue: number | null) => void
 }) {
   const [tab, setTab]             = useState<ActiveTab>('ability')
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -291,6 +368,18 @@ export function DiceConsole({
   // Luck (optimistic)
   const [clientLuck, setClientLuck]   = useState<number | null>(initialLuck)
   const [pendingLuck, setPendingLuck] = useState<{ rollHistoryId: number; cost: number } | null>(null)
+
+  // MP (optimistic)
+  const [clientMp, setClientMp]       = useState<number | null>(initialMp)
+  
+  // Sanity (optimistic)
+  const [clientSanity, setClientSanity] = useState<number | null>(initialSanity)
+  
+  // HP (optimistic)
+  const [clientHp, setClientHp]       = useState<number | null>(initialHp)
+  
+  // Pending power cost spending
+  const [pendingPowerCost, setPendingPowerCost] = useState<{ rollHistoryId: number; type: 'mp' | 'sanity' | 'hp'; cost: number } | null>(null)
 
   // Improvement marks (optimistic): set of skillIds marked during this session
   const [markedSkillIds, setMarkedSkillIds] = useState<Set<number>>(
@@ -354,7 +443,8 @@ export function DiceConsole({
   function dispatchRoll(
     entry: Omit<HistoryEntry, 'id' | 'createdAt'>,
     rawRoll: number,
-    effectiveTarget: number | null
+    effectiveTarget: number | null,
+    powerData?: PowerEntry
   ) {
     startScramble(entry.resultType as ResultType | null)
     const tempId = tempIdRef.current--
@@ -409,6 +499,24 @@ export function DiceConsole({
             setPendingLuck({ rollHistoryId: saved.id, cost })
           }
         }
+
+        // Handle power cost spending for power rolls
+        // NOTE: Only one cost type per power is supported. Cost priority: MP > Sanity > HP.
+        // If a power has multiple cost types defined, only the first will be prompted.
+        if (entry.rollType === 'power' && powerData) {
+          // Check for MP cost (highest priority)
+          if (powerData.mpCost && powerData.mpCost > 0) {
+            setPendingPowerCost({ rollHistoryId: saved.id, type: 'mp', cost: powerData.mpCost })
+          }
+          // Check for Sanity cost (medium priority)
+          else if (powerData.sanityCost && powerData.sanityCost > 0) {
+            setPendingPowerCost({ rollHistoryId: saved.id, type: 'sanity', cost: powerData.sanityCost })
+          }
+          // Check for HP cost (lowest priority)
+          else if (powerData.hpCost && powerData.hpCost > 0) {
+            setPendingPowerCost({ rollHistoryId: saved.id, type: 'hp', cost: powerData.hpCost })
+          }
+        }
       } catch {
         // Keep optimistic entry; luck-spend prompt won't appear (no real id)
       }
@@ -429,7 +537,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'ability', label: `${stat.label} Check`, roll, target, difficulty: abilityTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null, abilityId: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, mpSpent: null, sanitySpent: null, hpSpent: null, skillId: null, abilityId: null },
       roll, target
     )
   }
@@ -441,7 +549,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'skill', label: skill.name, roll, target, difficulty: skillTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: skill.id, abilityId: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, mpSpent: null, sanitySpent: null, hpSpent: null, skillId: skill.id, abilityId: null },
       roll, target
     )
   }
@@ -453,8 +561,8 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'power', label: power.name, roll, target, difficulty: powerTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null, abilityId: power.abilityId },
-      roll, target
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, mpSpent: null, sanitySpent: null, hpSpent: null, skillId: null, abilityId: power.abilityId },
+      roll, target, power
     )
   }
 
@@ -466,7 +574,7 @@ export function DiceConsole({
     }`
     dispatchRoll(
       { rollType: 'free', label, roll: total, target: null, difficulty: null,
-        resultType: null, dice: JSON.stringify(dice), modifier, luckSpent: null, skillId: null, abilityId: null },
+        resultType: null, dice: JSON.stringify(dice), modifier, luckSpent: null, mpSpent: null, sanitySpent: null, hpSpent: null, skillId: null, abilityId: null },
       total, null
     )
   }
@@ -477,7 +585,11 @@ export function DiceConsole({
     startSpendTransition(async () => {
       try {
         await spendLuckOnRoll(characterId, rollHistoryId, cost)
-        setClientLuck((prev) => (prev !== null ? prev - cost : null))
+        setClientLuck((prevLuck) => {
+          const newLuck = prevLuck !== null ? prevLuck - cost : null
+          onResourceSpent?.('luck', newLuck)
+          return newLuck
+        })
         setHistory((prev) =>
           prev.map((r) =>
             r.id === rollHistoryId ? { ...r, resultType: 'SUCCESS', luckSpent: cost } : r
@@ -485,6 +597,53 @@ export function DiceConsole({
         )
         setPendingLuck(null)
         setFlavorText(randomFlavor('SUCCESS'))
+      } catch {
+        // State unchanged; user can retry
+      }
+    })
+  }
+
+  const handleSpendPowerCost = (rollHistoryId: number, costType: 'mp' | 'sanity' | 'hp', cost: number) => {
+    startSpendTransition(async () => {
+      try {
+        if (costType === 'mp') {
+          await spendMpOnRoll(characterId, rollHistoryId, cost)
+          setClientMp((prevMp) => {
+            const newMp = prevMp !== null ? prevMp - cost : null
+            onResourceSpent?.('mp', newMp)
+            return newMp
+          })
+          setHistory((prev) =>
+            prev.map((r) =>
+              r.id === rollHistoryId ? { ...r, mpSpent: cost } : r
+            )
+          )
+        } else if (costType === 'sanity') {
+          await spendSanityOnRoll(characterId, rollHistoryId, cost)
+          setClientSanity((prevSanity) => {
+            const newSanity = prevSanity !== null ? prevSanity - cost : null
+            onResourceSpent?.('sanity', newSanity)
+            return newSanity
+          })
+          setHistory((prev) =>
+            prev.map((r) =>
+              r.id === rollHistoryId ? { ...r, sanitySpent: cost } : r
+            )
+          )
+        } else if (costType === 'hp') {
+          await spendHpOnRoll(characterId, rollHistoryId, cost)
+          setClientHp((prevHp) => {
+            const newHp = prevHp !== null ? prevHp - cost : null
+            onResourceSpent?.('hp', newHp)
+            return newHp
+          })
+          setHistory((prev) =>
+            prev.map((r) =>
+              r.id === rollHistoryId ? { ...r, hpSpent: cost } : r
+            )
+          )
+        }
+        setPendingPowerCost(null)
       } catch {
         // State unchanged; user can retry
       }
@@ -808,6 +967,25 @@ export function DiceConsole({
                   currentLuck={clientLuck}
                   onSpend={handleSpendLuck}
                   onDismiss={() => setPendingLuck(null)}
+                  isPending={isSpending}
+                />
+              )}
+
+              {/* Power cost spend prompt */}
+              {pendingPowerCost && (
+                <PowerCostPrompt
+                  rollHistoryId={pendingPowerCost.rollHistoryId}
+                  costType={pendingPowerCost.type}
+                  cost={pendingPowerCost.cost}
+                  currentValue={
+                    pendingPowerCost.type === 'mp'
+                      ? clientMp
+                      : pendingPowerCost.type === 'sanity'
+                        ? clientSanity
+                        : clientHp
+                  }
+                  onSpend={handleSpendPowerCost}
+                  onDismiss={() => setPendingPowerCost(null)}
                   isPending={isSpending}
                 />
               )}

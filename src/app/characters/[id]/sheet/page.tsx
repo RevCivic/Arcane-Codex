@@ -8,7 +8,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { importFoundryCharacterSheet, updateCharacterSheet } from '@/app/actions'
 import { getSheetLayoutPreference } from '@/app/actions/sheetLayout'
-import { DiceConsole } from '@/components/DiceConsole'
+import { DiceConsoleWithResourceDisplay } from '@/components/DiceConsoleWithResourceDisplay'
 import type { StatEntry, SkillEntry, PowerEntry } from '@/components/DiceConsole'
 import { SkillImprovementPanel } from '@/components/SkillImprovementPanel'
 import type { MarkedSkill } from '@/components/SkillImprovementPanel'
@@ -123,102 +123,6 @@ function StatBox({
   )
 }
 
-function DerivedBox({
-  label, currentName, maxName,
-  current, max,
-  accent,
-  description,
-}: {
-  label: string
-  currentName: string
-  maxName: string
-  current: number | null | undefined
-  max: number | null | undefined
-  accent: string
-  description?: string
-}) {
-  const tooltipId = `derived-help-${currentName}`
-
-  return (
-    <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: `1px solid ${accent}33` }}>
-      <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
-        <span>{label}</span>
-        {description && (
-          <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color={accent} />
-        )}
-      </div>
-      <div className="flex items-center gap-2 justify-center">
-        <input
-          name={currentName}
-          type="number"
-          defaultValue={current ?? ''}
-          min={0}
-          max={999}
-          className="arcane-input text-center w-16 text-base font-bold"
-          style={{ color: '#e2e8f0' }}
-          placeholder="—"
-        />
-        <span style={{ color: '#6b7280' }}>/</span>
-        <input
-          name={maxName}
-          type="number"
-          defaultValue={max ?? ''}
-          min={0}
-          max={999}
-          className="arcane-input text-center w-16 text-base font-bold"
-          style={{ color: '#6b7280' }}
-          placeholder="—"
-        />
-      </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>current</span>
-        <span className="text-xs" style={{ color: '#4b5563', fontFamily: 'Georgia, serif' }}>max</span>
-      </div>
-    </div>
-  )
-}
-
-function SimpleStatBox({
-  label,
-  name,
-  value,
-  accent,
-  description,
-  min = 0,
-  max = 99,
-}: {
-  label: string
-  name: string
-  value: number | null | undefined
-  accent: string
-  description?: string
-  min?: number
-  max?: number
-}) {
-  const tooltipId = `stat-help-${name}`
-
-  return (
-    <div className="rounded-lg p-3" style={{ backgroundColor: '#0d0d15', border: `1px solid ${accent}33` }}>
-      <div className="text-xs uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1" style={{ color: accent, fontFamily: 'Georgia, serif' }}>
-        <span>{label}</span>
-        {description && (
-          <InfoTooltipButton label={label} description={description} tooltipId={tooltipId} color={accent} />
-        )}
-      </div>
-      <input
-        name={name}
-        type="number"
-        defaultValue={value ?? ''}
-        min={min}
-        max={max}
-        className="arcane-input text-center w-full text-base font-bold"
-        style={{ color: '#e2e8f0' }}
-        placeholder="—"
-      />
-    </div>
-  )
-}
-
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function CharacterSheetPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string }> }) {
@@ -237,7 +141,7 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
       include: {
         sheet: { include: { skillValues: { include: { skill: true } } } },
         characterPowers: {
-          include: { power: { select: { id: true, name: true, baseAbility: true, basePercentage: true } } },
+          include: { power: { select: { id: true, name: true, baseAbility: true, basePercentage: true, mpCost: true, sanityCost: true, hpCost: true } } },
           orderBy: { power: { name: 'asc' } },
         },
         characterAbilities: {
@@ -341,6 +245,9 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
         effectiveValue: effectivePct,
         abilityId: ability?.id ?? null,
         markedForImprovement: ability?.markedForImprovement ?? false,
+        mpCost: cp.power.mpCost ?? null,
+        sanityCost: cp.power.sanityCost ?? null,
+        hpCost: cp.power.hpCost ?? null,
       }]
     })
 
@@ -379,6 +286,9 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
     dice:       r.dice,
     modifier:   r.modifier,
     luckSpent:  r.luckSpent,
+    mpSpent:    r.mpSpent,
+    sanitySpent: r.sanitySpent,
+    hpSpent:    r.hpSpent,
     skillId:    r.skillId,
     abilityId:  r.abilityId,
     createdAt:  r.createdAt.toISOString(),
@@ -509,28 +419,22 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                   </div>
                 </CollapsibleSection>
 
-                {/* Derived / Current Values */}
-                <CollapsibleSection
-                  storageKey="derived-statistics"
-                  className="card-arcane rounded-lg p-6"
-                  style={{ fontFamily: 'Georgia, serif' }}
-                  title={
-                    <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
-                      ✦ Derived Statistics
-                    </h2>
-                  }
-                >
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <DerivedBox label="Hit Points" currentName="currentHp" maxName="maxHp"
-                      current={sheet?.currentHp} max={sheet?.maxHp} accent="#4ade80" description={DERIVED_STAT_HELP.HIT_POINTS} />
-                    <DerivedBox label="Sanity"     currentName="currentSanity" maxName="maxSanity"
-                      current={sheet?.currentSanity} max={sheet?.maxSanity} accent="#a78bfa" description={DERIVED_STAT_HELP.SANITY} />
-                    <DerivedBox label="Magic Pts"  currentName="currentMp" maxName="maxMp"
-                      current={sheet?.currentMp} max={sheet?.maxMp} accent="#60a5fa" description={DERIVED_STAT_HELP.MAGIC_PTS} />
-                    <SimpleStatBox label="Luck" name="luck" value={sheet?.luck} accent="#f59e0b" description={DERIVED_STAT_HELP.LUCK} min={0} max={99} />
-                    <SimpleStatBox label="Build" name="build" value={sheet?.build} accent="#9ca3af" description={DERIVED_STAT_HELP.BUILD} min={-2} max={4} />
-                  </div>
-                </CollapsibleSection>
+                {/* Derived / Current Values and Dice Console */}
+                <DiceConsoleWithResourceDisplay
+                  characterId={characterId}
+                  stats={consoleStats}
+                  skills={consoleSkills}
+                  powers={consolePowers}
+                  initialLuck={sheet?.luck ?? null}
+                  initialMp={sheet?.currentMp ?? null}
+                  initialSanity={sheet?.currentSanity ?? null}
+                  initialHp={sheet?.currentHp ?? null}
+                  maxHp={sheet?.maxHp ?? null}
+                  maxMp={sheet?.maxMp ?? null}
+                  maxSanity={sheet?.maxSanity ?? null}
+                  initialBuild={sheet?.build ?? null}
+                  initialHistory={initialHistory}
+                />
 
                 {/* Skills */}
                 {allSkills.length > 0 && (
@@ -703,31 +607,6 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                     initialMarkedAbilities={markedAbilities}
                   />
                 )}
-              </CollapsibleSection>
-            ),
-          } satisfies SheetModule,
-
-          // ── Dice Console ────────────────────────────────────────────────
-          {
-            key: 'dice',
-            label: '🎲 Dice Console',
-            content: (
-              <CollapsibleSection
-                storageKey="dice-console"
-                title={
-                  <h2 className="text-lg font-semibold uppercase tracking-widest" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-                    🎲 Dice Console
-                  </h2>
-                }
-              >
-                <DiceConsole
-                  characterId={characterId}
-                  stats={consoleStats}
-                  skills={consoleSkills}
-                  powers={consolePowers}
-                  initialLuck={sheet?.luck ?? null}
-                  initialHistory={initialHistory}
-                />
               </CollapsibleSection>
             ),
           } satisfies SheetModule,

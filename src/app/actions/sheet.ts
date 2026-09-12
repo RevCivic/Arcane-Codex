@@ -441,6 +441,105 @@ export async function spendLuckOnRoll(
   revalidatePath(`/characters/${characterId}/sheet`)
 }
 
+export async function spendMpOnRoll(
+  characterId: number,
+  rollHistoryId: number,
+  mpToSpend: number
+) {
+  const user = await requireAuthorizedUser()
+  await requireCharacterOwner(characterId, user)
+
+  const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
+  if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
+  if (roll.rollType !== 'power') throw new Error('Can only spend MP on power rolls')
+  if (roll.mpSpent !== null) throw new Error('MP already spent on this roll')
+
+  // Use interactive transaction to atomically read, check, and update
+  await prisma.$transaction(async (tx) => {
+    const sheet = await tx.characterSheet.findUnique({ where: { characterId } })
+    if (!sheet) throw new Error('Character sheet not found')
+    if (sheet.currentMp === null) throw new Error('Character MP not initialized')
+    if (sheet.currentMp < mpToSpend) throw new Error('Not enough Magic Points')
+
+    await tx.rollHistory.update({
+      where: { id: rollHistoryId },
+      data: { mpSpent: mpToSpend },
+    })
+    await tx.characterSheet.update({
+      where: { characterId },
+      data: { currentMp: sheet.currentMp - mpToSpend },
+    })
+  })
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
+
+export async function spendSanityOnRoll(
+  characterId: number,
+  rollHistoryId: number,
+  sanityToSpend: number
+) {
+  const user = await requireAuthorizedUser()
+  await requireCharacterOwner(characterId, user)
+
+  const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
+  if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
+  if (roll.rollType !== 'power') throw new Error('Can only spend Sanity on power rolls')
+  if (roll.sanitySpent !== null) throw new Error('Sanity already spent on this roll')
+
+  // Use interactive transaction to atomically read, check, and update
+  await prisma.$transaction(async (tx) => {
+    const sheet = await tx.characterSheet.findUnique({ where: { characterId } })
+    if (!sheet) throw new Error('Character sheet not found')
+    if (sheet.currentSanity === null) throw new Error('Character Sanity not initialized')
+    if (sheet.currentSanity < sanityToSpend) throw new Error('Not enough Sanity Points')
+
+    await tx.rollHistory.update({
+      where: { id: rollHistoryId },
+      data: { sanitySpent: sanityToSpend },
+    })
+    await tx.characterSheet.update({
+      where: { characterId },
+      data: { currentSanity: sheet.currentSanity - sanityToSpend },
+    })
+  })
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
+
+export async function spendHpOnRoll(
+  characterId: number,
+  rollHistoryId: number,
+  hpToSpend: number
+) {
+  const user = await requireAuthorizedUser()
+  await requireCharacterOwner(characterId, user)
+
+  const roll = await prisma.rollHistory.findUnique({ where: { id: rollHistoryId } })
+  if (!roll || roll.characterId !== characterId) throw new Error('Roll not found')
+  if (roll.rollType !== 'power') throw new Error('Can only spend HP on power rolls')
+  if (roll.hpSpent !== null) throw new Error('HP already spent on this roll')
+
+  // Use interactive transaction to atomically read, check, and update
+  await prisma.$transaction(async (tx) => {
+    const sheet = await tx.characterSheet.findUnique({ where: { characterId } })
+    if (!sheet) throw new Error('Character sheet not found')
+    if (sheet.currentHp === null) throw new Error('Character HP not initialized')
+    if (sheet.currentHp < hpToSpend) throw new Error('Not enough Hit Points')
+
+    await tx.rollHistory.update({
+      where: { id: rollHistoryId },
+      data: { hpSpent: hpToSpend },
+    })
+    await tx.characterSheet.update({
+      where: { characterId },
+      data: { currentHp: sheet.currentHp - hpToSpend },
+    })
+  })
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+}
+
 // ─── Skill Improvement ────────────────────────────────────────────────────────
 
 /**
