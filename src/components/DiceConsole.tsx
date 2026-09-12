@@ -539,7 +539,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'ability', label: `${stat.label} Check`, roll, target, difficulty: abilityTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null, abilityId: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, mpSpent: null, sanitySpent: null, hpSpent: null, skillId: null, abilityId: null },
       roll, target
     )
   }
@@ -551,7 +551,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'skill', label: skill.name, roll, target, difficulty: skillTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: skill.id, abilityId: null },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, mpSpent: null, sanitySpent: null, hpSpent: null, skillId: skill.id, abilityId: null },
       roll, target
     )
   }
@@ -563,7 +563,7 @@ export function DiceConsole({
     const roll   = rollD100()
     dispatchRoll(
       { rollType: 'power', label: power.name, roll, target, difficulty: powerTier,
-        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, skillId: null, abilityId: power.abilityId },
+        resultType: getD100ResultType(roll, target), dice: null, modifier: null, luckSpent: null, mpSpent: null, sanitySpent: null, hpSpent: null, skillId: null, abilityId: power.abilityId },
       roll, target, power
     )
   }
@@ -576,7 +576,7 @@ export function DiceConsole({
     }`
     dispatchRoll(
       { rollType: 'free', label, roll: total, target: null, difficulty: null,
-        resultType: null, dice: JSON.stringify(dice), modifier, luckSpent: null, skillId: null, abilityId: null },
+        resultType: null, dice: JSON.stringify(dice), modifier, luckSpent: null, mpSpent: null, sanitySpent: null, hpSpent: null, skillId: null, abilityId: null },
       total, null
     )
   }
