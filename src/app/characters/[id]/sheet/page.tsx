@@ -685,15 +685,11 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
                   </h2>
                 }
               >
-                {consoleSkills.length === 0 ? (
-                  <p className="text-xs" style={{ color: '#6b7280' }}>No skills assigned.</p>
-                ) : (
-                  <RollableSkills
-                    characterId={characterId}
-                    skills={consoleSkills}
-                    initialHistory={initialHistory}
-                  />
-                )}
+                <RollableSkills
+                  characterId={characterId}
+                  skills={consoleSkills}
+                  initialHistory={initialHistory}
+                />
               </CollapsibleSection>
             ),
           } satisfies SheetModule,

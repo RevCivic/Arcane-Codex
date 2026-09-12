@@ -3,6 +3,9 @@
  * Used by RollableStats, RollableSkills, and RollablePowers
  */
 
+'use client'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
 
 export type DifficultyTier = 'Easy' | 'Average' | 'Difficult' | 'Hard' | 'Extreme' | 'Impossible'
@@ -67,4 +70,48 @@ export function randomFlavor(rt: D100ResultType): string {
     ],
   }
   return flavors[rt][Math.floor(Math.random() * flavors[rt].length)]
+}
+
+/**
+ * Custom hook for managing scramble animation during dice rolls
+ * Returns state and startScramble function for rune cycling and flavor text
+ */
+export function useScrambleAnimation() {
+  const [isScrambling, setIsScrambling] = useState(false)
+  const [scrambleRune, setScrambleRune] = useState('ᚱ')
+  const [flavorText, setFlavorText] = useState<string | null>(null)
+
+  const scrambleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrambleInterval = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const startScramble = useCallback((resultType: D100ResultType | null) => {
+    if (scrambleTimer.current) clearTimeout(scrambleTimer.current)
+    if (scrambleInterval.current) clearInterval(scrambleInterval.current)
+
+    setIsScrambling(true)
+    setScrambleRune(ARCANE_RUNES[Math.floor(Math.random() * ARCANE_RUNES.length)])
+    setFlavorText(null)
+
+    scrambleInterval.current = setInterval(() => {
+      setScrambleRune(ARCANE_RUNES[Math.floor(Math.random() * ARCANE_RUNES.length)])
+    }, 80)
+
+    scrambleTimer.current = setTimeout(() => {
+      if (scrambleInterval.current) {
+        clearInterval(scrambleInterval.current)
+        scrambleInterval.current = null
+      }
+      setIsScrambling(false)
+      if (resultType) setFlavorText(randomFlavor(resultType))
+    }, 400)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (scrambleTimer.current) clearTimeout(scrambleTimer.current)
+      if (scrambleInterval.current) clearInterval(scrambleInterval.current)
+    }
+  }, [])
+
+  return { isScrambling, scrambleRune, flavorText, startScramble }
 }

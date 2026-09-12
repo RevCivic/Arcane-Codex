@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useTransition, useCallback, useRef, useEffect } from 'react'
+import { useState, useTransition, useRef, useCallback } from 'react'
 import { saveRoll } from '@/app/actions'
 import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
-import { TIERS, RESULT_CONFIG, ARCANE_RUNES, applyDifficulty, randomFlavor, type DifficultyTier } from './diceConsoleShared'
+import { TIERS, RESULT_CONFIG, applyDifficulty, useScrambleAnimation, type DifficultyTier } from './diceConsoleShared'
 import type { SkillEntry, HistoryEntry } from './DiceConsole'
 
 // ─── Component ────────────────────────────────────────────────────────────
@@ -36,42 +36,9 @@ export function RollableSkills({
   )
 
   const [isRolling, startRollTransition] = useTransition()
-  const [isScrambling, setIsScrambling] = useState(false)
-  const [scrambleRune, setScrambleRune] = useState('')
-  const [flavorText, setFlavorText] = useState<string | null>(null)
+  const { isScrambling, scrambleRune, flavorText, startScramble } = useScrambleAnimation()
 
   const tempIdRef = useRef(-1)
-  const scrambleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const scrambleInterval = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const startScramble = useCallback((resultType: D100ResultType | null) => {
-    if (scrambleTimer.current) clearTimeout(scrambleTimer.current)
-    if (scrambleInterval.current) clearInterval(scrambleInterval.current)
-
-    setIsScrambling(true)
-    setScrambleRune(ARCANE_RUNES[Math.floor(Math.random() * ARCANE_RUNES.length)])
-    setFlavorText(null)
-
-    scrambleInterval.current = setInterval(() => {
-      setScrambleRune(ARCANE_RUNES[Math.floor(Math.random() * ARCANE_RUNES.length)])
-    }, 80)
-
-    scrambleTimer.current = setTimeout(() => {
-      if (scrambleInterval.current) {
-        clearInterval(scrambleInterval.current)
-        scrambleInterval.current = null
-      }
-      setIsScrambling(false)
-      if (resultType) setFlavorText(randomFlavor(resultType))
-    }, 400)
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (scrambleTimer.current) clearTimeout(scrambleTimer.current)
-      if (scrambleInterval.current) clearInterval(scrambleInterval.current)
-    }
-  }, [])
 
   const handleRoll = useCallback(() => {
     const skill = skills.find((s) => s.id === selectedSkillId)
