@@ -2,9 +2,10 @@
 
 import { useState, useTransition, useRef, useCallback } from 'react'
 import { saveRoll } from '@/app/actions'
-import { getD100ResultType, type D100ResultType } from '@/lib/diceRules'
-import { TIERS, applyDifficulty, useScrambleAnimation, type DifficultyTier } from './diceConsoleShared'
+import { getD100ResultType } from '@/lib/diceRules'
+import { applyDifficulty, useScrambleAnimation, type DifficultyTier } from './diceConsoleShared'
 import { RollResultDisplay } from './RollResultDisplay'
+import { DifficultySelector } from './DifficultySelector'
 import type { StatEntry, HistoryEntry } from './DiceConsole'
 
 // ─── Helper Functions ─────────────────────────────────────────────────────
@@ -105,7 +106,7 @@ export function RollableStats({
     })
   }, [characterId, stats, selectedStat, tier, startScramble])
 
-  const latest = history[0]
+  const latest = history[0] ?? null
 
   return (
     <div className="space-y-4">
@@ -133,32 +134,7 @@ export function RollableStats({
         </div>
 
         {/* Difficulty Selector */}
-        {availableStats.length > 0 && (
-          <div>
-            <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: '#d97706', fontFamily: 'Georgia, serif' }}>
-              Difficulty
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {TIERS.map((t) => (
-                <button
-                  key={t.tier}
-                  type="button"
-                  onClick={() => setTier(t.tier)}
-                  className="rounded py-1.5 text-xs font-bold uppercase tracking-wider transition-all"
-                  style={{
-                    backgroundColor: tier === t.tier ? `${t.color}33` : '#0d0d15',
-                    border: `1px solid ${tier === t.tier ? t.color : '#1f2937'}`,
-                    boxShadow: tier === t.tier ? `0 0 10px ${t.color}44` : 'none',
-                    color: tier === t.tier ? t.color : '#6b7280',
-                  }}
-                >
-                  {t.label}
-                  <div className="text-[0.65rem] opacity-75">{t.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {availableStats.length > 0 && <DifficultySelector tier={tier} onTierChange={setTier} />}
 
         {/* Roll Button */}
         <button
