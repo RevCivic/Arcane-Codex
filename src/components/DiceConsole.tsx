@@ -504,21 +504,15 @@ export function DiceConsole({
         if (entry.rollType === 'power' && powerData) {
           // Check for MP cost
           if (powerData.mpCost && powerData.mpCost > 0) {
-            if (clientMp !== null && clientMp >= powerData.mpCost) {
-              setPendingPowerCost({ rollHistoryId: saved.id, type: 'mp', cost: powerData.mpCost })
-            }
+            setPendingPowerCost({ rollHistoryId: saved.id, type: 'mp', cost: powerData.mpCost })
           }
           // Check for Sanity cost
           else if (powerData.sanityCost && powerData.sanityCost > 0) {
-            if (clientSanity !== null && clientSanity >= powerData.sanityCost) {
-              setPendingPowerCost({ rollHistoryId: saved.id, type: 'sanity', cost: powerData.sanityCost })
-            }
+            setPendingPowerCost({ rollHistoryId: saved.id, type: 'sanity', cost: powerData.sanityCost })
           }
           // Check for HP cost
           else if (powerData.hpCost && powerData.hpCost > 0) {
-            if (clientHp !== null && clientHp >= powerData.hpCost) {
-              setPendingPowerCost({ rollHistoryId: saved.id, type: 'hp', cost: powerData.hpCost })
-            }
+            setPendingPowerCost({ rollHistoryId: saved.id, type: 'hp', cost: powerData.hpCost })
           }
         }
       } catch {
