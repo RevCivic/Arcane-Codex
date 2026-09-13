@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   experimental: {
     // Image uploads are validated at 5 MB by the server action. Allow an
     // additional megabyte for the multipart form fields and encoding overhead.

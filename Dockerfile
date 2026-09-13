@@ -46,12 +46,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs nextjs
 
-# Copy the built application
+# Copy the standalone server bundle (includes only the node_modules it needs)
+COPY --from=builder /app/.next/standalone ./
+# Copy static assets served by Next.js
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.ts ./next.config.ts
 
 # Copy Prisma artefacts (schema, migrations, generated client, config)
 COPY --from=builder /app/prisma ./prisma
