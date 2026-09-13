@@ -14,4 +14,4 @@ until npx prisma migrate deploy; do
 done
 
 echo "Starting Arcane Codex on port ${PORT:-3000}..."
-exec npm run start
+exec node server.js

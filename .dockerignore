@@ -33,3 +33,6 @@ docker-compose.yml
 
 # README
 README.md
+
+# Scripts (not needed in the image)
+scripts/
