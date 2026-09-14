@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { syncCharactersFromSheet, syncCharactersToSheet } from '@/app/actions'
 
-type FromSheetResult = { created: number; updated: number; queued: number; error?: string } | null
+type FromSheetResult = { created: number; unchanged: number; queued: number; error?: string } | null
 type ToSheetResult = { updated: number; skipped: number; error?: string } | null
-type Direction = 'from' | 'to'
+type Direction = 'from' | 'fromNewOnly' | 'to'
 
 export function SyncFromSheetButton() {
   const [loading, setLoading] = useState(false)
@@ -20,16 +20,19 @@ export function SyncFromSheetButton() {
       if (direction === 'from') {
         const res = await syncCharactersFromSheet()
         setFromResult(res)
+      } else if (direction === 'fromNewOnly') {
+        const res = await syncCharactersFromSheet(true)
+        setFromResult(res)
       } else {
         const res = await syncCharactersToSheet()
         setToResult(res)
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unexpected error'
-      if (direction === 'from') {
-        setFromResult({ created: 0, updated: 0, queued: 0, error: msg })
-      } else {
+      if (direction === 'to') {
         setToResult({ updated: 0, skipped: 0, error: msg })
+      } else {
+        setFromResult({ created: 0, unchanged: 0, queued: 0, error: msg })
       }
     } finally {
       setLoading(false)
@@ -39,6 +42,7 @@ export function SyncFromSheetButton() {
   const buttonBase =
     'rounded px-4 py-2 text-sm font-semibold uppercase tracking-wider transition-all duration-200 hover:opacity-90 disabled:opacity-50'
   const buttonStyle = { backgroundColor: '#065f46', color: '#6ee7b7', border: '1px solid #047857', fontFamily: 'Georgia, serif' }
+  const newOnlyStyle = { backgroundColor: '#1e1b4b', color: '#a78bfa', border: '1px solid #4c1d95', fontFamily: 'Georgia, serif' }
 
   const activeResult = fromResult ?? toResult
   let resultMessage: string | null = null
@@ -46,7 +50,7 @@ export function SyncFromSheetButton() {
     if (fromResult.error) {
       resultMessage = `⚠ ${fromResult.error}`
     } else {
-      const parts = [`${fromResult.created} created`, `${fromResult.updated} unchanged`]
+      const parts = [`${fromResult.created} created`, `${fromResult.unchanged} unchanged`]
       if (fromResult.queued > 0) {
         parts.push(`${fromResult.queued} queued for review`)
       }
@@ -68,6 +72,14 @@ export function SyncFromSheetButton() {
           style={buttonStyle}
         >
           {loading ? '⏳ Syncing…' : '⬇ Sheet → DB'}
+        </button>
+        <button
+          onClick={() => handleSync('fromNewOnly')}
+          disabled={loading}
+          className={buttonBase}
+          style={newOnlyStyle}
+        >
+          {loading ? '⏳ Syncing…' : '✦ New Only'}
         </button>
         <button
           onClick={() => handleSync('to')}

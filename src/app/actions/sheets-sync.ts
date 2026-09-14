@@ -39,10 +39,12 @@ function extractCellHyperlink(cell: SheetCellData | undefined): string | null {
  *  - New characters are created immediately.
  *  - Existing characters with changed fields are placed in an approval queue
  *    instead of being overwritten directly.
+ *  - When `newOnly` is true, existing characters are skipped entirely — only
+ *    brand-new names result in database writes.
  */
-export async function syncCharactersFromSheet(): Promise<{
+export async function syncCharactersFromSheet(newOnly = false): Promise<{
   created: number
-  updated: number
+  unchanged: number
   queued: number
   error?: string
 }> {
@@ -95,13 +97,13 @@ export async function syncCharactersFromSheet(): Promise<{
     try {
       const res = await fetch(csvUrl, { cache: 'no-store' })
       if (!res.ok) {
-        return { created: 0, updated: 0, queued: 0, error: `Failed to fetch sheet (HTTP ${res.status})` }
+        return { created: 0, unchanged: 0, queued: 0, error: `Failed to fetch sheet (HTTP ${res.status})` }
       }
       const contentType = res.headers.get('content-type') ?? ''
       if (contentType.includes('text/html')) {
         return {
           created: 0,
-          updated: 0,
+          unchanged: 0,
           queued: 0,
           error:
             'Google returned an HTML page instead of CSV data. ' +
@@ -110,13 +112,13 @@ export async function syncCharactersFromSheet(): Promise<{
       }
       text = await res.text()
     } catch {
-      return { created: 0, updated: 0, queued: 0, error: 'Network error — could not reach Google Sheets' }
+      return { created: 0, unchanged: 0, queued: 0, error: 'Network error — could not reach Google Sheets' }
     }
     rows = parseCSV(text)
   }
 
   if (rows.length < 2) {
-    return { created: 0, updated: 0, queued: 0, error: 'Sheet appears empty or has no data rows' }
+    return { created: 0, unchanged: 0, queued: 0, error: 'Sheet appears empty or has no data rows' }
   }
 
   const col = mapHeaders(rows[0])
@@ -124,14 +126,14 @@ export async function syncCharactersFromSheet(): Promise<{
   if (col.name === undefined && col.firstName === undefined) {
     return {
       created: 0,
-      updated: 0,
+      unchanged: 0,
       queued: 0,
       error: 'Could not find a "Name" or "First Name" column in the sheet headers',
     }
   }
 
   let created = 0
-  let updated = 0
+  let unchanged = 0
   let queued = 0
 
   // Fetch all existing characters once to avoid N+1 queries inside the loop.
@@ -187,6 +189,12 @@ export async function syncCharactersFromSheet(): Promise<{
 
     const existingChar = existingByName.get(name)
     if (existingChar !== undefined) {
+      // In newOnly mode, skip all existing characters without queuing.
+      if (newOnly) {
+        unchanged++
+        continue
+      }
+
       // Check whether any field actually differs before queuing.
       const existingData = {
         firstName: existingChar.firstName ?? null,
@@ -211,7 +219,7 @@ export async function syncCharactersFromSheet(): Promise<{
 
       if (!hasChanges) {
         // Data is identical — nothing to do.
-        updated++ // count as "handled" for consistency
+        unchanged++
         continue
       }
 
@@ -274,7 +282,7 @@ export async function syncCharactersFromSheet(): Promise<{
 
   revalidatePath('/characters')
   revalidatePath('/admin/import-queue')
-  return { created, updated, queued }
+  return { created, unchanged, queued }
 }
 
 /** Reads all characters from the database and writes their values back to the
