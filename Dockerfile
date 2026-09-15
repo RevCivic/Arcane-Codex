@@ -1,5 +1,5 @@
 # ---- Stage 1: Install dependencies ----
-FROM node:20-slim AS deps
+FROM node:22-slim AS deps
 
 # Required for native modules and Prisma migrations
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -18,7 +18,7 @@ RUN npm config set fetch-timeout 60000 && \
     npm ci --no-audit --no-fund
 
 # ---- Stage 2: Build the application ----
-FROM node:20-slim AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
@@ -31,7 +31,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ---- Stage 3: Production runner ----
-FROM node:20-slim AS runner
+FROM node:22-slim AS runner
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
