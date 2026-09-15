@@ -48,6 +48,12 @@ RUN groupadd --system --gid 1001 nodejs && \
 
 # Copy the standalone server bundle (includes only the node_modules it needs)
 COPY --from=builder /app/.next/standalone ./
+# Next.js' standalone tracer only includes packages used by the application at
+# runtime. The Prisma CLI is invoked by the entrypoint before Next.js starts, so
+# copy the installed, lockfile-pinned dependencies explicitly instead of letting
+# npx download an arbitrary Prisma release when the container starts.
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/package.json /app/package-lock.json ./
 # Copy static assets served by Next.js
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
