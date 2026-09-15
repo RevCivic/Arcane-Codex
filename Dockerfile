@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 # ---- Stage 1: Install dependencies ----
 FROM node:22-slim AS deps
 
@@ -11,7 +13,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies with retry logic and improved network configuration
-RUN npm config set fetch-timeout 60000 && \
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm config set fetch-timeout 60000 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-retries 5 && \
@@ -39,7 +42,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # npm automatically executes prebuild → prisma generate
-RUN npm run build
+RUN --mount=type=cache,target=/app/.next/cache,sharing=locked npm run build
 
 # ---- Stage 3: Production runner ----
 FROM node:22-slim AS runner
@@ -57,11 +60,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
-# Add only the pruned, lockfile-pinned migration toolchain, then overlay the
-# standalone server bundle and its traced runtime dependencies. COPY --chown
-# avoids creating another large filesystem layer solely to change ownership.
-COPY --from=prisma-cli --chown=nextjs:nodejs /app/node_modules ./node_modules
+# The standalone server already contains `pg`, which the lightweight migration
+# runner also uses. This avoids shipping Prisma's 250+ MB development CLI and
+# eliminates all npm activity when the container starts.
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --chown=nextjs:nodejs deploy-migrations.cjs ./deploy-migrations.cjs
 # Copy static assets served by Next.js
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
