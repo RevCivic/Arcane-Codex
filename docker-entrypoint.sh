@@ -3,7 +3,8 @@ set -e
 
 echo "Running database migrations..."
 tries=0
-until npx prisma migrate deploy; do
+
+until node ./deploy-migrations.cjs; do
   tries=$((tries + 1))
   if [ "$tries" -ge 20 ]; then
     echo "Database migrations failed after ${tries} attempts."
