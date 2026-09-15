@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 # ---- Stage 1: Install dependencies ----
 FROM node:22-slim AS deps
 
@@ -11,7 +13,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies with retry logic and improved network configuration
-RUN npm config set fetch-timeout 60000 && \
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm config set fetch-timeout 60000 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-retries 5 && \
@@ -28,7 +31,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # npm automatically executes prebuild → prisma generate
-RUN npm run build
+RUN --mount=type=cache,target=/app/.next/cache,sharing=locked npm run build
 
 # ---- Stage 3: Production runner ----
 FROM node:22-slim AS runner
@@ -46,8 +49,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
-# Copy the standalone server bundle (includes only the node_modules it needs)
-COPY --from=builder /app/.next/standalone ./
+# The standalone server already contains `pg`, which the lightweight migration
+# runner also uses. This avoids shipping Prisma's 250+ MB development CLI and
+# eliminates all npm activity when the container starts.
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --chown=nextjs:nodejs deploy-migrations.cjs ./deploy-migrations.cjs
 # Copy static assets served by Next.js
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
@@ -65,10 +71,6 @@ RUN chmod +x docker-entrypoint.sh && chown nextjs:nodejs docker-entrypoint.sh
 # Character images and thumbnails are stored here at runtime.
 RUN mkdir -p public/uploads/characters && \
     chown -R nextjs:nodejs public/uploads
-
-# Fix node_modules ownership for the non-root user to prevent EACCES errors
-# This is necessary if node_modules are mounted as volumes or if npm commands are run at runtime
-RUN if [ -d node_modules ]; then chown -R nextjs:nodejs node_modules; fi
 
 USER nextjs
 
