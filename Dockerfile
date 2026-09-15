@@ -66,6 +66,10 @@ RUN chmod +x docker-entrypoint.sh && chown nextjs:nodejs docker-entrypoint.sh
 RUN mkdir -p public/uploads/characters && \
     chown -R nextjs:nodejs public/uploads
 
+# Fix node_modules ownership for the non-root user to prevent EACCES errors
+# This is necessary if node_modules are mounted as volumes or if npm commands are run at runtime
+RUN if [ -d node_modules ]; then chown -R nextjs:nodejs node_modules; fi
+
 USER nextjs
 
 # The internal container port (always 3000; host mapping is handled by Compose)
