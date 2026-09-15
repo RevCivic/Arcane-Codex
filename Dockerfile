@@ -42,9 +42,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create a non-root user
+# Create a non-root user with a home directory so npm can write its cache there
 RUN groupadd --system --gid 1001 nodejs && \
-    useradd --system --uid 1001 --gid nodejs nextjs
+    useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
 # Copy the standalone server bundle (includes only the node_modules it needs)
 COPY --from=builder /app/.next/standalone ./
