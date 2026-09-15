@@ -20,6 +20,17 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm config set fetch-retries 5 && \
     npm ci --no-audit --no-fund
 
+# Keep only the packages required by `prisma migrate deploy` in a dedicated
+# stage. The complete development dependency tree is over 1 GB and must not be
+# copied into (or exported with) the production image just to run migrations.
+# Exact versions are read from the lockfile-installed packages, and --offline
+# ensures this pruning step can never fetch a different CLI from npm.
+FROM deps AS prisma-cli
+
+RUN node -e 'const fs=require("fs"); const version=(name)=>require(`./node_modules/${name}/package.json`).version; fs.writeFileSync("package.json", JSON.stringify({private:true,dependencies:{dotenv:version("dotenv"),prisma:version("prisma")}},null,2))' && \
+    rm -f package-lock.json node_modules/.package-lock.json && \
+    npm prune --omit=dev --ignore-scripts --offline --no-audit --no-fund
+
 # ---- Stage 2: Build the application ----
 FROM node:22-slim AS builder
 
