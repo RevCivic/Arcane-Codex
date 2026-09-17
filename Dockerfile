@@ -27,7 +27,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # npm automatically executes prebuild → prisma generate
-RUN npm run build
+RUN --mount=type=cache,target=/app/.next/cache,sharing=locked npm run build
 
 # ---- Stage 3: Production runner ----
 FROM node:22-slim AS runner
