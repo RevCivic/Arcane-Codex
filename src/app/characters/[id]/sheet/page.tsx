@@ -22,6 +22,7 @@ import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { CharacterSheetSuggestionPanel } from '@/components/CharacterSheetSuggestionPanel'
 import { SheetLayoutManager } from '@/components/SheetLayoutManager'
 import type { SheetModule } from '@/components/SheetLayoutManager'
+import { PlayModeSheet } from '@/components/PlayModeSheet'
 import { entityDestination, getListReturnPath } from '@/lib/listNavigation'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -343,11 +344,182 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
         </div>
       </div>
 
-      {/* ── Sheet Layout Manager (controls + reorderable modules) ─────────── */}
-      <SheetLayoutManager
-        isAdmin={isAdmin}
+      {/* ── Play / Edit mode sheet ─────────────────────────────────────────── */}
+      <PlayModeSheet
         characterId={characterId}
-        modules={[
+        stats={consoleStats}
+        skills={consoleSkills}
+        powers={consolePowers}
+        initialLuck={sheet?.luck ?? null}
+        initialMp={sheet?.currentMp ?? null}
+        initialSanity={sheet?.currentSanity ?? null}
+        initialHp={sheet?.currentHp ?? null}
+        maxHp={sheet?.maxHp ?? null}
+        maxMp={sheet?.maxMp ?? null}
+        maxSanity={sheet?.maxSanity ?? null}
+        initialBuild={sheet?.build ?? null}
+        initialHistory={initialHistory}
+        pendingImprovements={markedSkills.length + markedAbilities.length}
+        playExtras={
+          <div className="space-y-4">
+            {/* Improvement panels - open automatically when pending */}
+            {(markedSkills.length > 0 || markedAbilities.length > 0) && (
+              <div className="space-y-4">
+                {markedSkills.length > 0 && (
+                  <CollapsibleSection
+                    storageKey="play-skill-improvement"
+                    defaultOpen={true}
+                    title={
+                      <h2 className="text-sm font-semibold uppercase tracking-widest flex items-center gap-2" style={sectionHead}>
+                        📌 Skill Improvement
+                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: '#1c1407', color: '#fbbf24', border: '1px solid #d9770666' }}>
+                          {markedSkills.length} pending
+                        </span>
+                      </h2>
+                    }
+                  >
+                    <SkillImprovementPanel characterId={characterId} initialMarkedSkills={markedSkills} />
+                  </CollapsibleSection>
+                )}
+                {markedAbilities.length > 0 && (
+                  <CollapsibleSection
+                    storageKey="play-ability-improvement"
+                    defaultOpen={true}
+                    title={
+                      <h2 className="text-sm font-semibold uppercase tracking-widest flex items-center gap-2" style={sectionHead}>
+                        ✨ Ability Improvement
+                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: '#1e1133', color: '#c4b5fd', border: '1px solid #7c3aed66' }}>
+                          {markedAbilities.length} pending
+                        </span>
+                      </h2>
+                    }
+                  >
+                    <AbilityImprovementPanel characterId={characterId} initialMarkedAbilities={markedAbilities} />
+                  </CollapsibleSection>
+                )}
+              </div>
+            )}
+
+            {/* Wounds & Notes */}
+            <CollapsibleSection
+              storageKey="play-wounds-notes"
+              defaultOpen={false}
+              className="card-arcane rounded-lg p-5"
+              style={{ fontFamily: 'Georgia, serif' }}
+              title={
+                <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                  ✦ Wounds &amp; Notes
+                </h2>
+              }
+            >
+              <form action={action} className="space-y-4">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <input type="hidden" name="characterName" value={character.name} />
+                <input type="hidden" name="characterRole" value={character.role ?? ''} />
+                <input type="hidden" name="characterRace" value={character.race ?? ''} />
+                <input type="hidden" name="characterDescription" value={character.description ?? ''} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Wounds / Injuries</label>
+                    <textarea name="wounds" rows={3} defaultValue={sheet?.wounds ?? ''} className="arcane-input"
+                      placeholder="Describe current injuries or conditions..." />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={labelStyle}>Session Notes</label>
+                    <textarea name="notes" rows={3} defaultValue={sheet?.notes ?? ''} className="arcane-input"
+                      placeholder="Clues, reminders, or session notes..." />
+                  </div>
+                </div>
+                <button type="submit" className="px-6 py-1.5 rounded text-sm font-semibold uppercase tracking-wider hover:opacity-90"
+                  style={{ backgroundColor: '#7c3aed', color: '#fff', fontFamily: 'Georgia, serif' }}>
+                  💾 Save Notes
+                </button>
+              </form>
+            </CollapsibleSection>
+
+            {/* Powers reference */}
+            {(character.characterPowers.length > 0 || character.characterAbilities.length > 0) && (
+              <CollapsibleSection
+                storageKey="play-powers-ref"
+                defaultOpen={false}
+                className="card-arcane rounded-lg p-5"
+                style={{ fontFamily: 'Georgia, serif' }}
+                title={
+                  <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                    ⚡ Powers &amp; Abilities
+                  </h2>
+                }
+              >
+                {character.characterPowers.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    {character.characterPowers.map((cp) => {
+                      const ability = cp.power.baseAbility ? abilityByName.get(cp.power.baseAbility) : undefined
+                      const effectivePct = ability
+                        ? ability.currentValue
+                        : cp.power.basePercentage != null
+                          ? cp.power.basePercentage + cp.modifier
+                          : undefined
+                      return (
+                        <div key={cp.id} className="card-arcane rounded-lg p-4">
+                          <h3 className="font-semibold text-sm mb-1" style={{ color: '#e2e8f0' }}>{cp.power.name}</h3>
+                          {cp.power.baseAbility && (
+                            <p className="text-xs mt-1" style={{ color: '#8b5cf6' }}>
+                              🎲 {cp.power.baseAbility}
+                              {effectivePct != null && (
+                                <span className="ml-1 font-mono px-1 rounded" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>{effectivePct}%</span>
+                              )}
+                              {cp.modifier !== 0 && (
+                                <span className="ml-1 font-mono" style={{ color: cp.modifier > 0 ? '#4ade80' : '#f87171' }}>
+                                  ({cp.modifier > 0 ? '+' : ''}{cp.modifier})
+                                </span>
+                              )}
+                            </p>
+                          )}
+                          {cp.notes && <p className="text-xs italic mt-1" style={{ color: '#6b7280' }}>{cp.notes}</p>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </CollapsibleSection>
+            )}
+
+            {/* Inventory */}
+            {character.inventoryItems.length > 0 && (
+              <CollapsibleSection
+                storageKey="play-inventory"
+                defaultOpen={false}
+                className="card-arcane rounded-lg p-5"
+                style={{ fontFamily: 'Georgia, serif' }}
+                title={
+                  <h2 className="text-sm font-semibold uppercase tracking-widest" style={sectionHead}>
+                    🎒 Carried Items
+                  </h2>
+                }
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {character.inventoryItems.map((item) => (
+                    <div key={item.id} className="card-arcane rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-sm" style={{ color: '#e2e8f0' }}>{item.name}</span>
+                        {item.category && (
+                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1c1407', color: '#f59e0b' }}>{item.category}</span>
+                        )}
+                      </div>
+                      {item.description && <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>{item.description}</p>}
+                      {item.effect && <p className="text-xs italic" style={{ color: '#a78bfa' }}>⚡ {item.effect}</p>}
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            )}
+          </div>
+        }
+        editLayoutContent={
+          <SheetLayoutManager
+            isAdmin={isAdmin}
+            characterId={characterId}
+            modules={[
           // ── Import FoundryVTT JSON ──────────────────────────────────────
           {
             key: 'import',
@@ -836,6 +1008,8 @@ export default async function CharacterSheetPage({ params, searchParams }: { par
             : []),
         ]}
         initialPreference={layoutPreference}
+      />
+        }
       />
     </div>
   )

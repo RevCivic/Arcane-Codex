@@ -649,3 +649,60 @@ export async function clearAbilityImprovementMarks(characterId: number): Promise
 
   revalidatePath(`/characters/${characterId}/sheet`)
 }
+
+/**
+ * Adjusts a resource pool (HP, Sanity, MP, or Luck) by a delta without a roll.
+ * Used by the play-mode resource pools for manual ±1 adjustments (healing, sanity loss, etc.).
+ * Accessible to the character owner or any admin.
+ * Returns the new value for the adjusted resource.
+ */
+export async function adjustResourceDirect(
+  characterId: number,
+  resource: 'hp' | 'sanity' | 'mp' | 'luck',
+  delta: number
+): Promise<number | null> {
+  const user = await requireAuthorizedUser()
+  await requireCharacterOwner(characterId, user)
+
+  const fieldMap = {
+    hp:     'currentHp',
+    sanity: 'currentSanity',
+    mp:     'currentMp',
+    luck:   'luck',
+  } as const
+
+  const maxFieldMap: Partial<Record<'hp' | 'sanity' | 'mp' | 'luck', string>> = {
+    hp:     'maxHp',
+    sanity: 'maxSanity',
+    mp:     'maxMp',
+  }
+
+  const field = fieldMap[resource]
+  const maxField = maxFieldMap[resource]
+
+  const sheet = await prisma.characterSheet.findUnique({ where: { characterId } })
+
+  // If no sheet exists yet, create one with the delta applied (min 0)
+  if (!sheet) {
+    const newValue = Math.max(0, delta)
+    await prisma.characterSheet.create({
+      data: { characterId, [field]: newValue },
+    })
+    revalidatePath(`/characters/${characterId}/sheet`)
+    return newValue
+  }
+
+  const current = (sheet[field as keyof typeof sheet] as number | null) ?? 0
+  const maxVal = maxField ? (sheet[maxField as keyof typeof sheet] as number | null) : null
+  const newValue = maxVal != null
+    ? Math.max(0, Math.min(maxVal, current + delta))
+    : Math.max(0, current + delta)
+
+  await prisma.characterSheet.update({
+    where: { characterId },
+    data: { [field]: newValue },
+  })
+
+  revalidatePath(`/characters/${characterId}/sheet`)
+  return newValue
+}
