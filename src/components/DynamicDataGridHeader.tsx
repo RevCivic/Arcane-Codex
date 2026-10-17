@@ -4,6 +4,7 @@ import React from 'react'
 import { ColumnConfig } from './DynamicDataGrid'
 import { SortOrder, getSortIndicator } from '@/lib/datagridSort'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface DynamicDataGridHeaderProps<T = any> {
   visibleColumns: ColumnConfig<T>[]
   sortBy: string
@@ -11,6 +12,7 @@ interface DynamicDataGridHeaderProps<T = any> {
   onSort: (columnId: string) => void
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function DynamicDataGridHeader<T extends Record<string, any> = any>({
   visibleColumns,
   sortBy,

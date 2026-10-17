@@ -77,14 +77,6 @@ const PRIMARY_CHARACTERISTIC_HELP = {
   EDU: 'Education: formal knowledge, training, and learned expertise.',
 } as const
 
-const DERIVED_STAT_HELP = {
-  HIT_POINTS: 'Hit Points: represents physical health. Typically (CON + SIZ) ÷ 2 at creation. Reduced by wounds; unconscious when reduced to 0 or below.',
-  SANITY: 'Sanity Points: resistance to supernatural horror and psychological stress. Reduced by encountering the supernatural. Critical encounters can cause temporary or permanent insanity.',
-  MAGIC_PTS: 'Magic Points: fuel for magic spells and rituals. Typically POW at creation. Spent to cast spells; regenerates slowly during rest.',
-  LUCK: 'Luck Points: fate\'s favor on your side. Can be spent to re-roll dice during critical moments. Resets between story arcs.',
-  BUILD: 'Build Modifier: affects physical damage and combat power. Positive Build adds damage; negative Build reduces it. Calculated from STR + SIZ.',
-} as const
-
 const STAT_TOOLTIP_CLASSNAME = [
   'pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2',
   'rounded border border-amber-700/60 bg-[#111827] p-2 text-[11px] normal-case leading-snug text-amber-100 shadow-lg',

@@ -4,6 +4,7 @@ import React from 'react'
 import { ColumnConfig } from './DynamicDataGrid'
 import { ColumnState } from '@/lib/datagridState'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface DynamicDataGridColumnToggleProps<T = any> {
   columns: ColumnConfig<T>[]
   columnStates: ColumnState[]
@@ -11,6 +12,7 @@ interface DynamicDataGridColumnToggleProps<T = any> {
   onClose: () => void
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function DynamicDataGridColumnToggle<T extends Record<string, any> = any>({
   columns,
   columnStates,

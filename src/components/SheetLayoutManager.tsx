@@ -31,15 +31,17 @@ function useStoredPreference(
   defaultModules: string[],
   initialPreference?: SheetLayoutPreferenceData,
 ): [SheetLayoutPreferenceData, (pref: SheetLayoutPreferenceData) => Promise<void>] {
-  const defaultRef = useRef<SheetLayoutPreferenceData>({
+  const defaultPref: SheetLayoutPreferenceData = {
     hiddenModules: [],
     moduleOrder: defaultModules,
     moduleSizes: {},
-  })
+  }
+
+  const defaultRef = useRef<SheetLayoutPreferenceData>(defaultPref)
 
   const cacheRef = useRef<PreferenceCache>({
     raw: null,
-    result: (initialPreference && initialPreference.moduleOrder.length > 0) ? initialPreference : defaultRef.current,
+    result: (initialPreference && initialPreference.moduleOrder.length > 0) ? initialPreference : defaultPref,
   })
 
   const subscribe = useCallback(
@@ -256,7 +258,6 @@ export function SheetLayoutManager({
     .map((key) => modules.find((m) => m.key === key))
     .filter((m): m is SheetModule => m != null)
 
-  const visibleModules = orderedModules.filter((m) => !draftPreference.hiddenModules.includes(m.key))
   const hiddenModules = orderedModules.filter((m) => draftPreference.hiddenModules.includes(m.key))
 
   // ── Render ───────────────────────────────────────────────────────────────────

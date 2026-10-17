@@ -168,7 +168,13 @@ export function PlayModeSheet({
               powers={powers}
               initialHistory={initialHistory}
               currentLuck={currentLuck}
+              currentHp={currentHp}
+              currentSanity={currentSanity}
+              currentMp={currentMp}
               onLuckSpent={setCurrentLuck}
+              onHpSpent={setCurrentHp}
+              onSanitySpent={setCurrentSanity}
+              onMpSpent={setCurrentMp}
             />
           </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef, useCallback, useEffect, useMemo } from 'react'
-import { saveRoll, spendLuckOnRoll } from '@/app/actions'
+import { saveRoll, spendLuckOnRoll, spendMpOnRoll, spendSanityOnRoll, spendHpOnRoll } from '@/app/actions'
 import { getD100ResultType } from '@/lib/diceRules'
 import {
   applyDifficulty,
@@ -58,13 +58,26 @@ function TierChip({ tier, active, onSelect }: TierChipProps) {
   )
 }
 
+type PowerCostType = 'mp' | 'sanity' | 'hp'
+
+interface PendingCost {
+  rollId: number
+  type: PowerCostType
+  cost: number
+}
+
 interface ResultOverlayProps {
   entry: HistoryEntry | null
   isScrambling: boolean
   scrambleRune: string
   flavorText: string | null
   currentLuck: number | null
+  pendingCost: PendingCost | null
+  currentHp: number | null
+  currentSanity: number | null
+  currentMp: number | null
   onLuckSpend: () => void
+  onCostSpend: () => void
   onDismiss: () => void
 }
 function ResultOverlay({
@@ -73,7 +86,12 @@ function ResultOverlay({
   scrambleRune,
   flavorText,
   currentLuck,
+  pendingCost,
+  currentHp,
+  currentSanity,
+  currentMp,
   onLuckSpend,
+  onCostSpend,
   onDismiss,
 }: ResultOverlayProps) {
   if (!entry) return null
@@ -166,6 +184,31 @@ function ResultOverlay({
           </button>
         )}
 
+        {/* Power cost spend */}
+        {!isScrambling && pendingCost && (() => {
+          const canAfford =
+            pendingCost.type === 'mp' ? (currentMp ?? 0) >= pendingCost.cost
+            : pendingCost.type === 'sanity' ? (currentSanity ?? 0) >= pendingCost.cost
+            : (currentHp ?? 0) >= pendingCost.cost
+          const costLabels: Record<PowerCostType, { emoji: string; label: string; color: string; bg: string; border: string }> = {
+            mp:     { emoji: '✨', label: 'Magic Pts', color: '#60a5fa', bg: '#0c1b2e', border: '#1d4ed866' },
+            sanity: { emoji: '🧠', label: 'Sanity',   color: '#a78bfa', bg: '#1e1133', border: '#7c3aed66' },
+            hp:     { emoji: '❤️', label: 'HP',       color: '#4ade80', bg: '#0a1f14', border: '#16a34a66' },
+          }
+          const cl = costLabels[pendingCost.type]
+          return (
+            <button
+              type="button"
+              onClick={onCostSpend}
+              disabled={!canAfford}
+              className="mt-2 px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider w-full transition-colors hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: cl.bg, color: cl.color, border: `1px solid ${cl.border}` }}
+            >
+              {cl.emoji} Spend {pendingCost.cost} {cl.label}
+            </button>
+          )
+        })()}
+
         {!isScrambling && (
           <button
             type="button"
@@ -189,7 +232,13 @@ interface UnifiedRollSurfaceProps {
   powers: PowerEntry[]
   initialHistory: HistoryEntry[]
   currentLuck: number | null
+  currentHp: number | null
+  currentSanity: number | null
+  currentMp: number | null
   onLuckSpent: (newLuck: number | null) => void
+  onHpSpent?: (newHp: number) => void
+  onSanitySpent?: (newSanity: number) => void
+  onMpSpent?: (newMp: number) => void
 }
 
 /**
@@ -206,7 +255,13 @@ export function UnifiedRollSurface({
   powers,
   initialHistory,
   currentLuck,
+  currentHp,
+  currentSanity,
+  currentMp,
   onLuckSpent,
+  onHpSpent,
+  onSanitySpent,
+  onMpSpent,
 }: UnifiedRollSurfaceProps) {
   const [search, setSearch] = useState('')
   const [tier, setTier] = useState<DifficultyTier>('Average')
@@ -214,6 +269,7 @@ export function UnifiedRollSurface({
   const [latestEntry, setLatestEntry] = useState<HistoryEntry | null>(null)
   const [showOverlay, setShowOverlay] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [pendingCost, setPendingCost] = useState<PendingCost | null>(null)
   const [markedSkillIds, setMarkedSkillIds] = useState<Set<number>>(
     () => new Set(skills.filter((s) => s.markedForImprovement).map((s) => s.id))
   )
@@ -374,6 +430,16 @@ export function UnifiedRollSurface({
           )
           setLatestEntry((prev) => (prev?.id === tempId ? { ...prev, id: saved.id } : prev))
           if (saved.currentLuck != null) onLuckSpent(saved.currentLuck)
+          // Queue power cost prompt (MP > Sanity > HP priority)
+          if (item.type === 'power') {
+            if (item.mpCost && item.mpCost > 0) {
+              setPendingCost({ rollId: saved.id, type: 'mp', cost: item.mpCost })
+            } else if (item.sanityCost && item.sanityCost > 0) {
+              setPendingCost({ rollId: saved.id, type: 'sanity', cost: item.sanityCost })
+            } else if (item.hpCost && item.hpCost > 0) {
+              setPendingCost({ rollId: saved.id, type: 'hp', cost: item.hpCost })
+            }
+          }
         } catch {
           // keep optimistic entry
         }
@@ -381,6 +447,32 @@ export function UnifiedRollSurface({
     },
     [characterId, tier, startScramble, scheduleDismiss, onLuckSpent, startTransition]
   )
+
+  const handleCostSpend = useCallback(() => {
+    if (!pendingCost) return
+    const { rollId, type, cost } = pendingCost
+
+    startTransition(async () => {
+      try {
+        if (type === 'mp') {
+          await spendMpOnRoll(characterId, rollId, cost)
+          if (currentMp != null) onMpSpent?.(Math.max(0, currentMp - cost))
+          setLatestEntry((prev) => prev ? { ...prev, mpSpent: cost } : prev)
+        } else if (type === 'sanity') {
+          await spendSanityOnRoll(characterId, rollId, cost)
+          if (currentSanity != null) onSanitySpent?.(Math.max(0, currentSanity - cost))
+          setLatestEntry((prev) => prev ? { ...prev, sanitySpent: cost } : prev)
+        } else {
+          await spendHpOnRoll(characterId, rollId, cost)
+          if (currentHp != null) onHpSpent?.(Math.max(0, currentHp - cost))
+          setLatestEntry((prev) => prev ? { ...prev, hpSpent: cost } : prev)
+        }
+        setPendingCost(null)
+      } catch {
+        // ignore; the roll history record remains without the cost annotated
+      }
+    })
+  }, [pendingCost, characterId, currentMp, currentSanity, currentHp, onMpSpent, onSanitySpent, onHpSpent, startTransition])
 
   const handleLuckSpend = useCallback(() => {
     if (!latestEntry || latestEntry.id < 0) return
@@ -412,7 +504,12 @@ export function UnifiedRollSurface({
           scrambleRune={scrambleRune}
           flavorText={flavorText}
           currentLuck={currentLuck}
+          pendingCost={pendingCost}
+          currentHp={currentHp}
+          currentSanity={currentSanity}
+          currentMp={currentMp}
           onLuckSpend={handleLuckSpend}
+          onCostSpend={handleCostSpend}
           onDismiss={() => setShowOverlay(false)}
         />
       )}

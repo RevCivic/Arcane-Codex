@@ -1,6 +1,5 @@
 'use server'
 
-import { AccessRole } from '@/generated/prisma'
 import { prisma } from '@/lib/prisma'
 import { normalizeEmail } from '@/lib/normalizeEmail'
 import { requireAuthorizedUser, requireAdminUser } from './_shared'
