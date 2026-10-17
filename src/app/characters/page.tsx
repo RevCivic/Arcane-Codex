@@ -20,6 +20,7 @@ import { TagFilter } from '@/components/TagFilter'
 import { parseSortField, SortOrder } from '@/lib/sortParams'
 import { EntityFilterPanel } from '@/components/EntityFilterPanel'
 import { entityDestination } from '@/lib/listNavigation'
+import { CharacterDataGrid } from '@/components/CharacterDataGrid'
 
 const VALID_SORT_FIELDS = ['name', 'role', 'status', 'race', 'age', 'affiliation'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
@@ -226,114 +227,13 @@ export default async function CharactersPage({
           No characters recorded. Begin by adding an agent or person of interest.
         </div>
       ) : view === 'list' ? (
-        <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #1f2937' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Georgia, serif' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #1f2937', backgroundColor: '#0d0d1a' }}>
-                <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'name')} style={{ color: sortBy === 'name' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Name<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="name" />
-                  </Link>
-                </th>
-                <th style={thStyle}>
-                  <span style={{ color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Photo
-                  </span>
-                </th>
-                <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'role')} style={{ color: sortBy === 'role' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Role<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="role" />
-                  </Link>
-                </th>
-                <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'status')} style={{ color: sortBy === 'status' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Status<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="status" />
-                  </Link>
-                </th>
-                <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'race')} style={{ color: sortBy === 'race' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Race<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="race" />
-                  </Link>
-                </th>
-                <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'age')} style={{ color: sortBy === 'age' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Age<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="age" />
-                  </Link>
-                </th>
-                <th style={thStyle}>
-                  <Link href={sortLink(queryParams, sortBy, sortOrder, 'affiliation')} style={{ color: sortBy === 'affiliation' ? '#a78bfa' : '#6b7280', textDecoration: 'none', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Affiliation<SortIcon sortBy={sortBy} sortOrder={sortOrder} column="affiliation" />
-                  </Link>
-                </th>
-                <th style={{ ...thStyle, textAlign: 'right', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {charactersWithDisplayImages.map((character) => (
-                <tr id={`character-${character.id}`} key={character.id} className="hover-row-arcane" style={{ borderBottom: '1px solid #1a1a2e' }}>
-                  <td style={{ padding: '10px 12px', color: '#e2e8f0', fontSize: '14px' }}>
-                    <div>{character.name}</div>
-                    {character.tags.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {character.tags.map((tag) => (
-                          <span key={tag.id} className="px-1.5 py-0.5 rounded-full text-[10px]" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
-                            #{tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '10px 12px' }}>
-                    {character.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={character.displayImageUrl ?? character.imageUrl}
-                        alt={`${character.name} thumbnail`}
-                        loading="lazy"
-                        className="h-12 w-12 rounded object-contain"
-                        style={{ border: '1px solid #1f2937', backgroundColor: '#07070d' }}
-                      />
-                    ) : (
-                      <span style={{ color: '#374151' }}>—</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '10px 12px', fontSize: '12px' }}>
-                    {character.role ? (
-                      <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1e1133', color: '#a78bfa' }}>
-                        {character.role}
-                      </span>
-                    ) : <span style={{ color: '#374151' }}>—</span>}
-                  </td>
-                  <td style={{ padding: '10px 12px', fontSize: '12px' }}>
-                    <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: character.status === 'Active' ? '#052e16' : '#1f1210', color: character.status === 'Active' ? '#4ade80' : '#f87171' }}>
-                      {character.status ?? 'Unknown'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: '13px' }}>
-                    {character.race ?? <span style={{ color: '#374151' }}>—</span>}
-                  </td>
-                  <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: '13px' }}>
-                    {character.age !== null && character.age !== undefined ? character.age.toString() : <span style={{ color: '#374151' }}>—</span>}
-                  </td>
-                  <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: '13px' }}>
-                    {character.affiliation ?? <span style={{ color: '#374151' }}>—</span>}
-                  </td>
-                  <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link href={destinationFor(character.id)} className="text-xs px-3 py-1 rounded transition-colors hover:text-purple-300" style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}>View</Link>
-                      <Link href={destinationFor(character.id, '/sheet')} className="text-xs px-3 py-1 rounded transition-colors hover:text-cyan-300" style={{ color: '#06b6d4', border: '1px solid #164e63' }}>Sheet</Link>
-                      <Link href={destinationFor(character.id, '/edit')} className="text-xs px-3 py-1 rounded transition-colors hover:text-amber-300" style={{ color: '#d97706', border: '1px solid #451a03' }}>Edit</Link>
-                      <DeleteButton action={deleteCharacter.bind(null, character.id)} label={character.name} />
-                    </div>
-                    {isAdmin && <CharacterQuickEdit character={quickCharacter(character)} action={quickUpdateCharacter.bind(null, character.id)} />}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <CharacterDataGrid
+          characters={charactersWithDisplayImages}
+          isAdmin={isAdmin}
+          destinationFor={destinationFor}
+          deleteCharacter={deleteCharacter}
+          quickUpdateCharacter={quickUpdateCharacter}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {charactersWithDisplayImages.map((character) => (
