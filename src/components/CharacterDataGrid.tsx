@@ -28,7 +28,7 @@ interface CharacterGridProps {
   isAdmin: boolean
   destinationFor: (characterId: number, suffix?: string) => string
   deleteCharacter: (id: number) => Promise<void>
-  quickUpdateCharacter: (id: number, updates: any) => Promise<void>
+  quickUpdateCharacter: (id: number, formData: FormData) => Promise<void>
 }
 
 export function CharacterDataGrid({
@@ -65,7 +65,7 @@ export function CharacterDataGrid({
     {
       id: 'photo',
       label: 'Photo',
-      field: 'displayImageUrl' as any,
+      field: 'displayImageUrl' as keyof CharacterRowData,
       sortable: false,
       filterable: false,
       defaultVisible: true,

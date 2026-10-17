@@ -52,6 +52,7 @@ export function applyFilter(value: FilterValue, filter: Filter): boolean {
 /**
  * Filter rows based on multiple filter criteria
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function filterRows<T extends Record<string, any>>(
   rows: T[],
   filters: Filter[],

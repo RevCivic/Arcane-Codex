@@ -1,7 +1,5 @@
 'use client'
 
-import type { CSSProperties } from 'react'
-
 interface DerivedBoxProps {
   label: string
   currentName: string

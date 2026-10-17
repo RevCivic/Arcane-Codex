@@ -7,6 +7,7 @@ export type SortOrder = 'asc' | 'desc'
 /**
  * Compare two values for sorting
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function compareValues(a: any, b: any, order: SortOrder = 'asc'): number {
   // Handle null/undefined
   if (a == null && b == null) return 0
@@ -41,10 +42,12 @@ export function compareValues(a: any, b: any, order: SortOrder = 'asc'): number 
 /**
  * Sort rows by a single column
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sortRows<T extends Record<string, any>>(
   rows: T[],
   sortBy: string,
   sortOrder: SortOrder = 'asc',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fieldAccessor?: (row: T, columnId: string) => any,
 ): T[] {
   const accessor = fieldAccessor || ((row: T, columnId: string) => row[columnId])
