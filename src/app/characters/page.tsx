@@ -25,19 +25,6 @@ import { CharacterDataGrid } from '@/components/CharacterDataGrid'
 const VALID_SORT_FIELDS = ['name', 'role', 'status', 'race', 'age', 'affiliation'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
 
-function sortLink(params: URLSearchParams, currentSortBy: string, currentSortOrder: string, col: string) {
-  const order = currentSortBy === col ? (currentSortOrder === 'asc' ? 'desc' : 'asc') : 'asc'
-  const next = new URLSearchParams(params)
-  next.set('sortBy', col)
-  next.set('sortOrder', order)
-  return `?${next.toString()}`
-}
-
-function SortIcon({ sortBy, sortOrder, column }: { sortBy: string; sortOrder: string; column: string }) {
-  if (sortBy !== column) return <span style={{ color: '#374151', marginLeft: '3px' }}>↕</span>
-  return <span style={{ color: '#a78bfa', marginLeft: '3px' }}>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-}
-
 async function hasLocalThumbnail(imageUrl: string): Promise<boolean> {
   const thumbnailUrl = getLocalCharacterThumbnailUrl(imageUrl)
   if (!thumbnailUrl) return false
@@ -147,15 +134,6 @@ export default async function CharactersPage({
         : null,
     })),
   )
-
-  const thStyle: React.CSSProperties = { padding: '10px 12px', textAlign: 'left', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }
-
-  const quickCharacter = (character: (typeof charactersWithDisplayImages)[number]) => ({
-    name: character.name, role: character.role, status: character.status,
-    affiliation: character.affiliation, currentCase: character.currentCase,
-    currentLocation: character.currentLocation, race: character.race, gender: character.gender,
-    age: character.age?.toString() ?? null,
-  })
 
   const content = (
     <div>
