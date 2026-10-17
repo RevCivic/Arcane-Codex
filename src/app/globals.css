@@ -181,3 +181,123 @@ body {
   }
 }
 
+/* Dynamic Data Grid Styles */
+.datagrid-wrapper {
+  width: 100%;
+}
+
+.datagrid-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.datagrid-toggle-button,
+.datagrid-reset-button {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid #3b1f6e;
+  background-color: transparent;
+  color: #a78bfa;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.datagrid-toggle-button:hover,
+.datagrid-reset-button:hover {
+  background-color: rgba(124, 58, 237, 0.1);
+  color: #c4b5fd;
+  border-color: #7c3aed;
+}
+
+.datagrid-header-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.datagrid-header-sortable:hover {
+  color: #a78bfa !important;
+}
+
+.datagrid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.datagrid-table thead tr {
+  background-color: #0d0d1a;
+  border-bottom: 2px solid #1f2937;
+}
+
+.datagrid-table th {
+  padding: 10px 12px;
+  text-align: left;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.datagrid-table tbody tr {
+  border-bottom: 1px solid #1a1a2e;
+  transition: background-color 0.2s;
+}
+
+.datagrid-table tbody tr:hover {
+  background-color: rgba(59, 31, 110, 0.15);
+}
+
+.datagrid-table td {
+  padding: 10px 12px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.datagrid-column-toggle {
+  background-color: #111118;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.datagrid-column-toggle h3 {
+  color: #a78bfa;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 8px 0;
+}
+
+.datagrid-column-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.datagrid-column-toggle label:hover {
+  background-color: rgba(124, 58, 237, 0.1);
+}
+
+.datagrid-column-toggle input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #7c3aed;
+}
+
