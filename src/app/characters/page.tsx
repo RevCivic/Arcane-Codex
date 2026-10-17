@@ -311,7 +311,12 @@ export default async function CharactersPage({
                   />
                 </div>
               </div>
-              {isAdmin && <CharacterQuickEdit character={quickCharacter(character)} action={quickUpdateCharacter.bind(null, character.id)} />}
+              {isAdmin && <CharacterQuickEdit character={{
+                name: character.name, role: character.role, status: character.status,
+                affiliation: character.affiliation, currentCase: character.currentCase,
+                currentLocation: character.currentLocation, race: character.race, gender: character.gender,
+                age: character.age?.toString() ?? null,
+              }} action={quickUpdateCharacter.bind(null, character.id)} />}
             </div>
           ))}
         </div>
