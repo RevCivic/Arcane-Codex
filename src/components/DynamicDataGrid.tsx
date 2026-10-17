@@ -37,16 +37,23 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
   rowClassName,
   actions,
 }: DynamicDataGridProps<T>) {
-  // Load persisted state once to avoid multiple localStorage reads
-  const savedState = typeof window !== 'undefined' ? loadDataGridState(entityType) : null
-
   const [columnStates, setColumnStates] = useState<ColumnState[]>(() => {
     const defaultStates = initializeColumnStates(columns)
-    return mergeColumnStates(savedState?.columns, defaultStates)
+    const saved = typeof window !== 'undefined' ? loadDataGridState(entityType) : null
+    return mergeColumnStates(saved?.columns, defaultStates)
   })
 
-  const [sortBy, setSortBy] = useState<string>(() => savedState?.sortBy || columns[0]?.id || '')
-  const [sortOrder, setSortOrder] = useState<SortOrder>(() => (savedState?.sortOrder as SortOrder) || 'asc')
+  const [sortBy, setSortBy] = useState<string>(() => {
+    if (typeof window === 'undefined') return columns[0]?.id || ''
+    const saved = loadDataGridState(entityType)
+    return saved?.sortBy || columns[0]?.id || ''
+  })
+
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
+    if (typeof window === 'undefined') return 'asc'
+    const saved = loadDataGridState(entityType)
+    return (saved?.sortOrder as SortOrder) || 'asc'
+  })
   const [filters, setFilters] = useState<Filter[]>([])
   const [showColumnToggle, setShowColumnToggle] = useState(false)
 
@@ -59,9 +66,10 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
     })
   }, [columnStates, sortBy, sortOrder, entityType])
 
-  // Get visible columns
+  // Get visible columns (optimized with Map for O(n) lookup)
   const visibleColumns = useMemo(() => {
-    return columns.filter((col) => columnStates.find((cs) => cs.id === col.id)?.visible !== false)
+    const stateMap = new Map(columnStates.map((cs) => [cs.id, cs]))
+    return columns.filter((col) => stateMap.get(col.id)?.visible !== false)
   }, [columns, columnStates])
 
   // Apply filters and sorting

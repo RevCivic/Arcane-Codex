@@ -19,11 +19,11 @@ export function applyFilter(value: FilterValue, filter: Filter): boolean {
       return value === filter.value
 
     case 'contains':
-      if (!value || !filter.value) return false
+      if (value === null || value === undefined || filter.value === null || filter.value === undefined) return false
       return String(value).toLowerCase().includes(String(filter.value).toLowerCase())
 
     case 'startsWith':
-      if (!value || !filter.value) return false
+      if (value === null || value === undefined || filter.value === null || filter.value === undefined) return false
       return String(value).toLowerCase().startsWith(String(filter.value).toLowerCase())
 
     case 'gte':

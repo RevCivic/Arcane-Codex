@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { DynamicDataGrid, ColumnConfig } from './DynamicDataGrid'
 import { DeleteButton } from './DeleteButton'
 import { CharacterQuickEdit } from './CharacterQuickEdit'
+import { createQuickEditCharacter } from '@/lib/characterUtils'
 
 interface CharacterRowData {
   id: number
@@ -182,7 +183,7 @@ export function CharacterDataGrid({
           <DeleteButton action={deleteCharacter.bind(null, row.id)} label={row.name} />
           {isAdmin && (
             <CharacterQuickEdit
-              character={{
+              character={createQuickEditCharacter({
                 name: row.name,
                 role: row.role,
                 status: row.status,
@@ -191,8 +192,8 @@ export function CharacterDataGrid({
                 currentLocation: null,
                 race: row.race,
                 gender: null,
-                age: row.age?.toString() ?? null,
-              }}
+                age: row.age,
+              })}
               action={quickUpdateCharacter.bind(null, row.id)}
             />
           )}

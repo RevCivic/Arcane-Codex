@@ -21,6 +21,7 @@ import { parseSortField, SortOrder } from '@/lib/sortParams'
 import { EntityFilterPanel } from '@/components/EntityFilterPanel'
 import { entityDestination } from '@/lib/listNavigation'
 import { CharacterDataGrid } from '@/components/CharacterDataGrid'
+import { createQuickEditCharacter } from '@/lib/characterUtils'
 
 const VALID_SORT_FIELDS = ['name', 'role', 'status', 'race', 'age', 'affiliation'] as const
 type SortField = (typeof VALID_SORT_FIELDS)[number]
@@ -311,12 +312,17 @@ export default async function CharactersPage({
                   />
                 </div>
               </div>
-              {isAdmin && <CharacterQuickEdit character={{
-                name: character.name, role: character.role, status: character.status,
-                affiliation: character.affiliation, currentCase: character.currentCase,
-                currentLocation: character.currentLocation, race: character.race, gender: character.gender,
-                age: character.age?.toString() ?? null,
-              }} action={quickUpdateCharacter.bind(null, character.id)} />}
+              {isAdmin && <CharacterQuickEdit character={createQuickEditCharacter({
+                name: character.name,
+                role: character.role,
+                status: character.status,
+                affiliation: character.affiliation,
+                currentCase: character.currentCase,
+                currentLocation: character.currentLocation,
+                race: character.race,
+                gender: character.gender,
+                age: character.age,
+              })} action={quickUpdateCharacter.bind(null, character.id)} />}
             </div>
           ))}
         </div>
