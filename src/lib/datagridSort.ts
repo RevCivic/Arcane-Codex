@@ -70,6 +70,6 @@ export function toggleSortOrder(currentSortBy: string, currentOrder: SortOrder, 
 /**
  * Get sort direction indicator
  */
-export function getSortIndicator(sortOrder: SortOrder, unsorted: string = '↕'): string {
+export function getSortIndicator(sortOrder: SortOrder): string {
   return sortOrder === 'asc' ? '↑' : '↓'
 }

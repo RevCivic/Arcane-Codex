@@ -37,14 +37,16 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
   rowClassName,
   actions,
 }: DynamicDataGridProps<T>) {
+  // Load persisted state once to avoid multiple localStorage reads
+  const savedState = typeof window !== 'undefined' ? loadDataGridState(entityType) : null
+
   const [columnStates, setColumnStates] = useState<ColumnState[]>(() => {
     const defaultStates = initializeColumnStates(columns)
-    const saved = loadDataGridState(entityType)
-    return mergeColumnStates(saved?.columns, defaultStates)
+    return mergeColumnStates(savedState?.columns, defaultStates)
   })
 
-  const [sortBy, setSortBy] = useState<string>(() => loadDataGridState(entityType)?.sortBy || columns[0]?.id || '')
-  const [sortOrder, setSortOrder] = useState<SortOrder>(() => (loadDataGridState(entityType)?.sortOrder as SortOrder) || 'asc')
+  const [sortBy, setSortBy] = useState<string>(() => savedState?.sortBy || columns[0]?.id || '')
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => (savedState?.sortOrder as SortOrder) || 'asc')
   const [filters, setFilters] = useState<Filter[]>([])
   const [showColumnToggle, setShowColumnToggle] = useState(false)
 
@@ -82,7 +84,7 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
 
   const handleSort = (columnId: string) => {
     const column = columns.find((col) => col.id === columnId)
-    if (!column?.sortable) return
+    if (column?.sortable === false) return
 
     const newOrder = toggleSortOrder(sortBy, sortOrder, columnId)
     setSortBy(columnId)
