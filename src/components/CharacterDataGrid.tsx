@@ -13,8 +13,11 @@ interface CharacterRowData {
   role: string | null
   status: string | null
   race: string | null
+  gender: string | null
   age: bigint | null
   affiliation: string | null
+  currentCase: string | null
+  currentLocation: string | null
   imageUrl: string | null
   displayImageUrl: string | null
   tags: Array<{ id: number; name: string }>
@@ -188,10 +191,10 @@ export function CharacterDataGrid({
                 role: row.role,
                 status: row.status,
                 affiliation: row.affiliation,
-                currentCase: null,
-                currentLocation: null,
+                currentCase: row.currentCase,
+                currentLocation: row.currentLocation,
                 race: row.race,
-                gender: null,
+                gender: row.gender,
                 age: row.age,
               })}
               action={quickUpdateCharacter.bind(null, row.id)}

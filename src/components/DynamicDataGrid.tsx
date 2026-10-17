@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, ReactNode } from 'react'
+import React, { useState, useEffect, useMemo, useRef, ReactNode } from 'react'
 import { ColumnState, DataGridState, initializeColumnStates, mergeColumnStates, loadDataGridState, saveDataGridState } from '@/lib/datagridState'
 import { Filter, filterRows } from '@/lib/datagridFilters'
 import { sortRows, SortOrder, toggleSortOrder } from '@/lib/datagridSort'
@@ -37,21 +37,28 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
   rowClassName,
   actions,
 }: DynamicDataGridProps<T>) {
+  // Use ref to cache savedState across initializers to avoid multiple localStorage reads
+  const savedStateRef = useRef<Partial<DataGridState> | null>(null)
+  const getSavedState = () => {
+    if (savedStateRef.current === null && typeof window !== 'undefined') {
+      savedStateRef.current = loadDataGridState(entityType) || {}
+    }
+    return savedStateRef.current
+  }
+
   const [columnStates, setColumnStates] = useState<ColumnState[]>(() => {
     const defaultStates = initializeColumnStates(columns)
-    const saved = typeof window !== 'undefined' ? loadDataGridState(entityType) : null
+    const saved = getSavedState()
     return mergeColumnStates(saved?.columns, defaultStates)
   })
 
   const [sortBy, setSortBy] = useState<string>(() => {
-    if (typeof window === 'undefined') return columns[0]?.id || ''
-    const saved = loadDataGridState(entityType)
+    const saved = getSavedState()
     return saved?.sortBy || columns[0]?.id || ''
   })
 
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
-    if (typeof window === 'undefined') return 'asc'
-    const saved = loadDataGridState(entityType)
+    const saved = getSavedState()
     return (saved?.sortOrder as SortOrder) || 'asc'
   })
   const [filters, setFilters] = useState<Filter[]>([])
