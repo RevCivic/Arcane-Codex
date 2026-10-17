@@ -39,21 +39,25 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
   rowClassName,
   actions,
 }: DynamicDataGridProps<T>) {
-  const [columnStates, setColumnStates] = useState<ColumnState[]>(() => {
+  // Single localStorage read initialises all three state slices
+  const [gridState, setGridState] = useState(() => {
     const saved = typeof window !== 'undefined' ? (loadDataGridState(entityType) || {}) : {}
     const defaultStates = initializeColumnStates(columns)
-    return mergeColumnStates(saved.columns, defaultStates)
+    return {
+      columnStates: mergeColumnStates(saved.columns, defaultStates),
+      sortBy: saved.sortBy || columns[0]?.id || '',
+      sortOrder: (saved.sortOrder as SortOrder) || 'asc' as SortOrder,
+    }
   })
 
-  const [sortBy, setSortBy] = useState<string>(() => {
-    const saved = typeof window !== 'undefined' ? (loadDataGridState(entityType) || {}) : {}
-    return saved.sortBy || columns[0]?.id || ''
-  })
-
-  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
-    const saved = typeof window !== 'undefined' ? (loadDataGridState(entityType) || {}) : {}
-    return (saved.sortOrder as SortOrder) || 'asc'
-  })
+  const { columnStates, sortBy, sortOrder } = gridState
+  const setColumnStates = (updater: ColumnState[] | ((prev: ColumnState[]) => ColumnState[])) =>
+    setGridState((prev) => ({
+      ...prev,
+      columnStates: typeof updater === 'function' ? updater(prev.columnStates) : updater,
+    }))
+  const setSortBy = (v: string) => setGridState((prev) => ({ ...prev, sortBy: v }))
+  const setSortOrder = (v: SortOrder) => setGridState((prev) => ({ ...prev, sortOrder: v }))
   const [showColumnToggle, setShowColumnToggle] = useState(false)
 
   // Persist state to localStorage whenever it changes
