@@ -451,7 +451,6 @@ export function UnifiedRollSurface({
   const handleCostSpend = useCallback(() => {
     if (!pendingCost) return
     const { rollId, type, cost } = pendingCost
-    setPendingCost(null)
 
     startTransition(async () => {
       try {
@@ -468,6 +467,7 @@ export function UnifiedRollSurface({
           if (currentHp != null) onHpSpent?.(Math.max(0, currentHp - cost))
           setLatestEntry((prev) => prev ? { ...prev, hpSpent: cost } : prev)
         }
+        setPendingCost(null)
       } catch {
         // ignore; the roll history record remains without the cost annotated
       }

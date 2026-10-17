@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, ReactNode } from 'react'
-import { ColumnState, initializeColumnStates, mergeColumnStates, loadDataGridState, saveDataGridState } from '@/lib/datagridState'
+import { initializeColumnStates, mergeColumnStates, loadDataGridState, saveDataGridState } from '@/lib/datagridState'
 import { sortRows, SortOrder, toggleSortOrder } from '@/lib/datagridSort'
 import { DynamicDataGridHeader } from './DynamicDataGridHeader'
 import { DynamicDataGridColumnToggle } from './DynamicDataGridColumnToggle'
@@ -51,13 +51,6 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
   })
 
   const { columnStates, sortBy, sortOrder } = gridState
-  const setColumnStates = (updater: ColumnState[] | ((prev: ColumnState[]) => ColumnState[])) =>
-    setGridState((prev) => ({
-      ...prev,
-      columnStates: typeof updater === 'function' ? updater(prev.columnStates) : updater,
-    }))
-  const setSortBy = (v: string) => setGridState((prev) => ({ ...prev, sortBy: v }))
-  const setSortOrder = (v: SortOrder) => setGridState((prev) => ({ ...prev, sortOrder: v }))
   const [showColumnToggle, setShowColumnToggle] = useState(false)
 
   // Persist state to localStorage whenever it changes
@@ -82,9 +75,12 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
   }, [initialRows, sortBy, sortOrder])
 
   const handleColumnToggle = (columnId: string) => {
-    setColumnStates((prev) =>
-      prev.map((col) => (col.id === columnId ? { ...col, visible: !col.visible } : col))
-    )
+    setGridState((prev) => ({
+      ...prev,
+      columnStates: prev.columnStates.map((col) =>
+        col.id === columnId ? { ...col, visible: !col.visible } : col
+      ),
+    }))
   }
 
   const handleSort = (columnId: string) => {
@@ -92,13 +88,12 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
     if (column?.sortable === false) return
 
     const newOrder = toggleSortOrder(sortBy, sortOrder, columnId)
-    setSortBy(columnId)
-    setSortOrder(newOrder)
+    setGridState((prev) => ({ ...prev, sortBy: columnId, sortOrder: newOrder }))
   }
 
   const handleResetColumns = () => {
     const defaultStates = initializeColumnStates(columns)
-    setColumnStates(defaultStates)
+    setGridState((prev) => ({ ...prev, columnStates: defaultStates }))
   }
 
   const getRowKey = (row: T, index: number): string | number => {
