@@ -10,6 +10,7 @@ interface DynamicDataGridHeaderProps<T = any> {
   sortBy: string
   sortOrder: SortOrder
   onSort: (columnId: string) => void
+  hasActions?: boolean
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,6 +19,7 @@ export function DynamicDataGridHeader<T extends Record<string, any> = any>({
   sortBy,
   sortOrder,
   onSort,
+  hasActions = false,
 }: DynamicDataGridHeaderProps<T>) {
   const thStyle: React.CSSProperties = {
     padding: '10px 12px',
@@ -73,6 +75,13 @@ export function DynamicDataGridHeader<T extends Record<string, any> = any>({
             </th>
           )
         })}
+        {hasActions && (
+          <th style={{ ...thStyle, textAlign: 'right' }}>
+            <span style={{ color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Actions
+            </span>
+          </th>
+        )}
       </tr>
     </thead>
   )

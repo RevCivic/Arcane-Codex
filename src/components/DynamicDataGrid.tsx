@@ -145,6 +145,7 @@ export function DynamicDataGrid<T extends Record<string, any> = any>({
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSort={handleSort}
+            hasActions={!!actions}
           />
 
           <tbody>
