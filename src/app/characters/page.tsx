@@ -133,6 +133,9 @@ export default async function CharactersPage({
       displayImageUrl: character.imageUrl
         ? getPreferredCharacterImageUrl(character.imageUrl, await hasLocalThumbnail(character.imageUrl))
         : null,
+      viewUrl: destinationFor(character.id),
+      sheetUrl: destinationFor(character.id, '/sheet'),
+      editUrl: destinationFor(character.id, '/edit'),
     })),
   )
 
@@ -209,7 +212,6 @@ export default async function CharactersPage({
         <CharacterDataGrid
           characters={charactersWithDisplayImages}
           isAdmin={isAdmin}
-          destinationFor={destinationFor}
           deleteCharacter={deleteCharacter}
           quickUpdateCharacter={quickUpdateCharacter}
         />
@@ -285,21 +287,21 @@ export default async function CharactersPage({
               )}
               <div className="flex flex-wrap items-center gap-2 pt-2" style={{ borderTop: '1px solid #1f2937' }}>
                 <Link
-                  href={destinationFor(character.id)}
+                  href={character.viewUrl}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-purple-300"
                   style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}
                 >
                   View
                 </Link>
                 <Link
-                  href={destinationFor(character.id, '/sheet')}
+                  href={character.sheetUrl}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-cyan-300"
                   style={{ color: '#06b6d4', border: '1px solid #164e63' }}
                 >
                   Sheet
                 </Link>
                 <Link
-                  href={destinationFor(character.id, '/edit')}
+                  href={character.editUrl}
                   className="text-xs px-3 py-1.5 rounded transition-colors hover:text-amber-300"
                   style={{ color: '#d97706', border: '1px solid #451a03' }}
                 >
