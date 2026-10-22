@@ -21,12 +21,14 @@ interface CharacterRowData {
   imageUrl: string | null
   displayImageUrl: string | null
   tags: Array<{ id: number; name: string }>
+  viewUrl: string
+  sheetUrl: string
+  editUrl: string
 }
 
 interface CharacterGridProps {
   characters: CharacterRowData[]
   isAdmin: boolean
-  destinationFor: (characterId: number, suffix?: string) => string
   deleteCharacter: (id: number) => Promise<void>
   quickUpdateCharacter: (id: number, formData: FormData) => Promise<void>
 }
@@ -34,7 +36,6 @@ interface CharacterGridProps {
 export function CharacterDataGrid({
   characters,
   isAdmin,
-  destinationFor,
   deleteCharacter,
   quickUpdateCharacter,
 }: CharacterGridProps) {
@@ -163,21 +164,21 @@ export function CharacterDataGrid({
       actions={(row) => (
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Link
-            href={destinationFor(row.id)}
+            href={row.viewUrl}
             className="text-xs px-3 py-1 rounded transition-colors hover:text-purple-300"
             style={{ color: '#8b5cf6', border: '1px solid #3b1f6e' }}
           >
             View
           </Link>
           <Link
-            href={destinationFor(row.id, '/sheet')}
+            href={row.sheetUrl}
             className="text-xs px-3 py-1 rounded transition-colors hover:text-cyan-300"
             style={{ color: '#06b6d4', border: '1px solid #164e63' }}
           >
             Sheet
           </Link>
           <Link
-            href={destinationFor(row.id, '/edit')}
+            href={row.editUrl}
             className="text-xs px-3 py-1 rounded transition-colors hover:text-amber-300"
             style={{ color: '#d97706', border: '1px solid #451a03' }}
           >
