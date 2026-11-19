@@ -4,6 +4,15 @@ import { useState, useTransition, useRef, useCallback, useEffect, useMemo } from
 import { saveRoll, spendLuckOnRoll, spendMpOnRoll, spendSanityOnRoll, spendHpOnRoll } from '@/app/actions'
 import { getD100ResultType } from '@/lib/diceRules'
 import {
+  formatFreeRollExpression,
+  isValidDieSides,
+  MAX_FREE_ROLL_DICE,
+  MAX_FREE_ROLL_SIDES,
+  MIN_FREE_ROLL_SIDES,
+  rollFreeDicePool,
+  STANDARD_FREE_ROLL_DICE,
+} from '@/lib/freeRoll'
+import {
   applyDifficulty,
   useScrambleAnimation,
   RESULT_CONFIG,
@@ -28,6 +37,16 @@ interface RollItem {
   sanityCost?: number | null
   hpCost?: number | null
   markedForImprovement?: boolean
+}
+
+function parseDiceResults(json: string | null): number[] | null {
+  if (!json) return null
+  try {
+    const value: unknown = JSON.parse(json)
+    return Array.isArray(value) && value.every((result) => typeof result === 'number') ? value : null
+  } catch {
+    return null
+  }
 }
 
 // Stats that are rolled directly without ×5 multiplier
@@ -97,6 +116,7 @@ function ResultOverlay({
   if (!entry) return null
   const rt = entry.resultType as keyof typeof RESULT_CONFIG | null | undefined
   const cfg = rt ? RESULT_CONFIG[rt] : null
+  const freeRollResults = entry.rollType === 'free' ? parseDiceResults(entry.dice) : null
 
   return (
     <div
@@ -146,6 +166,28 @@ function ResultOverlay({
         >
           {isScrambling ? scrambleRune : entry.roll}
         </div>
+
+        {!isScrambling && freeRollResults && (
+          <div className="flex flex-wrap justify-center gap-1.5 mb-3" aria-label="Individual dice results">
+            {freeRollResults.map((result, index) => (
+              <span
+                key={`${index}-${result}`}
+                className="text-xs px-2 py-1 rounded font-mono"
+                style={{ backgroundColor: '#111118', color: '#a78bfa', border: '1px solid #3b1f6e' }}
+              >
+                {result}
+              </span>
+            ))}
+            {entry.modifier != null && entry.modifier !== 0 && (
+              <span
+                className="text-xs px-2 py-1 rounded font-mono"
+                style={{ backgroundColor: '#111118', color: '#9ca3af', border: '1px solid #1f2937' }}
+              >
+                {entry.modifier > 0 ? '+' : ''}{entry.modifier}
+              </span>
+            )}
+          </div>
+        )}
 
         {!isScrambling && entry.target != null && (
           <div className="text-sm mb-3" style={{ color: '#9ca3af' }}>
@@ -270,6 +312,9 @@ export function UnifiedRollSurface({
   const [showOverlay, setShowOverlay] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [pendingCost, setPendingCost] = useState<PendingCost | null>(null)
+  const [dicePool, setDicePool] = useState<number[]>([])
+  const [modifier, setModifier] = useState(0)
+  const [customSides, setCustomSides] = useState('')
   const [markedSkillIds, setMarkedSkillIds] = useState<Set<number>>(
     () => new Set(skills.filter((s) => s.markedForImprovement).map((s) => s.id))
   )
@@ -282,6 +327,27 @@ export function UnifiedRollSurface({
 
   const tempIdRef = useRef(-1)
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const freeRollExpression = useMemo(
+    () => formatFreeRollExpression(dicePool, modifier),
+    [dicePool, modifier]
+  )
+
+  const addDie = useCallback((sides: number) => {
+    if (!isValidDieSides(sides)) return
+    setDicePool((current) => current.length < MAX_FREE_ROLL_DICE ? [...current, sides] : current)
+  }, [])
+
+  const removeDie = useCallback((index: number) => {
+    setDicePool((current) => current.filter((_, dieIndex) => dieIndex !== index))
+  }, [])
+
+  const addCustomDie = useCallback(() => {
+    const sides = Number(customSides)
+    if (!isValidDieSides(sides) || dicePool.length >= MAX_FREE_ROLL_DICE) return
+    addDie(sides)
+    setCustomSides('')
+  }, [addDie, customSides, dicePool.length])
 
   // Build unified roll items
   const allItems = useMemo<RollItem[]>(() => {
@@ -448,6 +514,59 @@ export function UnifiedRollSurface({
     [characterId, tier, startScramble, scheduleDismiss, onLuckSpent, startTransition]
   )
 
+  const rollFree = useCallback(() => {
+    if (dicePool.length === 0) return
+
+    const { results, total } = rollFreeDicePool(dicePool, modifier)
+    const entry: Omit<HistoryEntry, 'id' | 'createdAt'> = {
+      rollType: 'free',
+      label: freeRollExpression,
+      roll: total,
+      target: null,
+      difficulty: null,
+      resultType: null,
+      dice: JSON.stringify(results),
+      modifier,
+      luckSpent: null,
+      mpSpent: null,
+      sanitySpent: null,
+      hpSpent: null,
+      skillId: null,
+      abilityId: null,
+    }
+
+    const tempId = tempIdRef.current--
+    const tempEntry: HistoryEntry = { ...entry, id: tempId, createdAt: new Date().toISOString() }
+
+    setHistory((current) => [tempEntry, ...current].slice(0, 20))
+    setLatestEntry(tempEntry)
+    setPendingCost(null)
+    setShowOverlay(true)
+    startScramble(null)
+    scheduleDismiss()
+
+    startTransition(async () => {
+      try {
+        const saved = await saveRoll(characterId, {
+          rollType: 'free',
+          label: freeRollExpression,
+          roll: total,
+          target: null,
+          difficulty: null,
+          resultType: null,
+          dice: results,
+          modifier,
+          skillId: null,
+          abilityId: null,
+        })
+        setHistory((current) => current.map((item) => item.id === tempId ? { ...item, id: saved.id } : item))
+        setLatestEntry((current) => current?.id === tempId ? { ...current, id: saved.id } : current)
+      } catch {
+        // Keep the optimistic result visible if persistence fails.
+      }
+    })
+  }, [characterId, dicePool, freeRollExpression, modifier, scheduleDismiss, startScramble, startTransition])
+
   const handleCostSpend = useCallback(() => {
     if (!pendingCost) return
     const { rollId, type, cost } = pendingCost
@@ -513,6 +632,128 @@ export function UnifiedRollSurface({
           onDismiss={() => setShowOverlay(false)}
         />
       )}
+
+      {/* Mixed dice pool for one-off DM checks */}
+      <div
+        className="rounded-lg p-4 space-y-3"
+        style={{ backgroundColor: '#0a0a11', border: '1px solid #3b1f6e' }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#c4b5fd' }}>
+              Free Roll
+            </div>
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>
+              Build a mixed dice pool for one-off DM checks.
+            </p>
+          </div>
+          {dicePool.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDicePool([])}
+              className="text-xs uppercase tracking-wider transition-colors hover:text-red-300"
+              style={{ color: '#6b7280' }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2" aria-label="Add a die">
+          {STANDARD_FREE_ROLL_DICE.map((sides) => (
+            <button
+              key={sides}
+              type="button"
+              onClick={() => addDie(sides)}
+              disabled={dicePool.length >= MAX_FREE_ROLL_DICE}
+              className="rounded px-2.5 py-1.5 text-xs font-bold transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#1e1133', color: '#c4b5fd', border: '1px solid #7c3aed66' }}
+              aria-label={`Add d${sides}`}
+            >
+              + d{sides}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-1 gap-2">
+            <input
+              type="number"
+              value={customSides}
+              min={MIN_FREE_ROLL_SIDES}
+              max={MAX_FREE_ROLL_SIDES}
+              onChange={(event) => setCustomSides(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  addCustomDie()
+                }
+              }}
+              placeholder="Custom sides"
+              className="arcane-input min-w-0 flex-1"
+              aria-label="Custom die sides"
+            />
+            <button
+              type="button"
+              onClick={addCustomDie}
+              disabled={!isValidDieSides(Number(customSides)) || dicePool.length >= MAX_FREE_ROLL_DICE}
+              className="rounded px-3 py-2 text-xs font-semibold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#111118', color: '#a78bfa', border: '1px solid #374151' }}
+            >
+              Add Die
+            </button>
+          </div>
+          <label className="flex items-center gap-2 text-xs uppercase tracking-wider" style={{ color: '#9ca3af' }}>
+            Modifier
+            <input
+              type="number"
+              value={modifier}
+              min={-999}
+              max={999}
+              onChange={(event) => setModifier(Math.max(-999, Math.min(999, Number.parseInt(event.target.value, 10) || 0)))}
+              className="arcane-input w-24 text-center font-bold"
+              aria-label="Free roll modifier"
+            />
+          </label>
+        </div>
+
+        <div
+          className="min-h-10 rounded p-2 flex flex-wrap items-center gap-2"
+          style={{ backgroundColor: '#0d0d15', border: '1px dashed #374151' }}
+          aria-label="Selected dice"
+        >
+          {dicePool.length === 0 ? (
+            <span className="text-xs" style={{ color: '#4b5563' }}>Add one or more dice above.</span>
+          ) : (
+            dicePool.map((sides, index) => (
+              <button
+                key={`${sides}-${index}`}
+                type="button"
+                onClick={() => removeDie(index)}
+                className="rounded px-2 py-1 text-xs font-mono transition-colors hover:text-red-300"
+                style={{ backgroundColor: '#1e1133', color: '#c4b5fd', border: '1px solid #7c3aed66' }}
+                aria-label={`Remove d${sides}`}
+                title={`Remove d${sides}`}
+              >
+                d{sides} ×
+              </button>
+            ))
+          )}
+          {dicePool.length >= MAX_FREE_ROLL_DICE && (
+            <span className="text-xs" style={{ color: '#f59e0b' }}>{MAX_FREE_ROLL_DICE}-die limit reached</span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={rollFree}
+          disabled={dicePool.length === 0 || isPending}
+          className="w-full rounded py-2.5 text-sm font-semibold uppercase tracking-wider transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: '#7c3aed', color: '#fff' }}
+        >
+          {isPending ? 'Rolling…' : freeRollExpression ? `Roll ${freeRollExpression}` : 'Add Dice to Roll'}
+        </button>
+      </div>
 
       {/* Search + tier row */}
       <div className="flex flex-col sm:flex-row gap-3">
